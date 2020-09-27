@@ -21,4 +21,4 @@ This repository provides an addon for Blender 2.8 that can (to some degree) impo
 3. Add readers for anim files
 
 ## Acknowledgements
-This project would not have even got off the ground without the [DSCSTools program](https://github.com/SydMontague/DSCSTools) by [https://github.com/SydMontague](SydMontague). Also, the [CSGeom program](https://github.com/xdanieldzd/CSGeom) by (xdanieldzd)[https://github.com/xdanieldzd] was very useful to compare against for the geom files, even though the file format has changed somewhat for the PC release.
+This project would not have even got off the ground without the [DSCSTools program](https://github.com/SydMontague/DSCSTools) by [SydMontague](https://github.com/SydMontague). Also, the [CSGeom program](https://github.com/xdanieldzd/CSGeom) by [xdanieldzd](https://github.com/xdanieldzd) was very useful to compare against for the geom files, even though the file format has changed somewhat for the PC release.
