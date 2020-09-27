@@ -29,17 +29,17 @@ class BaseRW:
         self.type_buffers = {
             'x': 1,  # pad byte
             'c': 1,  # char
-            'b': 1,  # uint8
-            'B': 1,  # uint16
+            'b': 1,  # int8
+            'B': 1,  # uint8
             '?': 1,  # bool
-            'h': 2,  # uint16
-            'H': 2,  # int16
-            'i': 4,  # uint32
-            'I': 4,  # int32
-            'l': 4,  # uint32
-            'L': 4,  # int32
-            'q': 8,  # uint64
-            'Q': 8,  # int64
+            'h': 2,  # int16
+            'H': 2,  # uint16
+            'i': 4,  # int32
+            'I': 4,  # uint32
+            'l': 4,  # int32
+            'L': 4,  # uint32
+            'q': 8,  # int64
+            'Q': 8,  # uint64
             'e': 2,  # half-float
             'f': 4,  # float
             'd': 8  # double
