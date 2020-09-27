@@ -23,7 +23,7 @@ bl_info = {
 
 class ImportDSCS(bpy.types.Operator, ImportHelper):
     bl_idname = 'import_file.import_dscs'
-    bl_label = 'Digimon Story: Cyber Sleuth (.name)'
+    bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
     bl_options = {'REGISTER', 'UNDO'}
     # This will actually work with any file extension since the code just looks for the right ones...
     filename_ext = "*.name"
@@ -176,6 +176,7 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
+        assert any([file_extension == ext for ext in ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
         self.import_file(context, filepath)
         
         return {'FINISHED'}
