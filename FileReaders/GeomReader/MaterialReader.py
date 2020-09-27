@@ -81,46 +81,46 @@ class MaterialComponent(BaseRW):
                         #      Name       numfloats
                         50: ('TextureID', 0),  # idx 0 is texture id, rest are...?
                         51: ('Colour', 4),  # RBGA? RBG at least seems to be correct, not sure about the last float
-                        53: ('unknown_attribute_type', 0),
-                        54: ('unknown_attribute_type', 1),
-                        56: ('unknown_attribute_type', 1),
-                        57: ('unknown_attribute_type', 1),
-                        58: ('unknown_attribute_type', 0),
-                        59: ('unknown_attribute_type', 1),
-                        60: ('unknown_attribute_type', 1),
-                        61: ('unknown_attribute_type', 1),
-                        62: ('unknown_attribute_type', 3),  # Only appears in chr435, chr912
-                        63: ('unknown_attribute_type', 3),  # Only appears in chr435, chr912
-                        64: ('unknown_attribute_type', 3),  # Only appears in chr435, chr912
-                        65: ('unknown_attribute_type', 1),  # Only appears in chr435, chr912
-                        66: ('unknown_attribute_type', 1),  # Only appears in chr435, chr912
-                        67: ('unknown_attribute_type', 0),
-                        68: ('unknown_attribute_type', 0),
-                        69: ('unknown_attribute_type', 0),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
-                        70: ('unknown_attribute_type', 1),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
-                        71: ('unknown_attribute_type', 1),
+                        53: ('unknown_component_type', 0),
+                        54: ('unknown_component_type', 1),
+                        56: ('unknown_component_type', 1),
+                        57: ('unknown_component_type', 1),
+                        58: ('unknown_component_type', 0),
+                        59: ('unknown_component_type', 1),
+                        60: ('unknown_component_type', 1),
+                        61: ('unknown_component_type', 1),
+                        62: ('unknown_component_type', 3),  # Only appears in chr435, chr912
+                        63: ('unknown_component_type', 3),  # Only appears in chr435, chr912
+                        64: ('unknown_component_type', 3),  # Only appears in chr435, chr912
+                        65: ('unknown_component_type', 1),  # Only appears in chr435, chr912
+                        66: ('unknown_component_type', 1),  # Only appears in chr435, chr912
+                        67: ('unknown_component_type', 0),
+                        68: ('unknown_component_type', 0),
+                        69: ('unknown_component_type', 0),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
+                        70: ('unknown_component_type', 1),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
+                        71: ('unknown_component_type', 1),
                         72: ('Toon?', 0),  # idx 0 is texture id, rest are...?
-                        75: ('unknown_attribute_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-                        76: ('unknown_attribute_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-                        77: ('unknown_attribute_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-                        79: ('unknown_attribute_type', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
-                        80: ('unknown_attribute_type', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
-                        84: ('unknown_attribute_type', 1),
-                        85: ('unknown_attribute_type', 2),
-                        88: ('unknown_attribute_type', 2),
-                        91: ('unknown_attribute_type', 2),
-                        94: ('unknown_attribute_type', 2),
-                        97: ('unknown_attribute_type', 2),
-                        100: ('unknown_attribute_type', 1),
-                        113: ('unknown_attribute_type', 1),
-                        114: ('unknown_attribute_type', 1),
-                        116: ('unknown_attribute_type', 2),
-                        119: ('unknown_attribute_type', 1),
-                        120: ('unknown_attribute_type', 1),  # eff_bts_chr429_swarhead.geom, eff_bts_chr590_hdr.geom
-                        123: ('unknown_attribute_type', 1),  # chr803.geom, chr805.geom, eff_bts_chr803_s02.geom
-                        129: ('unknown_attribute_type', 2),  # eff_bts_chr802_s01.geom
-                        141: ('unknown_attribute_type', 1),
-                        142: ('unknown_attribute_type', 0)  # eff_bts_chr032_c_revolution.geom
+                        75: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
+                        76: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
+                        77: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
+                        79: ('unknown_component_type', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
+                        80: ('unknown_component_type', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
+                        84: ('unknown_component_type', 1),
+                        85: ('unknown_component_type', 2),
+                        88: ('unknown_component_type', 2),
+                        91: ('unknown_component_type', 2),
+                        94: ('unknown_component_type', 2),
+                        97: ('unknown_component_type', 2),
+                        100: ('unknown_component_type', 1),
+                        113: ('unknown_component_type', 1),
+                        114: ('unknown_component_type', 1),
+                        116: ('unknown_component_type', 2),
+                        119: ('unknown_component_type', 1),
+                        120: ('unknown_component_type', 1),  # eff_bts_chr429_swarhead.geom, eff_bts_chr590_hdr.geom
+                        123: ('unknown_component_type', 1),  # chr803.geom, chr805.geom, eff_bts_chr803_s02.geom
+                        129: ('unknown_component_type', 2),  # eff_bts_chr802_s01.geom
+                        141: ('unknown_component_type', 1),
+                        142: ('unknown_component_type', 0)  # eff_bts_chr032_c_revolution.geom
                       }
 
     def __init__(self, io_stream):
@@ -135,7 +135,7 @@ class MaterialComponent(BaseRW):
     def read(self):
         self.data = self.bytestream.read(16)
 
-        self.component_type = self.unpack('B')  # Each attribute type has a specific number of floats attached
+        self.component_type = self.unpack('B')  # Each component type has a specific number of floats attached
         self.num_floats_in_data = self.unpack('B')  # If 0, it means there's 8 uint16s
 
         self.always_65280 = self.unpack('H')  # Always 65280. Might be a stop code?
@@ -191,7 +191,7 @@ class UnknownMaterialData:
         self.padding_0x0E = data[3]  # Always 0
         assert self.padding_0x0E == 0, f"padding_0x0E is {self.padding_0x0E}, not 0"
 
-        self.maybe_component_type = data[4]  # Few values, 160 - 169 + 172 # Presumably the attribute type?
+        self.maybe_component_type = data[4]  # Few values, 160 - 169 + 172 # Presumably the component type?
 
         self.always_100 = data[5]  # Always 100
         assert self.always_100 == 100, f"always_100 is {self.always_100}, not 100"

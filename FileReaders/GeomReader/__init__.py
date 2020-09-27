@@ -46,24 +46,24 @@ class GeomReader(BaseRW):
         self.unknown_0x2C = None
 
         self.meshes_start_ptr = None
-        self.Unknown0x34 = None
+        self.unknown_0x34 = None
         self.materials_start_ptr = None
-        self.Unknown0x3C = None
+        self.unknown_0x3C = None
 
         self.unknown_cam_data_1_start_ptr = None
-        self.Unknown0x44 = None
+        self.unknown_0x44 = None
         self.unknown_cam_data_2_start_ptr = None
-        self.Unknown0x4C = None
+        self.unknown_0x4C = None
 
         self.bone_data_start_ptr = None
-        self.Unknown0x54 = None
+        self.unknown_0x54 = None
         self.unknown_0x58 = None
-        self.Unknown0x5C = None
+        self.unknown_0x5C = None
 
         self.texture_names_start_ptr = None
-        self.Unknown0x64 = None
+        self.unknown_0x64 = None
         self.footer_data_start_offset = None
-        self.Unknown0x6C = None
+        self.unknown_0x6C = None
 
         # Data storage variables
         self.meshes = []
@@ -163,7 +163,7 @@ class GeomReader(BaseRW):
             meshReader.read_vertices()
             meshReader.read_weighted_bone_indices()
             meshReader.read_polygons()
-            meshReader.read_vertex_attribs()
+            meshReader.read_vertex_components()
             meshReader.interpret_vertices()
 
     def read_material_data(self):

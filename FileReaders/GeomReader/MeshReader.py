@@ -22,7 +22,7 @@ class MeshReader(BaseRW):
     Current hypotheses and observations
     ------
     1. *Every* header contains a value of 5123 occupying bytes 0x2C-0x2F. Maybe it's a checksum?
-    2. *Every* vertex attribute contains a value of 20 occupying byte 0x05. Another checksum?! Weird junk data?
+    2. *Every* vertex component contains a value of 20 occupying byte 0x05. Another checksum?! Weird junk data?
     3. The remaining unknowns have been modified on the pc002 mesh, and the results have been inconclusive.
        No visual changes have been seen, except in the case of unknown_0x31, which may affect bone weights.
        Setting all the floats to 0 (unknowns 0x48 - 0x68) has no observable effect.
@@ -60,7 +60,7 @@ class MeshReader(BaseRW):
         self.vertex_data = None
         self.weighted_bone_idxs = None
         self.polygon_data = None
-        self.vertex_attribs = None
+        self.vertex_components = None
 
         # Utility data
         self.bytes_read = 0
@@ -125,28 +125,28 @@ class MeshReader(BaseRW):
         self.polygon_data = [idx[0] for idx in self.decode_chunk(self.polygon_data_start_ptr, self.num_polygon_idxs, 'H', 1)]
         self.cleanup_ragged_chunk(self.bytes_read, 4)
 
-    def read_vertex_attribs(self):
-        # 8 bytes per vertex attribute
+    def read_vertex_components(self):
+        # 8 bytes per vertex component
         chunksize = 8
-        self.vertex_attribs = list(map(VertexComponents, self.chunk_list(
+        self.vertex_components = list(map(VertexComponent, self.chunk_list(
             self.read_chunk(self.vertex_components_start_ptr, self.num_vertex_components * chunksize), chunksize)))
 
     def interpret_vertices(self):
         for i, raw_vertex_data in enumerate(self.vertex_data):
             interpreted_vertex = {}
-            bounds = [vertexAttribute.data_start_ptr for vertexAttribute in self.vertex_attribs]
+            bounds = [vertex_component.data_start_ptr for vertex_component in self.vertex_components]
             bounds.append(len(raw_vertex_data))
-            for j, vertexAttribute in enumerate(self.vertex_attribs):
+            for j, vertex_component in enumerate(self.vertex_components):
                 lo_bnd = bounds[j]
                 hi_bnd = bounds[j + 1]
                 raw_vertex_subdata = raw_vertex_data[lo_bnd:hi_bnd]
-                used_data = vertexAttribute.num_elements * self.type_buffers[vertexAttribute.vertex_dtype]
+                used_data = vertex_component.num_elements * self.type_buffers[vertex_component.vertex_dtype]
 
-                dtype = f'{vertexAttribute.num_elements}{vertexAttribute.vertex_dtype}'
+                dtype = f'{vertex_component.num_elements}{vertex_component.vertex_dtype}'
                 interpreted_data = np.array(struct.unpack(dtype, raw_vertex_subdata[:used_data]))
-                if vertexAttribute.validate is not None:
-                    vertexAttribute.validate(interpreted_data)
-                interpreted_vertex[vertexAttribute.vertex_type] = interpreted_data
+                if vertex_component.validate is not None:
+                    vertex_component.validate(interpreted_data)
+                interpreted_vertex[vertex_component.vertex_type] = interpreted_data
 
                 unused_data = raw_vertex_subdata[used_data:]
                 if len(unused_data) > 0:
@@ -154,11 +154,11 @@ class MeshReader(BaseRW):
             self.vertex_data[i] = interpreted_vertex
 
 
-def validate_weighted_bone_id(attribute_data):
-    assert np.all(np.mod(attribute_data, 3)) == 0, f"WeightedBoneIDs were not all multiples of 3: {attribute_data}"
+def validate_weighted_bone_id(component_data):
+    assert np.all(np.mod(component_data, 3)) == 0, f"WeightedBoneIDs were not all multiples of 3: {component_data}"
 
 
-class VertexComponents:
+class VertexComponent:
     vertex_types = {1: 'Position',  # 3 floats
                     2: 'Normal',  # 3 half-floats
                     3: 'UnknownVertexUsage1',  # 4 half-floats, appears in chr, d, eff, npc, t, ui files
@@ -178,12 +178,12 @@ class VertexComponents:
 
     def __init__(self, args):
         data = struct.unpack('HHBBH', args)
-        self.vertex_type = VertexComponents.vertex_types[data[0]]
+        self.vertex_type = VertexComponent.vertex_types[data[0]]
         self.num_elements = data[1]
-        self.vertex_dtype = VertexComponents.dtypes[data[2]]
+        self.vertex_dtype = VertexComponent.dtypes[data[2]]
         self.always_20 = data[3]  # Always 20, no idea what for. Possibly a weird value for a junk byte.
         self.data_start_ptr = data[4]
 
         # Utility func
-        self.validate = VertexComponents.validation_policies.get(self.vertex_type)
+        self.validate = VertexComponent.validation_policies.get(self.vertex_type)
 
