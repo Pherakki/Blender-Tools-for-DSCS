@@ -43,27 +43,18 @@ class GeomReader(BaseRW):
         self.num_bytes_in_texture_names_section = None
         self.unknown_0x14 = None
         self.unknown_0x20 = None
-        self.unknown_0x2C = None
+        self.padding_0x2C = None
 
         self.meshes_start_ptr = None
-        self.unknown_0x34 = None
         self.materials_start_ptr = None
-        self.unknown_0x3C = None
 
         self.unknown_cam_data_1_start_ptr = None
-        self.unknown_0x44 = None
         self.unknown_cam_data_2_start_ptr = None
-        self.unknown_0x4C = None
 
         self.bone_data_start_ptr = None
-        self.unknown_0x54 = None
-        self.unknown_0x58 = None
-        self.unknown_0x5C = None
-
+        self.padding_0x58 = None
         self.texture_names_start_ptr = None
-        self.unknown_0x64 = None
         self.footer_data_start_offset = None
-        self.unknown_0x6C = None
 
         # Data storage variables
         self.meshes = []
@@ -91,7 +82,6 @@ class GeomReader(BaseRW):
     def read_header(self):
         """
         -> Only unknown values bytes 0x14-0x2B, assumed to be 6 floats.
-        -> Might be sensible to convert 32-bit ints to 64-bit...
         
         Returns
         -------
@@ -117,7 +107,7 @@ class GeomReader(BaseRW):
         self.num_bytes_in_texture_names_section = self.unpack('I')
         self.unknown_0x14 = self.unpack('fff')  # Unknown: huge variation
         self.unknown_0x20 = self.unpack('fff')  # Unknown: huge variation
-        self.unknown_0x2C = self.unpack('I')  # Always 0
+        self.padding_0x2C = self.unpack('I')  # Always 0
         self.assert_is_zero('unknown_0x2C')
 
         self.meshes_start_ptr = self.unpack('Q')
@@ -126,7 +116,8 @@ class GeomReader(BaseRW):
         self.unknown_cam_data_2_start_ptr = self.unpack('Q')
 
         self.bone_data_start_ptr = self.unpack('Q')
-        self.unknown_0x58 = self.unpack('Q')
+        self.padding_0x58 = self.unpack('Q')
+        self.assert_is_zero("padding_0x58")
         self.texture_names_start_ptr = self.unpack('Q')
         self.footer_data_start_offset = self.unpack('Q')
 
