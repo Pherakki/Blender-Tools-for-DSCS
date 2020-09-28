@@ -108,7 +108,7 @@ class GeomReader(BaseRW):
         self.unknown_0x14 = self.unpack('fff')  # Unknown: huge variation
         self.unknown_0x20 = self.unpack('fff')  # Unknown: huge variation
         self.padding_0x2C = self.unpack('I')  # Always 0
-        self.assert_is_zero('unknown_0x2C')
+        self.assert_is_zero('padding_0x2C')
 
         self.meshes_start_ptr = self.unpack('Q')
         self.materials_start_ptr = self.unpack('Q')
