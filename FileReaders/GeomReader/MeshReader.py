@@ -9,7 +9,7 @@ class MeshReader(BaseRW):
         1. The header, which gives file pointers to split the file into its major sections, plus counts of what appears
            in each section.
         2. A section that contains raw byte data for each vertex.
-        3. A section that describes bone indices associated with the mesh; currently unsure what the purpose is.
+        3. A section that contains bone indices which have vertices assigned to them by this mesh.
         4. A section that defines the polygons.
         5. A section that states how to construct meaningful information out of the raw vertex bytes.
 
