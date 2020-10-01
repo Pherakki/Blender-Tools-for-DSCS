@@ -26,7 +26,8 @@ This repository provides a work-in-progress addon for Blender 2.8 that can (to s
 e-mail: pherakki@gmail.com
 
 ## Notes
-I have next to no experience with Blender or its API. The import script is a bit of a mess which will hopefully get cleaner over time.
+1. I have next to no experience with Blender or its API. The import script is a bit of a mess which will hopefully get cleaner over time.
+2. Images are stored in a 'img' format, which is secretly a DDS (BC2; Linear DXT3 codec) **with mipmaps**. The game will not enjoy the experience of trying to load anything else and will present you with blank textures in retaliation. Save your editted (or new) textures as a BC2 DDS and rename the extension (I have not yet checked if renaming the extension is necessary).
 
 ## Acknowledgements
 This project would not have even got off the ground without the [DSCSTools program](https://github.com/SydMontague/DSCSTools) by [SydMontague](https://github.com/SydMontague). Also, the [CSGeom program](https://github.com/xdanieldzd/CSGeom) by [xdanieldzd](https://github.com/xdanieldzd) was very useful to compare against for the geom files, even though the file format has changed somewhat for the PC release.
