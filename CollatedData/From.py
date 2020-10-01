@@ -41,10 +41,12 @@ def generate_intermediate_format_from_files(filepath):
 ##################################
 def triangle_strips_to_polys(idxs):
     triangles = []
-    for tri, (idx_a, idx_b, idx_c) in enumerate(zip(idxs, idxs[1:], idxs[2:])):
-        triangle = {idx_a, idx_b, idx_c}
-        if not (len(triangle) != 3 or triangle in triangles):
-            triangles.append((idx_a, idx_b, idx_c))
+    for i, tri in enumerate(zip(idxs, idxs[1:], idxs[2:])):
+        order = i % 2
+        tri = (tri[0 + order], tri[1 - order], tri[2])
+        triangle = set(tri)
+        if not (len(triangle) != 3 or tri in triangles):
+            triangles.append(tri)
     return triangles
 
 
