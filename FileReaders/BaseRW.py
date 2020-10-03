@@ -76,6 +76,34 @@ class BaseRW:
         self.header.append(result)
         return result
 
+    def read_buffer(self, variable, dtype, endianness=None, force_1d=False):
+        val = self.unpack(dtype, endianness, force_1d)
+        setattr(self, variable, val)
+
+    def read_ascii(self, variable, num_bytes=None):
+        bytes_to_read = [] if num_bytes is None else [num_bytes]
+        val = self.bytestream.read(*bytes_to_read).decode('ascii')
+        setattr(self, variable, val)
+
+    def pack(self, value, dtype, endianness=None):
+        if endianness is None:
+            endianness = self.endianness
+        return struct.pack(endianness + dtype, *value)
+
+    def write_buffer(self, variable, dtype, endianness=None, force_1d=False):
+        val = getattr(self, variable)
+        # If it's not a tuple/list/, turn it into a tuple
+        if not (hasattr(val, '__len__') and not isinstance(val, str)):
+            val = (val,)
+        to_write = self.pack(val, dtype, endianness)
+        self.bytestream.write(to_write)
+
+    def write_ascii(self, variable, num_bytes=None):
+        val = getattr(self, variable)
+        if num_bytes is not None:
+            assert len(val) == num_bytes, "String to write is not equal to the number of bytes."
+        self.bytestream.write(val.encode('ascii'))
+
     def decode_data_as(self, buf, data, endianness=None):
         """
         Interprets an input byte-string 'data' as a list of data types specified by 'buf'.
