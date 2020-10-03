@@ -85,6 +85,11 @@ class BaseRW:
         val = self.bytestream.read(*bytes_to_read).decode('ascii')
         setattr(self, variable, val)
 
+    def read_raw(self, variable, num_bytes=None):
+        bytes_to_read = [] if num_bytes is None else [num_bytes]
+        val = self.bytestream.read(*bytes_to_read)
+        setattr(self, variable, val)
+
     def pack(self, value, dtype, endianness=None):
         if endianness is None:
             endianness = self.endianness
@@ -103,6 +108,12 @@ class BaseRW:
         if num_bytes is not None:
             assert len(val) == num_bytes, "String to write is not equal to the number of bytes."
         self.bytestream.write(val.encode('ascii'))
+
+    def write_raw(self, variable, num_bytes=None):
+        val = getattr(self, variable)
+        if num_bytes is not None:
+            assert len(val) == num_bytes, "String to write is not equal to the number of bytes."
+        self.bytestream.write(val)
 
     def decode_data_as(self, buf, data, endianness=None):
         """
@@ -168,6 +179,9 @@ class BaseRW:
         THe 1D input 'lst' converted to a 2D list, where each sub-list has length 'chunksize'.
         """
         return [lst[i:i + chunksize] for i in range(0, len(lst), chunksize)]
+
+    def flatten_list(self, lst):
+        return [subitem for item in lst for subitem in item]
 
     def read(self):
         """
