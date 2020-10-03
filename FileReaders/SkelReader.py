@@ -17,7 +17,7 @@ class SkelReader(BaseRW):
     ------
     (o) SkelReader can successfully parse all name files in DSDB archive within current constraints.
     (x) SkelReader cannot yet fully interpret all data in name files in DSDB archive.
-    (o) SkelReader cannot yet write data to skel files.
+    (o) SkelReader can write data to skel files.
 
     Current hypotheses and observations
     ------
