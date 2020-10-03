@@ -13,7 +13,7 @@ class NameReader(BaseRW):
     ------
     (o) NameReader can successfully parse all name files in DSDB archive within current constraints.
     (o) NameReader can fully interpret all data in name files in DSDB archive.
-    (x) NameReader cannot yet write data to name files.
+    (o) NameReader can write data to name files.
     """
     def __init__(self, bytestream):
         super().__init__(bytestream)
@@ -27,25 +27,54 @@ class NameReader(BaseRW):
 
     def read(self):
         """
-        Reads and decodes the name file.
+        Reads the name file.
         """
-        self.read_header()
-        self.read_pointers()
-        self.read_bone_names()
-        self.read_material_names()
-        
-    def read_header(self):
+        self.read_write(self.read_buffer, self.read_ascii)
+        self.interpret_name_data()
+
+    def write(self):
+        """
+        Writes the name file.
+        """
+        self.reinterpret_name_data()
+        self.read_write(self.write_buffer, self.write_ascii)
+
+    def read_write(self, buffer_operator, ascii_operator):
+        self.rw_header(buffer_operator)
+        self.rw_pointers(buffer_operator)
+        self.rw_bone_names(ascii_operator)
+        self.rw_material_names(ascii_operator)
+
+    def rw_header(self, rw_operator):
         self.assert_file_pointer_now_at(0)
 
-        self.num_bone_names = self.unpack('I')
-        self.num_material_names = self.unpack('I')
+        rw_operator('num_bone_names', 'I')
+        rw_operator('num_material_names', 'I')
         
-    def read_pointers(self):
-        self.bone_name_pointers = self.unpack('I'*self.num_bone_names, force_1d=True)
-        self.material_name_pointers = self.unpack('I'*self.num_material_names, force_1d=True)
+    def rw_pointers(self, rw_operator):
+        rw_operator('bone_name_pointers', 'I'*self.num_bone_names, force_1d=True)
+        rw_operator('material_name_pointers', 'I'*self.num_material_names, force_1d=True)
+
+    def rw_bone_names(self, rw_operator):
+        if len(self.bone_name_pointers) == 0:
+            self.bone_names = ''
+            return
+        self.assert_file_pointer_now_at(self.bone_name_pointers[0])
+        if len(self.material_name_pointers) == 0:
+            rw_operator('bone_data')
+        else:
+            bytes_to_read = self.material_name_pointers[0] - self.bytestream.tell()
+            rw_operator('bone_names', bytes_to_read)
+
+    def rw_material_names(self, rw_operator):
+        if len(self.material_name_pointers) == 0:
+            self.material_names = ''
+            return
+        self.assert_file_pointer_now_at(self.material_name_pointers[0])
+        rw_operator('material_names')
 
     # There is probably a cleaner way of reading the bone names in.
-    # This works for the moment though! May need revisiting for the write method.
+    # This works for the moment though!
     def split_string_by_ptrs(self, ascii_string, ptrs):
         # Split up the ascii-string into its constituent components.
         # The file pointers point to the start of each sub-string.
@@ -64,24 +93,15 @@ class NameReader(BaseRW):
 
         return retval
 
-    def read_bone_names(self):
-        if len(self.bone_name_pointers) == 0:
-            self.bone_names = []
-            return
-        self.assert_file_pointer_now_at(self.bone_name_pointers[0])
-        if len(self.material_name_pointers) == 0:
-            bone_data = self.bytestream.read().decode('ascii')
-        else:
-            bytes_to_read = self.material_name_pointers[0] - self.bytestream.tell()
-            bone_data = self.bytestream.read(bytes_to_read).decode('ascii')
+    def interpret_name_data(self):
+        self.bone_names = self.split_string_by_ptrs(self.bone_names, self.bone_name_pointers)
+        assert len(self.bone_names) == self.num_bone_names, "Number of bone names is different to number of bone entries."
+        self.material_names = self.split_string_by_ptrs(self.material_names, self.material_name_pointers)
+        assert len(self.material_names) == self.num_material_names, "Number of material names is different to number of material entries."
 
-        self.bone_names = self.split_string_by_ptrs(bone_data, self.bone_name_pointers)
+    def reinterpret_name_data(self):
+        assert len(self.bone_names) == self.num_bone_names, "Number of bone names is different to number of bone entries."
+        self.bone_names = ''.join(self.bone_names)
+        assert len(self.material_names) == self.num_material_names, f"Number of material names is different to number of material entries: {self.material_names}, {self.num_material_names}"
+        self.material_names = ''.join(self.material_names)
 
-    def read_material_names(self):
-        if len(self.material_name_pointers) == 0:
-            self.material_names = []
-            return
-        self.assert_file_pointer_now_at(self.material_name_pointers[0])
-        material_data = self.bytestream.read().decode('ascii')
-
-        self.material_names = self.split_string_by_ptrs(material_data, self.material_name_pointers)
