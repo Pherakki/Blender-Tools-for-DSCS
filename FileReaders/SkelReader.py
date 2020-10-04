@@ -63,7 +63,7 @@ class SkelReader(BaseRW):
         self.abs_ptr_unknown_parent_child_data = None
         self.abs_ptr_bone_defs = None
         self.abs_ptr_parent_bones = None
-        self.abs_ptr_end_of_parent_bones_junk = None
+        self.abs_ptr_end_of_parent_bones_chunk = None
         self.abs_ptr_unknown_2 = None
         self.abs_ptr_unknown_3 = None
         self.abs_ptr_unknown_4 = None
@@ -122,7 +122,7 @@ class SkelReader(BaseRW):
         self.abs_ptr_unknown_parent_child_data = upcd_pos + self.rel_ptr_to_end_of_unknown_parent_child_data - (self.num_unknown_parent_child_data * 16)
         self.abs_ptr_bone_defs = bonedefs_pos + self.rel_ptr_to_end_of_bone_defs - (self.num_bones * 12 * 4)
         self.abs_ptr_parent_bones = pcp_pos + self.rel_ptr_to_end_of_parent_bones - self.num_bones * 2
-        self.abs_ptr_end_of_parent_bones_junk = pb_chunk_ptr_pos + self.rel_ptr_to_end_of_parent_bones_chunk
+        self.abs_ptr_end_of_parent_bones_chunk = pb_chunk_ptr_pos + self.rel_ptr_to_end_of_parent_bones_chunk
         self.abs_ptr_unknown_2 = unk2_pos + self.unknown_rel_ptr_2 - self.num_bones * 4
         self.abs_ptr_unknown_3 = unk3_pos + self.unknown_rel_ptr_3 - self.unknown_0x0C * 4
 
@@ -151,7 +151,7 @@ class SkelReader(BaseRW):
         cur_pos = self.bytestream.tell()
         # (16 - (num_bones*2) % 16) % 16 works for bytes_remaining_after_parent_child_pairs <= 32... sometimes for more
         # Need to be able to calculate the size and contents in order for the write to work...
-        bytes_to_read = self.abs_ptr_end_of_parent_bones_junk - cur_pos  # could equally just use abs_ptr_unknown_2...
+        bytes_to_read = self.abs_ptr_end_of_parent_bones_chunk - cur_pos  # could equally just use abs_ptr_unknown_2...
         rw_operator_raw('parent_bones_junk', bytes_to_read)
         # Interesting that the bytes are multiples of 8 - does this have some significance?!
         for byte in self.parent_bones_junk:
