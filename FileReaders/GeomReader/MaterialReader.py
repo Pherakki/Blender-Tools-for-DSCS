@@ -13,7 +13,7 @@ class MaterialReader(BaseRW):
     ------
     (o) MaterialReader can successfully parse all meshes in geom files in DSDB archive within current constraints.
     (x) MaterialReader cannot yet fully interpret all material data in geom files in DSDB archive.
-    (x) MaterialReader cannot yet write data to geom files.
+    (o) MaterialReader can write data to geom files.
 
     Current hypotheses and observations
     ------

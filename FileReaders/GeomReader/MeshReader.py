@@ -17,7 +17,7 @@ class MeshReader(BaseRW):
     ------
     (o) MeshReader can successfully parse all meshes in geom files in DSDB archive within current constraints.
     (x) MeshReader cannot yet fully interpret all mesh data in geom files in DSDB archive.
-    (x) MeshReader cannot yet write data to geom files.
+    (o) MeshReader can write data to geom files.
 
     Current hypotheses and observations
     ------

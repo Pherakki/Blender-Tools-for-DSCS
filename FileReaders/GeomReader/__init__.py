@@ -20,7 +20,7 @@ class GeomReader(BaseRW):
     ------
     (o) GeomReader can successfully parse all geom files in DSDB archive within current constraints.
     (x) GeomReader cannot yet fully interpret all data in geom files in DSDB archive.
-    (x) GeomReader cannot yet write data to geom files.
+    (o) GeomReader can write data to geom files.
 
     Current hypotheses and observations
     ------
