@@ -76,35 +76,66 @@ def add_meshes(model_data, imported_geomdata):
             pos = vertex.get('Position')
             norm = vertex.get('Normal')
             uv = vertex.get('UV')
+            vgroups = vertex.get('WeightedBoneID')
             if uv is not None:
                 uv = (uv[0], 1 - uv[-1])
             if 'WeightedBoneID' in vertex:
-                for three_x_bone_id, weight in zip(vertex['WeightedBoneID'], vertex['BoneWeight']):
+                for j, three_x_bone_id, weight in enumerate(zip(vertex['WeightedBoneID'], vertex['BoneWeight'])):
                     vertex_group_idx = three_x_bone_id // 3
+                    vgroups[j] = vertex_group_idx
                     current_IF_mesh.vertex_groups[vertex_group_idx].vertex_indices.append(i)
                     current_IF_mesh.vertex_groups[vertex_group_idx].weights.append(weight)
-            current_IF_mesh.add_vertex(pos, norm, uv)
+            current_IF_mesh.add_vertex(pos, norm, uv, vgroups)
 
         triangles = triangle_converters[mesh.polygon_data_type](mesh.polygon_data)
         for tri in triangles:
             current_IF_mesh.add_polygon(tri)
         current_IF_mesh.material_id = mesh.material_id
+
+        # Add unknown data
+        current_IF_mesh.unknown_data['unknown_0x30'] = mesh.unknown_0x30
+        current_IF_mesh.unknown_data['unknown_0x31'] = mesh.unknown_0x31
+        current_IF_mesh.unknown_data['unknown_0x34'] = mesh.unknown_0x34
+        current_IF_mesh.unknown_data['unknown_0x44'] = mesh.unknown_0x44
+        current_IF_mesh.unknown_data['unknown_0x50'] = mesh.unknown_0x50
+        current_IF_mesh.unknown_data['unknown_0x5C'] = mesh.unknown_0x5C
+
         model_data.meshes[-1] = current_IF_mesh
+    model_data.unknown_data['geom_unknown_0x14'] = imported_geomdata.unknown_0x14
+    model_data.unknown_data['geom_unknown_0x20'] = imported_geomdata.unknown_0x20
+
+    model_data.unknown_data['unknown_cam_data_1'] = imported_geomdata.unknown_cam_data_1
+    model_data.unknown_data['unknown_cam_data_2'] = imported_geomdata.unknown_cam_data_2
 
 
 def add_materials(model_data, imported_namedata, imported_geomdata):
     #assert len(imported_namedata.material_names) == len(imported_geomdata.material_data), \
     #    f"Mismatch between material names and unique material data. {len(imported_namedata.material_names)} {len(imported_geomdata.material_data)}"
+    model_data.unknown_data['material names'] = imported_namedata.material_names
     for i, material in enumerate(imported_geomdata.material_data):
         model_data.new_material()
         # I can't figure out how to match up the material names to the materials yet when there are fewer names than materials
         model_data.materials[-1].name = str(i)# material_name
+
+        # Add unknown data
+        model_data.materials[-1].unknown_data['unknown_0x00'] = material.unknown_0x00
+        model_data.materials[-1].unknown_data['unknown_0x10'] = material.unknown_0x10
+        model_data.materials[-1].unknown_data['unknown_0x11'] = material.unknown_0x11
+        model_data.materials[-1].unknown_data['unknown_0x12'] = material.unknown_0x12
+        model_data.materials[-1].unknown_data['unknown_0x16'] = material.unknown_0x16
+
         for i, material_component in enumerate(material.material_components):
             # Appears to mark the block as identifying a texture ID
             if material_component.component_type == 50:
                 model_data.materials[-1].texture_id = material_component.data[0]
-            if material_component.component_type == 51:
+                model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data[1:]
+            elif material_component.component_type == 51:
                 model_data.materials[-1].rgba = material_component.data
+            else:
+                model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
+
+        for i, material_component in enumerate(material.unknown_data):
+            model_data.materials[-1].unknown_data[f'type_2_component_{material_component.maybe_component_type}'] = material_component.data
 
 
 def add_textures(model_data, imported_geomdata, image_folder_path):
@@ -121,3 +152,12 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     for bone_data in imported_geomdata.bone_data:
         position = (-bone_data.xpos, -bone_data.ypos, -bone_data.zpos)
         model_data.skeleton.bone_positions.append(position)
+
+    # Put the unknown data into the skeleton
+    model_data.skeleton.unknown_data['unknown_0x0C'] = imported_skeldata.unknown_0x0C
+    model_data.skeleton.unknown_data['unknown_parent_child_data'] = imported_skeldata.unknown_parent_child_data
+    model_data.skeleton.unknown_data['bone_data'] = imported_skeldata.bone_data
+    model_data.skeleton.unknown_data['parent_bones_junk'] = imported_skeldata.parent_bones_junk
+    model_data.skeleton.unknown_data['unknown_data_2'] = imported_skeldata.unknown_data_2
+    model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
+    model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4

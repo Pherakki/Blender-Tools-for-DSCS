@@ -35,8 +35,8 @@ class MeshData:
 
         self.unknown_data = {}
         
-    def add_vertex(self, position=None, normal=None, UV=None):
-        self.vertices.append(Vertex(position, normal, UV))
+    def add_vertex(self, position=None, normal=None, UV=None, vertex_groups=None):
+        self.vertices.append(Vertex(position, normal, UV, vertex_groups))
 
     def add_vertex_group(self, bone_idx, vertex_indices=None, weights=None):
         self.vertex_groups.append(VertexGroup(bone_idx, vertex_indices, weights))
@@ -46,10 +46,11 @@ class MeshData:
 
 
 class Vertex:
-    def __init__(self, position, normal, UV):
+    def __init__(self, position, normal, UV, vertex_groups):
         self.position = position
         self.normal = normal
         self.UV = UV
+        self.vertex_groups = vertex_groups
 
         self.unknown_data = {}
 
