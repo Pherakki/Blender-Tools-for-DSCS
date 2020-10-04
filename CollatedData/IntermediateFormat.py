@@ -14,6 +14,7 @@ class IntermediateFormat:
         self.meshes = []
         self.materials = []
         self.textures = []
+        self.unknown_data = {}
         
     def new_mesh(self):
         self.meshes.append(MeshData())
@@ -31,6 +32,8 @@ class MeshData:
         self.vertex_groups = []
         self.polygons = []
         self.material_id = None
+
+        self.unknown_data = {}
         
     def add_vertex(self, position=None, normal=None, UV=None):
         self.vertices.append(Vertex(position, normal, UV))
@@ -47,6 +50,8 @@ class Vertex:
         self.position = position
         self.normal = normal
         self.UV = UV
+
+        self.unknown_data = {}
 
 
 class VertexGroup:
@@ -67,6 +72,8 @@ class MaterialData:
         self.texture_id = None
         self.rgba = None
 
+        self.unknown_data = {}
+
 
 class TextureData:
     def __init__(self):
@@ -79,3 +86,5 @@ class Skeleton:
         self.bone_names = []
         self.bone_positions = []
         self.bone_relations = []
+
+        self.unknown_data = {}
