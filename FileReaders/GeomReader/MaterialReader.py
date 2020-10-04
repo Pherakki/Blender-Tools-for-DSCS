@@ -20,6 +20,7 @@ class MaterialReader(BaseRW):
     1. Some materials are listed as being e.g. 'specular' materials in the name file - so information of this type may
        exist in the material definitions.
     2. acc129's 2nd material appears to be a Lambert shader - look into this.
+    3. '65280' == \x00\xff - looks like a stop code to me
     """
 
     def __init__(self, io_stream):
@@ -43,13 +44,26 @@ class MaterialReader(BaseRW):
 
         # Data variables
         self.material_components = []
-        self.unknown_data_2 = []
+        self.unknown_data = []
 
-    def read_header(self):
+    def read(self):
+        self.read_write(self.read_buffer, 'read', self.read_raw, self.prepare_material_read)
+
+    def write(self):
+        self.read_write(self.write_buffer, 'write', self.write_raw, lambda: None)
+
+    def read_write(self, rw_operator, rw_method_name, rw_operator_raw, preparation_operator):
+        self.rw_header(rw_operator, rw_operator_raw)
+        preparation_operator()
+        self.rw_material_components(rw_method_name)
+        self.rw_unknown_data(rw_method_name)
+
+
+    def rw_header(self, rw_operator, rw_operator_raw):
         # Changing 0x04 - 0x0E to random values results in no material drawn
         # unknown_0x12 must be exactly correct - might be a data type or material type
         # changing 0x16 to the other values seems to have no effect
-        self.unknown_0x00 = self.bytestream.read(16) #self.unpack('e')
+        rw_operator_raw('unknown_0x00', 16) #self.unpack('e')
         #self.unknown_0x02 = self.unpack('e')
         #self.unknown_0x04 = self.unpack('H')
         #self.unknown_0x06 = self.unpack('H')
@@ -57,23 +71,26 @@ class MaterialReader(BaseRW):
         #self.unknown_0x0A = self.unpack('H')
         #self.unknown_0x0C = self.unpack('H'
         #self.unknown_0x0E = self.unpack('H')  # These are all multiples of 4. Highly suggestive.
-        self.unknown_0x10 = self.unpack('B')  # 0, except for one file, where it is 1
-        self.unknown_0x11 = self.unpack('B')  # 0 or 128.
-        self.unknown_0x12 = self.unpack('H')  # 0, 3, 4, 5, 6... possibly data type? No obvious pattern though...
-        self.num_material_components = self.unpack('B')  # Known
-        self.num_unknown_data = self.unpack('B')  # Known
-        self.unknown_0x16 = self.unpack('H')  # 1, 3, or 5
+        rw_operator('unknown_0x10', 'B')  # 0, except for one file, where it is 1
+        rw_operator('unknown_0x11', 'B')  # 0 or 128.
+        rw_operator('unknown_0x12', 'H')  # 0, 3, 4, 5, 6... possibly data type? No obvious pattern though...
+        rw_operator('num_material_components', 'B')  # Known
+        rw_operator('num_unknown_data', 'B')  # Known
+        rw_operator('unknown_0x16', 'H')  # 1, 3, or 5
 
         self.header = (self.unknown_0x00, *self.header)
 
-    def read_material_components(self):
-        for _ in range(self.num_material_components):
-            self.material_components.append(MaterialComponent(self.bytestream))
-            self.material_components[-1].read()
+    def rw_material_components(self, rw_method_name):
+        for component_reader in self.material_components:
+            getattr(component_reader, rw_method_name)()
 
-    def read_unknown_data(self):
-        for _ in range(self.num_unknown_data):
-            self.unknown_data_2.append(UnknownMaterialData(self.bytestream.read(24)))
+    def rw_unknown_data(self, rw_method_name):
+        for component_reader in self.unknown_data:
+            getattr(component_reader, rw_method_name)()
+
+    def prepare_material_read(self):
+        self.material_components = [MaterialComponent(self.bytestream) for _ in range(self.num_material_components)]
+        self.unknown_data = [UnknownMaterialData(self.bytestream) for _ in range(self.num_unknown_data)]
 
 
 class MaterialComponent(BaseRW):
@@ -156,8 +173,21 @@ class MaterialComponent(BaseRW):
 
         self.header = tuple([*self.data, self.component_type, self.num_floats_in_data, self.always_65280, self.padding_0x14])
 
+    def write(self):
+        if self.num_floats_in_data == 0:
+            data = struct.pack('H', self.data[0]) + 10*self.pad_byte + struct.pack('HH', *self.data[1:])
+        else:
+            data = struct.pack(f'{self.num_floats_in_data}f', *self.data)
+            data += 4*self.pad_byte*(4 - self.num_floats_in_data)
 
-class UnknownMaterialData:
+        data += struct.pack('B', self.component_type)
+        data += struct.pack('B', self.num_floats_in_data)
+        data += struct.pack('H', self.always_65280)
+        data += struct.pack('I', self.padding_0x14)
+        self.bytestream.write(data)
+
+
+class UnknownMaterialData(BaseRW):
     """
     A class holding unknown data that only occurs in some materials.
 
@@ -178,7 +208,22 @@ class UnknownMaterialData:
                       172: 'II',  # Always (0, 0)
                       }
 
-    def __init__(self, args):
+    def __init__(self, io_stream):
+        super().__init__(io_stream)
+
+        self.data = None
+        self.padding_0x08 = None
+        self.padding_0x0A = None
+        self.padding_0x0C = None
+        self.padding_0x0E = None
+        self.maybe_component_type = None
+        self.always_100 = None
+        self.always_65280 = None
+        self.padding_0x14 = None
+
+    def read(self):
+        args = self.bytestream.read(24)
+
         self.data = args[:8]
 
         data = struct.unpack('HHHHBBHI', args[8:])
@@ -203,3 +248,16 @@ class UnknownMaterialData:
         self.data = struct.unpack(UnknownMaterialData.possibly_types[self.maybe_component_type], self.data)
 
         self.header = (*self.data, self.maybe_component_type, self.always_100, self.always_65280, self.padding_0x14)
+
+    def write(self):
+        data = struct.pack(UnknownMaterialData.possibly_types[self.maybe_component_type], *self.data)
+        data += struct.pack('H', self.padding_0x08)
+        data += struct.pack('H', self.padding_0x0A)
+        data += struct.pack('H', self.padding_0x0C)
+        data += struct.pack('H', self.padding_0x0E)
+        data += struct.pack('B', self.maybe_component_type)
+        data += struct.pack('B', self.always_100)
+        data += struct.pack('H', self.always_65280)
+        data += struct.pack('I', self.padding_0x14)
+        assert len(data) == 24
+        self.bytestream.write(data)
