@@ -6,7 +6,7 @@ from bpy_extras.io_utils import ImportHelper
 from bpy_extras.image_utils import load_image
 from bpy_extras.object_utils import object_data_add
 from mathutils import Vector
-from .CollatedData.From import generate_intermediate_format_from_files
+from .CollatedData.FromReadWrites import generate_intermediate_format_from_files
 
 
 bl_info = {
