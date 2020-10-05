@@ -13,8 +13,8 @@ This repository provides a work-in-progress addon for Blender 2.8 that can (to s
 
 ## Some Known Bugs and Limitations
 1. Material names are not yet those found within the files.
-2. Some vertices have no weights.
-3. ~~How the game interprets the polygon index format is not fully understood. This package does not build polygons in the same way as the game yet; exported meshes have holes in-game.~~ Polygon format is now understood and mesh exporter in-progress
+2. There are five types of data attached to vertices not currently understood.
+3. Materials are almost completely not understood.
 
 ## Future Plans
 0. ~~Some time in October 2020 I may upload a cleaner version of my export script, so that others can experiment with tweaking the unknown byte data and report back with any in-game findings. Since limiting this experimentation to users who can use Python would likely reduce the number of people using it, this should be an executable GUI program...~~ Experimentation will be integrated with Blender export functionality
