@@ -132,12 +132,12 @@ class MeshReader(BaseRW):
 
     def rw_weighted_bone_indices(self, rw_operator):
         self.assert_file_pointer_now_at(self.weighted_bone_data_start_ptr)
-        rw_operator('weighted_bone_idxs', 'I'*self.num_weighted_bone_idxs)
+        rw_operator('weighted_bone_idxs', 'I'*self.num_weighted_bone_idxs, force_1d=True)
         #self.weighted_bone_idxs = [idx[0] for idx in self.decode_chunk(self.weighted_bone_data_start_ptr, self.num_weighted_bone_idxs, 'I', 1)]
 
     def rw_polygons(self, rw_operator, chunk_cleanup_operator):
         self.assert_file_pointer_now_at(self.polygon_data_start_ptr)
-        rw_operator('polygon_data', 'H'*self.num_polygon_idxs)
+        rw_operator('polygon_data', 'H'*self.num_polygon_idxs, force_1d=True)
         #self.polygon_data = [idx[0] for idx in self.decode_chunk(self.polygon_data_start_ptr, self.num_polygon_idxs, 'H', 1)]
         # Can probably replace 'bytes read' with something less hacky
         chunk_cleanup_operator(self.bytestream.tell(), 4)

@@ -68,7 +68,6 @@ def add_meshes(model_data, imported_geomdata):
     for mesh in imported_geomdata.meshes:
         model_data.new_mesh()
         current_IF_mesh = model_data.meshes[-1]
-
         for bone_id in mesh.weighted_bone_idxs:
             current_IF_mesh.add_vertex_group(bone_id, [], [])
 
@@ -80,7 +79,9 @@ def add_meshes(model_data, imported_geomdata):
             if uv is not None:
                 uv = (uv[0], 1 - uv[-1])
             if 'WeightedBoneID' in vertex:
-                for j, three_x_bone_id, weight in enumerate(zip(vertex['WeightedBoneID'], vertex['BoneWeight'])):
+                for j, (three_x_bone_id, weight) in enumerate(zip(vertex['WeightedBoneID'], vertex['BoneWeight'])):
+                    if weight == 0:
+                        continue
                     vertex_group_idx = three_x_bone_id // 3
                     vgroups[j] = vertex_group_idx
                     current_IF_mesh.vertex_groups[vertex_group_idx].vertex_indices.append(i)
