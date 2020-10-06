@@ -100,9 +100,9 @@ class MaterialComponent(BaseRW):
                         51: ('Colour', 4),  # RBGA? RBG at least seems to be correct, not sure about the last float
                         53: ('unknown_component_type', 0),
                         54: ('unknown_component_type', 1),
-                        56: ('unknown_component_type', 1),
+                        56: ('Specular', 1),  # float is 0-1; specular coefficient
                         57: ('unknown_component_type', 1),
-                        58: ('unknown_component_type', 0),
+                        58: ('CubeMapTextureID', 0),
                         59: ('unknown_component_type', 1),
                         60: ('unknown_component_type', 1),
                         61: ('unknown_component_type', 1),
@@ -116,7 +116,7 @@ class MaterialComponent(BaseRW):
                         69: ('unknown_component_type', 0),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
                         70: ('unknown_component_type', 1),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
                         71: ('unknown_component_type', 1),
-                        72: ('Toon?', 0),  # idx 0 is texture id, rest are...?
+                        72: ('ToonTextureID?', 0),  # idx 0 is texture id, rest are...?
                         75: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
                         76: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
                         77: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
@@ -126,7 +126,7 @@ class MaterialComponent(BaseRW):
                         85: ('unknown_component_type', 2),
                         88: ('unknown_component_type', 2),
                         91: ('unknown_component_type', 2),
-                        94: ('unknown_component_type', 2),
+                        94: ('EnableUVManipulation?', 2),  # Allows the material to change UV coordinates? Appears so with pc002!
                         97: ('unknown_component_type', 2),
                         100: ('unknown_component_type', 1),
                         113: ('unknown_component_type', 1),
