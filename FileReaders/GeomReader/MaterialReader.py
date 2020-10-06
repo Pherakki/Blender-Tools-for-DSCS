@@ -98,12 +98,12 @@ class MaterialComponent(BaseRW):
                         #      Name       numfloats
                         50: ('TextureID', 0),  # idx 0 is texture id, rest are...?
                         51: ('Colour', 4),  # RBGA? RBG at least seems to be correct, not sure about the last float
-                        53: ('unknown_component_type', 0),
+                        53: ('NormalMapTextureID', 0),
                         54: ('unknown_component_type', 1),
                         56: ('Specular', 1),  # float is 0-1; specular coefficient
                         57: ('unknown_component_type', 1),
                         58: ('CubeMapTextureID', 0),
-                        59: ('unknown_component_type', 1),
+                        59: ('CubeMapCoefficient?', 1),  #
                         60: ('unknown_component_type', 1),
                         61: ('unknown_component_type', 1),
                         62: ('unknown_component_type', 3),  # Only appears in chr435, chr912
