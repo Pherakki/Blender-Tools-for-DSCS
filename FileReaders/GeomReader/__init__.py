@@ -63,6 +63,8 @@ class GeomReader(BaseRW):
         self.bone_data = []
         self.unknown_footer_data = []
 
+        self.subreaders = [self.meshes, self.material_data, self.bone_data]
+
     def read(self):
         self.read_write(self.read_buffer, 'read', self.read_raw, self.prepare_read_op, self.cleanup_ragged_chunk_read)
         self.interpret_geom_data()

@@ -11,18 +11,17 @@ class BaseRW:
     This is a base class for bytestream parsing, intended to be able to read/write (RW) these bytestreams to/from files.
     """
 
-    def __init__(self, io_object):
+    def __init__(self, io_object=None):
         """
         Inputs
         ------
         A filestream opened with 'read-binary' (rb) or 'write-binary' (wb) permissions.
         """
-        assert (type(io_object) == io.BufferedReader) or (type(io_object) == io.BufferedWriter), \
-            f"Read-write object was instantiated with a {type(io_object)}, not a {io.BufferedReader} or " \
-            f"{io.BufferedWriter}. Ensure you are instantiating this object with a file opened in 'rb' or 'wb' mode."
-        self.bytestream = io_object
+        self.bytestream = None
+        self.set_file_rw(io_object)
         self.header = []
         self.endianness = '<'
+        self.subreaders = []
 
         self.pad_byte = b'\x00'
 
@@ -44,6 +43,21 @@ class BaseRW:
             'f': 4,  # float
             'd': 8  # double
         }
+
+    def set_file_rw(self, io_object):
+        assert (type(io_object) == io.BufferedReader) or (type(io_object) == io.BufferedWriter), \
+            f"Read-write object was instantiated with a {type(io_object)}, not a {io.BufferedReader} or " \
+            f"{io.BufferedWriter}. Ensure you are instantiating this object with a file opened in 'rb' or 'wb' mode."
+        self.bytestream = io_object
+        for lst in self.subreaders:
+            for subreader in lst:
+                subreader.set_file_rw(io_object)
+
+    def unset_file_rw(self):
+        self.bytestream = None
+        for lst in self.subreaders:
+            for subreader in lst:
+                subreader.unset_file_rw()
 
     def unpack(self, dtype, endianness=None, force_1d=False):
         """
@@ -167,8 +181,7 @@ class BaseRW:
 
     def cleanup_ragged_chunk_write(self, position, chunksize):
         """
-        If 'position' is partially through a chunk, this function will check that the remaining bytes in the chunk
-        are pad bytes.
+        If 'position' is partially through a chunk, this function will complete the chunk with pad bytes.
         """
         bytes_read_from_final_chunk = position % chunksize
         # The modulo maps {bytes_read_from_final_chunk == 0} to {0} rather than {chunksize}

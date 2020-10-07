@@ -46,6 +46,8 @@ class MaterialReader(BaseRW):
         self.material_components = []
         self.unknown_data = []
 
+        self.subreaders = [self.material_components, self.unknown_data]
+
     def read(self):
         self.read_write(self.read_buffer, 'read', self.read_raw, self.prepare_material_read)
 
@@ -57,7 +59,6 @@ class MaterialReader(BaseRW):
         preparation_operator()
         self.rw_material_components(rw_method_name)
         self.rw_unknown_data(rw_method_name)
-
 
     def rw_header(self, rw_operator, rw_operator_raw):
         # Changing 0x04 - 0x0E to random values results in no material drawn
