@@ -44,10 +44,10 @@ def make_skelreader(filepath, model_data):
 
         skelReader.rel_ptr_to_end_of_unknown_parent_child_data = 24 + skelReader.num_unknown_parent_child_data*16
         skelReader.rel_ptr_to_end_of_bone_defs = 4 + skelReader.rel_ptr_to_end_of_unknown_parent_child_data + skelReader.num_bones*12*4
+        skelReader.rel_ptr_to_end_of_parent_bones = 16 + skelReader.rel_ptr_to_end_of_bone_defs + skelReader.num_bones*2
         skelReader.rel_ptr_to_end_of_parent_bones_chunk = 4 + skelReader.rel_ptr_to_end_of_bone_defs + 0  # FIX ME
         skelReader.unknown_rel_ptr_2 = 4 + skelReader.rel_ptr_to_end_of_parent_bones + skelReader.num_bones*4
         skelReader.unknown_rel_ptr_3 = 4 + skelReader.unknown_rel_ptr_2 + skelReader.unknown_0x0C*4
-        skelReader.rel_ptr_to_end_of_parent_bones = 16 + skelReader.rel_ptr_to_end_of_bone_defs + skelReader.num_bones*2
 
         bytes_after_parent_bones_chunk = skelReader.unknown_rel_ptr_3 - skelReader.rel_ptr_to_end_of_parent_bones_chunk - 4
         bytes_after_parent_bones_chunk += (16 - (bytes_after_parent_bones_chunk % 16)) % 16
@@ -98,7 +98,7 @@ def make_geomreader(filepath, model_data):
             meshReader.vertex_data = generate_vertex_data(mesh.vertices, vertex_generators)
             virtual_pos += meshReader.bytes_per_vertex*len(meshReader.vertex_data)
             meshReader.weighted_bone_data_start_ptr = virtual_pos
-            meshReader.weighted_bone_idxs = [vgroup.bone_id for vgroup in mesh.vertex_groups]
+            meshReader.weighted_bone_idxs = [vgroup.bone_idx for vgroup in mesh.vertex_groups]
             virtual_pos += 4*len(meshReader.weighted_bone_idxs)
             meshReader.polygon_data_start_ptr = virtual_pos
             meshReader.polygon_data = polys_to_triangles(mesh.polygons)
@@ -197,10 +197,10 @@ def calculate_vertex_properties(example_vertex):
         vertex_components.append(VertexComponent([2, 3, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'Normal': vtx.normal})
-    if example_vertex.uv is not None:
+    if example_vertex.UV is not None:
         vertex_components.append(VertexComponent([3, 2, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 4
-        vertex_generators.append(lambda vtx: {'UV': vtx.uv})
+        vertex_generators.append(lambda vtx: {'UV': vtx.UV})
     if 'UnknownVertexUsage1' in example_vertex.unknown_data:
         vertex_components.append(VertexComponent([4, 4, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
