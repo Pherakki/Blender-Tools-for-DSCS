@@ -18,10 +18,10 @@ class BaseRW:
         A filestream opened with 'read-binary' (rb) or 'write-binary' (wb) permissions.
         """
         self.bytestream = None
+        self.subreaders = []
         self.set_file_rw(io_object)
         self.header = []
         self.endianness = '<'
-        self.subreaders = []
 
         self.pad_byte = b'\x00'
 
@@ -120,7 +120,7 @@ class BaseRW:
     def write_ascii(self, variable, num_bytes=None):
         val = getattr(self, variable)
         if num_bytes is not None:
-            assert len(val) == num_bytes, "String to write is not equal to the number of bytes."
+            assert len(val) == num_bytes, f"String to write [{val}] is not equal to the number of bytes [{num_bytes}]."
         self.bytestream.write(val.encode('ascii'))
 
     def write_raw(self, variable, num_bytes=None):

@@ -76,17 +76,18 @@ def add_meshes(model_data, imported_geomdata):
             norm = vertex.get('Normal')
             uv = vertex.get('UV')
             vgroups = vertex.get('WeightedBoneID')
+            weights = vertex.get('BoneWeight')
             if uv is not None:
                 uv = (uv[0], 1 - uv[-1])
             if 'WeightedBoneID' in vertex:
-                for j, (three_x_bone_id, weight) in enumerate(zip(vertex['WeightedBoneID'], vertex['BoneWeight'])):
+                for j, (three_x_bone_id, weight) in enumerate(zip(vgroups, weights)):
                     if weight == 0:
                         continue
                     vertex_group_idx = three_x_bone_id // 3
                     vgroups[j] = vertex_group_idx
                     current_IF_mesh.vertex_groups[vertex_group_idx].vertex_indices.append(i)
                     current_IF_mesh.vertex_groups[vertex_group_idx].weights.append(weight)
-            current_IF_mesh.add_vertex(pos, norm, uv, vgroups)
+            current_IF_mesh.add_vertex(pos, norm, uv, vgroups, weights)
 
         triangles = triangle_converters[mesh.polygon_data_type](mesh.polygon_data)
         for tri in triangles:
@@ -97,6 +98,7 @@ def add_meshes(model_data, imported_geomdata):
         current_IF_mesh.unknown_data['unknown_0x30'] = mesh.unknown_0x30
         current_IF_mesh.unknown_data['unknown_0x31'] = mesh.unknown_0x31
         current_IF_mesh.unknown_data['unknown_0x34'] = mesh.unknown_0x34
+        current_IF_mesh.unknown_data['unknown_0x36'] = mesh.unknown_0x36
         current_IF_mesh.unknown_data['unknown_0x44'] = mesh.unknown_0x44
         current_IF_mesh.unknown_data['unknown_0x50'] = mesh.unknown_0x50
         current_IF_mesh.unknown_data['unknown_0x5C'] = mesh.unknown_0x5C
@@ -107,6 +109,8 @@ def add_meshes(model_data, imported_geomdata):
 
     model_data.unknown_data['unknown_cam_data_1'] = imported_geomdata.unknown_cam_data_1
     model_data.unknown_data['unknown_cam_data_2'] = imported_geomdata.unknown_cam_data_2
+
+    model_data.unknown_data['unknown_footer_data'] = imported_geomdata.unknown_footer_data
 
 
 def add_materials(model_data, imported_namedata, imported_geomdata):
@@ -129,9 +133,10 @@ def add_materials(model_data, imported_namedata, imported_geomdata):
             # Appears to mark the block as identifying a texture ID
             if material_component.component_type == 50:
                 model_data.materials[-1].texture_id = material_component.data[0]
-                model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data[1:]
+                model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
             elif material_component.component_type == 51:
                 model_data.materials[-1].rgba = material_component.data
+                model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
             else:
                 model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
 
@@ -153,6 +158,9 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     for bone_data in imported_geomdata.bone_data:
         position = (-bone_data.xpos, -bone_data.ypos, -bone_data.zpos)
         model_data.skeleton.bone_positions.append(position)
+        model_data.skeleton.bone_xvecs.append((bone_data.unknown_0x00, bone_data.unknown_0x04, bone_data.unknown_0x08))
+        model_data.skeleton.bone_yvecs.append((bone_data.unknown_0x0C, bone_data.unknown_0x10, bone_data.unknown_0x14))
+        model_data.skeleton.bone_zvecs.append((bone_data.unknown_0x1A, bone_data.unknown_0x1E, bone_data.unknown_0x22))
 
     # Put the unknown data into the skeleton
     model_data.skeleton.unknown_data['unknown_0x0C'] = imported_skeldata.unknown_0x0C

@@ -97,7 +97,8 @@ class MeshReader(BaseRW):
         rw_operator('unknown_0x31', 'B')  # ditto # values 1, 4, 5
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
         # Definitely not a float... could be B, H, or e.
-        rw_operator('unknown_0x34', 'HH')  # All over the place - I have no idea.
+        rw_operator('unknown_0x34', 'H')  # All over the place - I have no idea.
+        rw_operator('unknown_0x36', 'H')  # All over the place - I have no idea.
         rw_operator('material_id', 'I')
         rw_operator('num_vertices', 'I')
 
@@ -127,19 +128,15 @@ class MeshReader(BaseRW):
     def rw_vertices(self, rw_operator_raw):
         self.assert_file_pointer_now_at(self.vertex_data_start_ptr)
         rw_operator_raw('vertex_data', self.num_vertices * self.bytes_per_vertex)
-        #self.vertex_data = self.chunk_list(self.read_chunk(self.vertex_data_start_ptr, self.num_vertices * self.bytes_per_vertex),
-        #                                   self.bytes_per_vertex)
 
     def rw_weighted_bone_indices(self, rw_operator):
         self.assert_file_pointer_now_at(self.weighted_bone_data_start_ptr)
         rw_operator('weighted_bone_idxs', 'I'*self.num_weighted_bone_idxs, force_1d=True)
-        #self.weighted_bone_idxs = [idx[0] for idx in self.decode_chunk(self.weighted_bone_data_start_ptr, self.num_weighted_bone_idxs, 'I', 1)]
 
     def rw_polygons(self, rw_operator, chunk_cleanup_operator):
         self.assert_file_pointer_now_at(self.polygon_data_start_ptr)
         rw_operator('polygon_data', 'H'*self.num_polygon_idxs, force_1d=True)
-        #self.polygon_data = [idx[0] for idx in self.decode_chunk(self.polygon_data_start_ptr, self.num_polygon_idxs, 'H', 1)]
-        # Can probably replace 'bytes read' with something less hacky
+
         chunk_cleanup_operator(self.bytestream.tell(), 4)
 
     def rw_vertex_components(self, rw_operator):

@@ -151,12 +151,6 @@ class GeomReader(BaseRW):
             getattr(meshReader, f'{rw_method_name}_header')()
         for i, meshReader in enumerate(self.meshes):
             getattr(meshReader, rw_method_name)()
-            #self.assert_file_pointer_now_at(meshReader.vertex_data_start_ptr)
-            #meshReader.read_vertices()
-            #meshReader.read_weighted_bone_indices()
-            #meshReader.read_polygons()
-            #meshReader.read_vertex_components()
-            #meshReader.interpret_vertices()
 
     def rw_material_data(self, rw_method_name):
         if self.is_ndef(self.materials_start_ptr, 'num_materials'):
@@ -165,9 +159,6 @@ class GeomReader(BaseRW):
 
         for materialReader in self.material_data:
             getattr(materialReader, rw_method_name)()
-            #materialReader.read_header()
-            #materialReader.read_material_components()
-            #materialReader.read_unknown_data()
 
     def rw_texture_names(self, rw_operator_raw):
         if self.is_ndef(self.texture_names_start_ptr, 'num_bytes_in_texture_names_section'):
@@ -175,10 +166,6 @@ class GeomReader(BaseRW):
         self.assert_file_pointer_now_at(self.texture_names_start_ptr)
 
         rw_operator_raw('texture_data', self.num_bytes_in_texture_names_section)
-
-        #texture_data = self.bytestream.read(self.num_bytes_in_texture_names_section)
-        #texture_data = self.chunk_list(texture_data, 32)
-        #self.texture_data = [datum.rstrip(self.pad_byte).decode('ascii') for datum in texture_data]
 
     def rw_unknown_cam_data_1(self, rw_operator):
         if self.is_ndef(self.unknown_cam_data_1_start_ptr, 'num_unknown_cam_data_1'):
@@ -261,9 +248,9 @@ class BoneDataReader(BaseRW):
         self.unknown_0x14 = None
         self.ypos = None
 
-        self.unknown_0x18 = None
-        self.unknown_0x1C = None
-        self.unknown_0x20 = None
+        self.unknown_0x1A = None
+        self.unknown_0x1E = None
+        self.unknown_0x22 = None
         self.zpos = None
 
     def read(self):
@@ -285,7 +272,7 @@ class BoneDataReader(BaseRW):
         rw_operator('unknown_0x14', 'f')
         rw_operator('ypos', 'f')
 
-        rw_operator('unknown_0x18', 'f')
-        rw_operator('unknown_0x1C', 'f')
-        rw_operator('unknown_0x20', 'f')
+        rw_operator('unknown_0x1A', 'f')
+        rw_operator('unknown_0x1E', 'f')
+        rw_operator('unknown_0x22', 'f')
         rw_operator('zpos', 'f')
