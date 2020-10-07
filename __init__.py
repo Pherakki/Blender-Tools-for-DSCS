@@ -173,6 +173,8 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             bpy.data.objects[armature_name].select_set(False)
 
         bpy.context.view_layer.objects.active = parent_obj
+        # Rotate to the Blender coordinate convention
+        parent_obj.rotation_euler = (np.pi/2, 0, 0)
 
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
