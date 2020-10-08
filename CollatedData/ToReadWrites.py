@@ -2,6 +2,7 @@ from ..FileReaders.NameReader import NameReader
 from ..FileReaders.SkelReader import SkelReader
 from ..FileReaders.GeomReader import GeomReader
 from ..FileReaders.GeomReader.MeshReader import VertexComponent
+from ..FileReaders.GeomReader.MaterialReader import MaterialComponent, UnknownMaterialData
 
 
 def generate_files_from_intermediate_format(filepath, model_data):
@@ -138,11 +139,33 @@ def make_geomreader(filepath, model_data):
 
             for key in material.unknown_data:
                 if 'type_1_component_' in key:
-                    materialReader.unknown_data.append(material.unknown_data[key])
+                    n_component = int(key[len('type_1_component_'):])
+                    material_component = material.unknown_data[key]
+                    mData = MaterialComponent(F)
+                    mData.data = material_component
+                    mData.component_type = n_component
+                    mData.num_floats_in_data = MaterialComponent.component_types[n_component][1]
+                    mData.always_65280 = 65280
+                    mData.padding_0x14 = 0
+
+                    materialReader.material_components.append(mData)
                     virtual_pos += 24
             for key in material.unknown_data:
                 if 'type_2_component_' in key:
-                    materialReader.unknown_data.append(material.unknown_data[key])
+                    n_component = int(key[len('type_2_component_'):])
+                    unknown_material_component = material.unknown_data[key]
+                    unknown_mData = UnknownMaterialData(F)
+                    unknown_mData.data = unknown_material_component
+                    unknown_mData.padding_0x08 = 0
+                    unknown_mData.padding_0x0A = 0
+                    unknown_mData.padding_0x0C = 0
+                    unknown_mData.padding_0x0E = 0
+                    unknown_mData.maybe_component_type = n_component
+                    unknown_mData.always_100 = 100
+                    unknown_mData.always_65280 = 65280
+                    unknown_mData.padding_0x14 = 0
+
+                    materialReader.unknown_data.append(unknown_mData)
                     virtual_pos += 24
 
             materialReader.num_material_components = len(materialReader.material_components)
