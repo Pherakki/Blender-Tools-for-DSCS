@@ -87,6 +87,7 @@ class SkelReader(BaseRW):
         self.rw_unknown_data_2(rw_operator_raw)
         self.rw_unknown_data_3(rw_operator)
         self.rw_unknown_data_4(rw_operator_raw)
+        chunk_cleanup(self.bytestream.tell() - self.remaining_bytes_after_parent_bones_chunk, self.remaining_bytes_after_parent_bones_chunk)
 
     def rw_header(self, rw_operator, rw_operator_ascii):
         self.assert_file_pointer_now_at(0)
@@ -99,17 +100,17 @@ class SkelReader(BaseRW):
         rw_operator('unknown_0x0C', 'H')
         rw_operator('num_unknown_parent_child_data', 'I')
 
-        upcd_pos = self.bytestream.tell()
+        upcd_pos = self.bytestream.tell()  # 24
         rw_operator('rel_ptr_to_end_of_unknown_parent_child_data', 'I')
-        bonedefs_pos = self.bytestream.tell()
+        bonedefs_pos = self.bytestream.tell()  # 28
         rw_operator('rel_ptr_to_end_of_bone_defs', 'I')
-        pb_chunk_ptr_pos = self.bytestream.tell()
+        pb_chunk_ptr_pos = self.bytestream.tell()  # 32
         rw_operator('rel_ptr_to_end_of_parent_bones_chunk', 'I')
-        unk2_pos = self.bytestream.tell()
+        unk2_pos = self.bytestream.tell()  # 36
         rw_operator('unknown_rel_ptr_2', 'I')
-        unk3_pos = self.bytestream.tell()
+        unk3_pos = self.bytestream.tell()  # 40
         rw_operator('unknown_rel_ptr_3', 'I')
-        pcp_pos = self.bytestream.tell()
+        pcp_pos = self.bytestream.tell()  # 44
         rw_operator('rel_ptr_to_end_of_parent_bones', 'I')
 
         rw_operator('padding_0x26', 'I')
@@ -165,10 +166,6 @@ class SkelReader(BaseRW):
     def rw_unknown_data_4(self, rw_operator_raw):
         # Contains some information (?) and pad bytes
         rw_operator_raw('unknown_data_4', 4*self.unknown_0x0C)
-
-        remaining_bytes = self.bytestream.read()
-        for byte in remaining_bytes:
-            assert byte == 0
 
     def interpret_skel_data(self):
         self.unknown_parent_child_data = self.chunk_list(self.unknown_parent_child_data, 8)

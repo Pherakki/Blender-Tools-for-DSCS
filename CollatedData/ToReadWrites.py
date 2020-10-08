@@ -42,17 +42,21 @@ def make_skelreader(filepath, model_data):
         skelReader.unknown_0x0C = model_data.skeleton.unknown_data['unknown_0x0C']
         skelReader.num_unknown_parent_child_data = len(model_data.skeleton.unknown_data['unknown_parent_child_data'])
 
-        skelReader.rel_ptr_to_end_of_unknown_parent_child_data = 24 + skelReader.num_unknown_parent_child_data*16
-        skelReader.rel_ptr_to_end_of_bone_defs = 4 + skelReader.rel_ptr_to_end_of_unknown_parent_child_data + skelReader.num_bones*12*4
-        skelReader.rel_ptr_to_end_of_parent_bones = 16 + skelReader.rel_ptr_to_end_of_bone_defs + skelReader.num_bones*2
-        skelReader.rel_ptr_to_end_of_parent_bones_chunk = 4 + skelReader.rel_ptr_to_end_of_bone_defs + 0  # FIX ME
-        skelReader.unknown_rel_ptr_2 = 4 + skelReader.rel_ptr_to_end_of_parent_bones + skelReader.num_bones*4
-        skelReader.unknown_rel_ptr_3 = 4 + skelReader.unknown_rel_ptr_2 + skelReader.unknown_0x0C*4
+        # Just give up and make the absolute pointers
+        skelReader.rel_ptr_to_end_of_unknown_parent_child_data = 40 + skelReader.num_unknown_parent_child_data*16
+        skelReader.rel_ptr_to_end_of_bone_defs = skelReader.rel_ptr_to_end_of_unknown_parent_child_data + skelReader.num_bones*12*4 - 4
+        skelReader.rel_ptr_to_end_of_parent_bones = skelReader.rel_ptr_to_end_of_bone_defs + skelReader.num_bones*2 - 16
+        abs_end_of_parent_bones_chunk = skelReader.rel_ptr_to_end_of_parent_bones + skelReader.unknown_0x0C + 44
 
-        bytes_after_parent_bones_chunk = skelReader.unknown_rel_ptr_3 - skelReader.rel_ptr_to_end_of_parent_bones_chunk - 4
-        bytes_after_parent_bones_chunk += (16 - (bytes_after_parent_bones_chunk % 16)) % 16
+        skelReader.rel_ptr_to_end_of_parent_bones_chunk = skelReader.rel_ptr_to_end_of_parent_bones + skelReader.unknown_0x0C + 12
+        skelReader.rel_ptr_to_end_of_parent_bones_chunk += (16 - ((abs_end_of_parent_bones_chunk) % 16)) % 16
+        skelReader.unknown_rel_ptr_2 = skelReader.rel_ptr_to_end_of_parent_bones_chunk + skelReader.num_bones*4 - 4
+        skelReader.unknown_rel_ptr_3 = skelReader.unknown_rel_ptr_2 + skelReader.unknown_0x0C*4 - 4
 
-        skelReader.total_bytes = skelReader.rel_ptr_to_end_of_parent_bones_chunk + bytes_after_parent_bones_chunk
+        bytes_after_parent_bones_chunk = (skelReader.unknown_rel_ptr_3 + 40) - (skelReader.rel_ptr_to_end_of_parent_bones_chunk + 32)
+        bytes_after_parent_bones_chunk += (16 - (bytes_after_parent_bones_chunk % 16))
+
+        skelReader.total_bytes = skelReader.rel_ptr_to_end_of_parent_bones_chunk + bytes_after_parent_bones_chunk + 32
         skelReader.remaining_bytes_after_parent_bones_chunk = bytes_after_parent_bones_chunk
 
         skelReader.padding_0x26 = 0
@@ -181,6 +185,8 @@ def make_geomreader(filepath, model_data):
         geomReader.footer_data_start_offset = virtual_pos
         geomReader.unknown_footer_data = model_data.unknown_data['unknown_footer_data']
 
+        geomReader.write()
+
 
 def calculate_vertex_properties(example_vertex):
     """
@@ -237,6 +243,7 @@ def calculate_vertex_properties(example_vertex):
 
 def generate_vertex_data(vertices, generators):
     retval = []
+    print(generators)
     for vertex in vertices:
         vdata = [generator(vertex) for generator in generators]
         retval.append({k: v for d in vdata for k, v in d.items()})
