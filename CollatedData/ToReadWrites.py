@@ -63,7 +63,7 @@ def make_skelreader(filepath, model_data):
         skelReader.unknown_parent_child_data = model_data.skeleton.unknown_data['unknown_parent_child_data']
         skelReader.bone_data = model_data.skeleton.unknown_data['bone_data']
         skelReader.parent_bones = model_data.skeleton.bone_relations
-        skelReader.parent_bones_junk = model_data.skeleton.unknown_data['parent_bones_junk']
+        skelReader.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']
         skelReader.unknown_data_2 = model_data.skeleton.unknown_data['unknown_data_2']
         skelReader.unknown_data_3 = model_data.skeleton.unknown_data['unknown_data_3']
         skelReader.unknown_data_4 = model_data.skeleton.unknown_data['unknown_data_4']

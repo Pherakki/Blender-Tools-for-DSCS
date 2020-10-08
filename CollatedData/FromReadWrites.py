@@ -166,7 +166,7 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     model_data.skeleton.unknown_data['unknown_0x0C'] = imported_skeldata.unknown_0x0C
     model_data.skeleton.unknown_data['unknown_parent_child_data'] = imported_skeldata.unknown_parent_child_data
     model_data.skeleton.unknown_data['bone_data'] = imported_skeldata.bone_data
-    model_data.skeleton.unknown_data['parent_bones_junk'] = imported_skeldata.parent_bones_junk
+    model_data.skeleton.unknown_data['unknown_data_1'] = imported_skeldata.unknown_data_1
     model_data.skeleton.unknown_data['unknown_data_2'] = imported_skeldata.unknown_data_2
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
     model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4
