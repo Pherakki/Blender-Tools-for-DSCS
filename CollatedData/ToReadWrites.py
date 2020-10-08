@@ -203,18 +203,18 @@ def calculate_vertex_properties(example_vertex):
         vertex_components.append(VertexComponent([2, 3, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'Normal': vtx.normal})
-    if example_vertex.UV is not None:
-        vertex_components.append(VertexComponent([3, 2, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 4
-        vertex_generators.append(lambda vtx: {'UV': vtx.UV})
     if 'UnknownVertexUsage1' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([4, 4, 11, 20, bytes_per_vertex]))
+        vertex_components.append(VertexComponent([3, 4, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'UnknownVertexUsage1': vtx.unknown_data['UnknownVertexUsage1']})
     if 'UnknownVertexUsage2' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([5, 3, 11, 20, bytes_per_vertex]))
+        vertex_components.append(VertexComponent([4, 3, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'UnknownVertexUsage2': vtx.unknown_data['UnknownVertexUsage2']})
+    if example_vertex.UV is not None:
+        vertex_components.append(VertexComponent([5, 2, 11, 20, bytes_per_vertex]))
+        bytes_per_vertex += 4
+        vertex_generators.append(lambda vtx: {'UV': vtx.UV})
     if 'UnknownVertexUsage3' in example_vertex.unknown_data:
         vertex_components.append(VertexComponent([6, 2, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 4
@@ -243,7 +243,6 @@ def calculate_vertex_properties(example_vertex):
 
 def generate_vertex_data(vertices, generators):
     retval = []
-    print(generators)
     for vertex in vertices:
         vdata = [generator(vertex) for generator in generators]
         retval.append({k: v for d in vdata for k, v in d.items()})
