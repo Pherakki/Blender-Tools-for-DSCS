@@ -53,6 +53,7 @@ class SkelReader(BaseRW):
         self.bone_data = None
         self.parent_bones = None
         self.parent_bones_junk = None
+        self.unknown_data_1 = None
         self.unknown_data_2 = None
         self.unknown_data_3 = None
         self.unknown_data_4 = None
@@ -69,19 +70,20 @@ class SkelReader(BaseRW):
         self.abs_ptr_unknown_4 = None
 
     def read(self):
-        self.read_write(self.read_buffer, self.read_ascii, self.read_raw)
+        self.read_write(self.read_buffer, self.read_ascii, self.read_raw, self.cleanup_ragged_chunk_read)
         self.interpret_skel_data()
 
     def write(self):
         self.reinterpret_skel_data()
-        self.read_write(self.write_buffer, self.write_ascii, self.write_raw)
+        self.read_write(self.write_buffer, self.write_ascii, self.write_raw, self.cleanup_ragged_chunk_write)
 
-    def read_write(self, rw_operator, rw_operator_ascii, rw_operator_raw):
+    def read_write(self, rw_operator, rw_operator_ascii, rw_operator_raw, chunk_cleanup):
         self.rw_header(rw_operator, rw_operator_ascii)
         self.rw_unknown_parent_child_data(rw_operator)
         self.rw_bone_data(rw_operator)
         self.rw_parent_bones(rw_operator)
-        self.rw_parent_bone_padding(rw_operator_raw)
+        self.rw_unknown_data_1(rw_operator)
+        chunk_cleanup(self.bytestream.tell(), 16)
         self.rw_unknown_data_2(rw_operator_raw)
         self.rw_unknown_data_3(rw_operator)
         self.rw_unknown_data_4(rw_operator_raw)
@@ -133,29 +135,19 @@ class SkelReader(BaseRW):
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_parent_child_data)
         int16s_to_read = self.num_unknown_parent_child_data * 8
         rw_operator('unknown_parent_child_data', 'h'*int16s_to_read)
-        #joint_data = self.decode_data_as('h', self.bytestream.read(bytes_to_read))
-        #self.unknown_parent_child_data = [(child, parent) for child, parent in zip(joint_data[::2], joint_data[1::2])]
 
     def rw_bone_data(self, rw_operator):
         self.assert_file_pointer_now_at(self.abs_ptr_bone_defs)
         floats_to_read = self.num_bones * 12  # * 4
         rw_operator('bone_data', 'f'*floats_to_read)
-        #self.bone_data = self.decode_data_as_chunks('f', self.bytestream.read(bytes_to_read), 12)
 
     def rw_parent_bones(self, rw_operator):
         self.assert_file_pointer_now_at(self.abs_ptr_parent_bones)
-        rw_operator('parent_bones', 'h'*self.num_bones)
-        #self.parent_bones = [(i, idx) for i, idx in enumerate(parents)]
+        rw_operator('parent_bones', 'h'*self.num_bones, force_1d=True)
 
-    def rw_parent_bone_padding(self, rw_operator_raw):
-        cur_pos = self.bytestream.tell()
-        # (16 - (num_bones*2) % 16) % 16 works for bytes_remaining_after_parent_child_pairs <= 32... sometimes for more
-        # Need to be able to calculate the size and contents in order for the write to work...
-        bytes_to_read = self.abs_ptr_end_of_parent_bones_chunk - cur_pos  # could equally just use abs_ptr_unknown_2...
-        rw_operator_raw('parent_bones_junk', bytes_to_read)
-        # Interesting that the bytes are multiples of 8 - does this have some significance?!
-        for byte in self.parent_bones_junk:
-            assert byte == 0 or byte == 8 or byte == 16, self.parent_bones_junk
+    def rw_unknown_data_1(self, rw_operator):
+        #self.assert_file_pointer_now_at()
+        rw_operator('unknown_data_1', 'B'*self.unknown_0x0C)
 
     def rw_unknown_data_2(self, rw_operator_raw):
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_2)
@@ -172,7 +164,11 @@ class SkelReader(BaseRW):
 
     def rw_unknown_data_4(self, rw_operator_raw):
         # Contains some information (?) and pad bytes
-        rw_operator_raw('unknown_data_4')
+        rw_operator_raw('unknown_data_4', 4*self.unknown_0x0C)
+
+        remaining_bytes = self.bytestream.read()
+        for byte in remaining_bytes:
+            assert byte == 0
 
     def interpret_skel_data(self):
         self.unknown_parent_child_data = self.chunk_list(self.unknown_parent_child_data, 8)
