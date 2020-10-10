@@ -21,6 +21,7 @@ class MaterialReader(BaseRW):
        exist in the material definitions.
     2. acc129's 2nd material appears to be a Lambert shader - look into this.
     3. '65280' == \x00\xff - looks like a stop code to me
+    4. Material data may related to that in the shader files --- they are plaintext, so fully readable..! 1398 of them. See if you can match this up with any material data...
     """
 
     def __init__(self, io_stream):
