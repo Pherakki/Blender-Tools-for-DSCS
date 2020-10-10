@@ -87,7 +87,7 @@ class SkelReader(BaseRW):
         self.rw_unknown_data_2(rw_operator_raw)
         self.rw_unknown_data_3(rw_operator)
         self.rw_unknown_data_4(rw_operator_raw)
-        chunk_cleanup(self.bytestream.tell() - self.remaining_bytes_after_parent_bones_chunk, self.remaining_bytes_after_parent_bones_chunk)
+        chunk_cleanup(self.bytestream.tell() - self.remaining_bytes_after_parent_bones_chunk, 16)
 
     def rw_header(self, rw_operator, rw_operator_ascii):
         self.assert_file_pointer_now_at(0)
