@@ -157,7 +157,7 @@ class MeshReader(BaseRW):
 
                 interpreted_data = np.array(struct.unpack(dtype, raw_vertex_subdata[:used_data]))
                 if vertex_component.validate is not None:
-                    vertex_component.validate(interpreted_data)
+                    interpreted_data = vertex_component.validate(interpreted_data)  # CHECK POSITION HACK!!!
                 interpreted_vertex[vertex_component.vertex_type] = interpreted_data
 
                 unused_data = raw_vertex_subdata[used_data:]
@@ -174,6 +174,7 @@ class MeshReader(BaseRW):
             for j, vertex_component in enumerate(self.vertex_components):
                 if vertex_component.validate is not None:
                     vertex_component.validate(vertex_data[vertex_component.vertex_type])
+                #print(vertex_component.vertex_type, vertex_component.num_elements, vertex_component.vertex_dtype, vertex_data[vertex_component.vertex_type])
                 reinterpreted_vertex += struct.pack(f'{vertex_component.num_elements}{vertex_component.vertex_dtype}',
                                                    *vertex_data[vertex_component.vertex_type])
                 reinterpreted_vertex += self.pad_byte * (bounds[j+1] - len(reinterpreted_vertex))
@@ -196,8 +197,14 @@ class MeshReader(BaseRW):
         self.vertex_components = self.flatten_list(vertex_components)
 
 
+def validate_position(component_data):
+    #assert len(component_data) == 3, f"Position is not a 3-vector: {component_data}"
+    return component_data[:3]
+
+
 def validate_weighted_bone_id(component_data):
     assert np.all(np.mod(component_data, 3)) == 0, f"WeightedBoneIDs were not all multiples of 3: {component_data}"
+    return component_data
 
 
 class VertexComponent:
@@ -231,7 +238,8 @@ class VertexComponent:
                       'e': 11,
                       'B': 1}
 
-    validation_policies = {'WeightedBoneID': validate_weighted_bone_id}
+    validation_policies = {'Position': validate_position,
+                           'WeightedBoneID': validate_weighted_bone_id}
 
     def __init__(self, data):
         self.vertex_type = VertexComponent.vertex_types[data[0]]
