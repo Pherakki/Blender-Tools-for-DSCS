@@ -55,23 +55,23 @@ class NameReader(BaseRW):
         rw_operator('bone_name_pointers', 'I'*self.num_bone_names, force_1d=True)
         rw_operator('material_name_pointers', 'I'*self.num_material_names, force_1d=True)
 
-    def rw_bone_names(self, rw_operator):
+    def rw_bone_names(self, rw_operator_ascii):
         if len(self.bone_name_pointers) == 0:
             self.bone_names = ''
             return
         self.assert_file_pointer_now_at(self.bone_name_pointers[0])
         if len(self.material_name_pointers) == 0:
-            rw_operator('bone_data')
+            rw_operator_ascii('bone_names')
         else:
             bytes_to_read = self.material_name_pointers[0] - self.bytestream.tell()
-            rw_operator('bone_names', bytes_to_read)
+            rw_operator_ascii('bone_names', bytes_to_read)
 
-    def rw_material_names(self, rw_operator):
+    def rw_material_names(self, rw_operator_ascii):
         if len(self.material_name_pointers) == 0:
             self.material_names = ''
             return
         self.assert_file_pointer_now_at(self.material_name_pointers[0])
-        rw_operator('material_names')
+        rw_operator_ascii('material_names')
 
     # There is probably a cleaner way of reading the bone names in.
     # This works for the moment though!
@@ -88,8 +88,9 @@ class NameReader(BaseRW):
             retval.append(stringslice)
         # The for loop will miss off the final sub-string because the file pointers just point to the starts of the
         # strings, so read it now
-        ed = ptrs[-1] - ptrs[0]
-        retval.append(ascii_string[ed:])
+        if len(ptrs) > 0:
+            ed = ptrs[-1] - ptrs[0]
+            retval.append(ascii_string[ed:])
 
         return retval
 
