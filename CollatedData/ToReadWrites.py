@@ -95,7 +95,7 @@ def make_geomreader(filepath, model_data):
         geomReader.prepare_read_op()
         virtual_pos = 112
         geomReader.meshes_start_ptr = virtual_pos if len(model_data.meshes) > 0 else 0
-        virtual_pos = geomReader.meshes_start_ptr + 104*geomReader.num_meshes
+        virtual_pos += 104*geomReader.num_meshes
         for mesh, meshReader in zip(model_data.meshes, geomReader.meshes):
             meshReader.vertex_data_start_ptr = virtual_pos
 
@@ -108,6 +108,7 @@ def make_geomreader(filepath, model_data):
             meshReader.polygon_data_start_ptr = virtual_pos
             meshReader.polygon_data = polys_to_triangles(mesh.polygons)
             virtual_pos += 2*len(meshReader.polygon_data)
+            virtual_pos += (4 - (virtual_pos % 4)) % 4  # Fix ragged chunk of size 4
             meshReader.padding_0x18 = 0
 
             meshReader.vertex_components_start_ptr = virtual_pos
@@ -173,6 +174,11 @@ def make_geomreader(filepath, model_data):
 
             virtual_pos += 24
 
+        geomReader.texture_names_start_ptr = virtual_pos if len(model_data.textures) > 0 else 0
+        for texture in model_data.textures:
+            geomReader.texture_data.append(texture.name)
+            virtual_pos += 32
+
         geomReader.unknown_cam_data_1_start_ptr = virtual_pos if len(model_data.unknown_data['unknown_cam_data_1']) > 0 else 0
         for elem in model_data.unknown_data['unknown_cam_data_1']:
             geomReader.unknown_cam_data_1.append(elem)
@@ -199,11 +205,6 @@ def make_geomreader(filepath, model_data):
         virtual_pos += geomReader.num_bones*12*4
 
         geomReader.padding_0x58 = 0
-
-        geomReader.texture_names_start_ptr = virtual_pos if len(model_data.textures) > 0 else 0
-        for texture in model_data.textures:
-            geomReader.texture_data.append(texture.name)
-            virtual_pos += 32
 
         geomReader.footer_data_start_offset = virtual_pos
         geomReader.unknown_footer_data = model_data.unknown_data['unknown_footer_data']
@@ -254,12 +255,12 @@ def calculate_vertex_properties(example_vertex):
         vertex_components.append(VertexComponent([10, len(example_vertex.vertex_groups), 1, 20, bytes_per_vertex]))
         nominal_bytes = len(example_vertex.vertex_groups)
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
-        vertex_generators.append(lambda vtx: {'WeightedBoneID': [grp*3 for grp in vtx.vertex_groups]})
+        vertex_generators.append(lambda vtx: {'WeightedBoneID': mk_extended_boneids(vtx)})
 
-        vertex_components.append(VertexComponent([11, len(example_vertex.vertex_groups), 1, 20, bytes_per_vertex]))
+        vertex_components.append(VertexComponent([11, len(example_vertex.vertex_groups), 11, 20, bytes_per_vertex]))
         nominal_bytes = 2*len(example_vertex.vertex_groups)
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
-        vertex_generators.append(lambda vtx: {'BoneWeight': vtx.vertex_group_weights})
+        vertex_generators.append(lambda vtx: {'BoneWeight': mk_extended_boneweights(vtx)})
 
     return bytes_per_vertex, vertex_components, vertex_generators
 
@@ -274,3 +275,17 @@ def generate_vertex_data(vertices, generators):
 
 def polys_to_triangles(polys):
     return [sublist for list in [poly.indices for poly in polys] for sublist in list]
+
+
+def mk_extended_boneids(vtx):
+    use_groups = [grp*3 for grp in vtx.vertex_groups]
+    if len(vtx.vertex_groups) < 2:
+        use_groups.extend([0]*(2-len(vtx.vertex_groups)))
+    return use_groups
+
+
+def mk_extended_boneweights(vtx):
+    use_groups = [grp for grp in vtx.vertex_group_weights]
+    if len(vtx.vertex_group_weights) < 2:
+        use_groups.extend([0]*(2-len(vtx.vertex_group_weights)))
+    return use_groups
