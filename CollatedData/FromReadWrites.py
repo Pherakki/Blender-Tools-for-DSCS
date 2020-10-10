@@ -73,6 +73,8 @@ def add_meshes(model_data, imported_geomdata):
 
         for i, vertex in enumerate(mesh.vertex_data):
             pos = vertex.get('Position')
+            if len(pos) > 3:
+                assert 0
             norm = vertex.get('Normal')
             uv = vertex.get('UV')
             vgroups = vertex.get('WeightedBoneID')
