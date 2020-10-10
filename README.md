@@ -2,7 +2,7 @@
 This repository provides a work-in-progress addon for Blender 2.8 that can (to some degree) import model files from the PC version of Digimon Story: Cyber Sleuth. It provides a new option in File > Import named "DSCS Model", which should be pointed towards 'name' files in the game data. Experimental export functionality is in-progress.
 
 ## Preparation
-1. Unpack the game files with [DSCSTools](https://github.com/SydMontague/DSCSTools), following the instructions in the readme. Alternatively, install [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) and click 'Extract DSDB'
+1. Unpack the game files with [DSCSTools](https://github.com/SydMontague/DSCSTools), following the instructions in the readme. Alternatively, install [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) and click 'Extract DSDB'.
 2. Install Blender Tools for DSCS as a zip archive like any other Blender addon.
 
 ## Usage
