@@ -16,6 +16,11 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
     # This will actually work with any file extension since the code just looks for the right ones...
     filename_ext = "*.name"
 
+    filter_glob: bpy.props.StringProperty(
+                                             default="*.name",
+                                             options={'HIDDEN'},
+                                         )
+
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
         model_data = generate_intermediate_format_from_files(filepath)
@@ -37,7 +42,7 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
 
         bpy.context.view_layer.objects.active = model_armature
         bpy.ops.object.mode_set(mode='EDIT')
-        for relation in model_data.skeleton.bone_relations:
+        for i, relation in enumerate(model_data.skeleton.bone_relations):
             child, parent = relation
             child_name = model_data.skeleton.bone_names[child]
             if child_name in list_of_bones:
@@ -60,14 +65,32 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                 # Get the vector from the parent to the child (i.e. the bone length), and just repeat it for the child
                 parent_pos = bone_pos[parent]
                 parent_bone_vec = np.array(child_pos) - np.array(parent_pos)
+                if np.sqrt(np.sum(parent_bone_vec**2)) < 0.0001:
+                    parent_bone_vec[2] += 0.05
                 tail_pos = np.array(child_pos) + parent_bone_vec
 
             bone = model_armature.data.edit_bones.new(child_name)
+
+            # Add the unknown vectors... might define the local coordinate system?!
+            bone['xvecs'] = model_data.skeleton.bone_xvecs[i]
+            bone['yvecs'] = model_data.skeleton.bone_yvecs[i]
+            bone['zvecs'] = model_data.skeleton.bone_zvecs[i]
+
             list_of_bones[child_name] = bone
             bone.head = child_pos
             bone.tail = list(tail_pos)
             if parent != -1:
                 bone.parent = list_of_bones[model_data.skeleton.bone_names[parent]]
+
+        # Add the unknown data
+        model_armature['unknown_0x0C'] = model_data.skeleton.unknown_data['unknown_0x0C']
+        model_armature['unknown_parent_child_data'] = model_data.skeleton.unknown_data['unknown_parent_child_data']
+        model_armature['bone_data'] = model_data.skeleton.unknown_data['bone_data']
+        model_armature['unknown_data_1'] = model_data.skeleton.unknown_data['unknown_data_1']
+        model_armature['unknown_data_2'] = model_data.skeleton.unknown_data['unknown_data_2']
+        model_armature['unknown_data_3'] = model_data.skeleton.unknown_data['unknown_data_3']
+        model_armature['unknown_data_4'] = model_data.skeleton.unknown_data['unknown_data_4']
+
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.view_layer.objects.active = parent_obj
 
@@ -89,6 +112,22 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             # tex_name = model_data.textures[IF_material.textureID].name
 
             new_material = bpy.data.materials.new(name=IF_material.name)
+            # Unknown data
+            new_material['unknown_0x00'] = IF_material.unknown_data['unknown_0x00']
+            new_material['unknown_0x10'] = IF_material.unknown_data['unknown_0x10']
+            new_material['unknown_0x11'] = IF_material.unknown_data['unknown_0x11']
+            new_material['unknown_0x12'] = IF_material.unknown_data['unknown_0x12']
+            new_material['unknown_0x16'] = IF_material.unknown_data['unknown_0x16']
+            new_material['temp_reference_textures'] = [tex.name for tex in model_data.textures]
+            for key in IF_material.unknown_data:
+                cstring_1 = 'type_1_component_'
+                cstring_2 = 'type_2_component_'
+                if key[:len(cstring_1)] == cstring_1:
+                    new_material[key] = IF_material.unknown_data[key]
+                elif key[:len(cstring_2)] == cstring_2:
+                    new_material[key] = IF_material.unknown_data[key]
+
+
             new_material.use_nodes = True
 
             # Get nodes to work with
@@ -129,11 +168,19 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             mesh_object.data.from_pydata(verts, edges, faces)
             bpy.context.collection.objects.link(mesh_object)
 
+            mesh.use_auto_smooth = True
+            mesh.auto_smooth_angle = np.pi
+            for polygon in mesh.polygons:
+                polygon.use_smooth = True
+
+            # NO IDEA how to do the normals properly - this is probably a hack?!
             vertex_normals = [Vector(vertex.normal) for vertex in IF_mesh.vertices]
-            # I think this assignment is incorrect - the data in 'vertex_normals' are 3-vectors, one per vertex,
-            # no idea what blender does with this 'normals_split_custom_set_from_vertices' function but the
-            # results don't look right at all. Disabled until I gain basic competency
-            # mesh.normals_split_custom_set_from_vertices(vertex_normals)
+            #mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
+            #mesh.normals_split_custom_set_from_vertices(vertex_normals)
+            for pos, normal, vec in zip(verts, vertex_normals, mesh.vertices):
+                vec.normal.zero()
+                vec.normal = normal
+
 
             material_name = model_data.materials[IF_mesh.material_id].name
             active_material = bpy.data.materials[material_name]
@@ -151,6 +198,15 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                 for vert_idx, vert_weight in zip(IF_vertex_group.vertex_indices, IF_vertex_group.weights):
                     vertex_group.add([vert_idx], vert_weight, 'REPLACE')
 
+            # Add unknown data
+            mesh_object['unknown_0x30'] = IF_mesh.unknown_data['unknown_0x30']
+            mesh_object['unknown_0x31'] = IF_mesh.unknown_data['unknown_0x31']
+            mesh_object['unknown_0x34'] = IF_mesh.unknown_data['unknown_0x34']
+            mesh_object['unknown_0x36'] = IF_mesh.unknown_data['unknown_0x36']
+            mesh_object['unknown_0x44'] = IF_mesh.unknown_data['unknown_0x44']
+            mesh_object['unknown_0x50'] = IF_mesh.unknown_data['unknown_0x50']
+            mesh_object['unknown_0x5C'] = IF_mesh.unknown_data['unknown_0x5C']
+
             bpy.data.objects[meshobj_name].select_set(True)
             bpy.data.objects[armature_name].select_set(True)
             # I would prefer to do this by directly calling object methods if possible
@@ -160,6 +216,14 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             mesh.update()
             bpy.data.objects[meshobj_name].select_set(False)
             bpy.data.objects[armature_name].select_set(False)
+
+        # Top-level unknown data
+        parent_obj['geom_unknown_0x14'] = model_data.unknown_data['geom_unknown_0x14']
+        parent_obj['geom_unknown_0x20'] = model_data.unknown_data['geom_unknown_0x20']
+        parent_obj['unknown_cam_data_1'] = model_data.unknown_data['unknown_cam_data_1']
+        parent_obj['unknown_cam_data_2'] = model_data.unknown_data['unknown_cam_data_2']
+        parent_obj['unknown_footer_data'] = model_data.unknown_data['unknown_footer_data']
+        parent_obj['material names'] = model_data.unknown_data['material names']
 
         bpy.context.view_layer.objects.active = parent_obj
         # Rotate to the Blender coordinate convention
