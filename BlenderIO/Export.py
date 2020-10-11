@@ -124,12 +124,13 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                 cstring_2 = 'type_2_component_'
                 if key[:len(cstring_1)] == cstring_1:
                     bmat_data = list(bmat[key])
-                    print(key, bmat_data)
                     if key[len(cstring_1):] == '50':
-                        print("Doing the first bit")
                         texture_node = node_tree.nodes["Image Texture"]
                         bimg = texture_node.image
-                        texname, _ = os.path.splitext(os.path.basename(bimg.filepath))
+                        texname = clean_texname(bimg.name)
+                        texname, tex_ext = os.path.splitext(texname)
+                        if tex_ext != '.dds':
+                            print(f"WARNING: texture {texname} is not a .dds file, is {tex_ext}")
                         if texname not in used_textures:
                             material.texture_id = len(used_textures)
                             used_textures.append(texname)
@@ -138,7 +139,6 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                         # This stuff should go in the to/from readwrites but w/e...
                         bmat_data[0] = material.texture_id
                     elif all(type(elem) == int for elem in bmat_data):
-                        print("Doing the elif bit")
                         texname = bmat['temp_reference_textures'][bmat_data[0]]
                         if texname not in used_textures:
                             tex_id = len(used_textures)
@@ -147,6 +147,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                             tex_id = used_textures.index(texname)
                         # This stuff should go in the to/from readwrites but w/e...
                         bmat_data[0] = tex_id
+                    elif key[len(cstring_1):] == '56':
+                        bsdf_node = node_tree.nodes["Principled BSDF"]
+                        bmat_data[0] = bsdf_node.inputs['Specular'].default_value
                     material.unknown_data[key] = bmat_data
                 elif key[:len(cstring_2)] == cstring_2:
                     material.unknown_data[key] = bmat[key]
@@ -194,3 +197,14 @@ def get_group(mesh_obj, bone_names, grp):
     bone_name = mesh_obj.vertex_groups[group_idx].name
     bone_id = bone_names.index(bone_name)
     return bone_id
+
+
+def clean_texname(name):
+    elems = name.split('.')
+    cutoff = None
+    for i, elem in enumerate(reversed(elems)):
+        if len(elem) == 3 and elem.isnumeric():
+            cutoff = i + 1
+    if cutoff is not None:
+        name = '.'.join(elems[:-cutoff])
+    return name
