@@ -1,5 +1,6 @@
 import bpy
 from .BlenderIO.Import import ImportDSCS
+from .BlenderIO.Export import ExportDSCS
 
 bl_info = {
         "name": "Digimon Story: Cyber Sleuth (.name)",
@@ -7,7 +8,7 @@ bl_info = {
         "author": "Pherakki",
         "version": (0, 1),
         "blender": (2, 80, 0),
-        "location": "File > Import",
+        "location": "File > Import, File > Export",
         "warning": "",
         "category": "Import-Export",
         }
@@ -17,22 +18,22 @@ def menu_func_import(self, context):
     self.layout.operator(ImportDSCS.bl_idname, text="DSCS Model (.name)")
 
 
-# def menu_func_export(self, context):
-#     self.layout.operator(ExportDSCS.bl_idname, text="DSCS Model (.name)")
+def menu_func_export(self, context):
+    self.layout.operator(ExportDSCS.bl_idname, text="DSCS Model (.name)")
 
 
 def register():
     bpy.utils.register_class(ImportDSCS)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-    # Not ready for this one yet
-    # bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+    bpy.utils.register_class(ExportDSCS)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 
 def unregister():
     bpy.utils.unregister_class(ImportDSCS)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    # Not ready for this one yet
-    # bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    bpy.utils.unregister_class(ExportDSCS)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
 # if __name__ == "__main__":
 #     register()
