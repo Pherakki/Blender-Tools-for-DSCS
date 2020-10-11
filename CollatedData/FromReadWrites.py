@@ -70,7 +70,7 @@ def add_meshes(model_data, imported_geomdata):
         current_IF_mesh = model_data.meshes[-1]
         for bone_id in mesh.weighted_bone_idxs:
             current_IF_mesh.add_vertex_group(bone_id, [], [])
-
+            
         for i, vertex in enumerate(mesh.vertex_data):
             pos = vertex.get('Position')
             if len(pos) > 3:
@@ -122,7 +122,7 @@ def add_materials(model_data, imported_namedata, imported_geomdata):
     for i, material in enumerate(imported_geomdata.material_data):
         model_data.new_material()
         # I can't figure out how to match up the material names to the materials yet when there are fewer names than materials
-        model_data.materials[-1].name = str(i)# material_name
+        model_data.materials[-1].name = str(i)  # model_data.unknown_data['material names'][i]
 
         # Add unknown data
         model_data.materials[-1].unknown_data['unknown_0x00'] = material.unknown_0x00
