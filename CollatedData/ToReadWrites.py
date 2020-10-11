@@ -99,11 +99,12 @@ def make_geomreader(filepath, model_data):
         for mesh, meshReader in zip(model_data.meshes, geomReader.meshes):
             meshReader.vertex_data_start_ptr = virtual_pos
 
-            meshReader.bytes_per_vertex, meshReader.vertex_components, vertex_generators = calculate_vertex_properties(mesh.vertices[0])
+            vgroup_idxs = sorted([vgroup.bone_idx for vgroup in mesh.vertex_groups])
+            meshReader.bytes_per_vertex, meshReader.vertex_components, vertex_generators = calculate_vertex_properties(mesh.vertices, vgroup_idxs)
             meshReader.vertex_data = generate_vertex_data(mesh.vertices, vertex_generators)
             virtual_pos += meshReader.bytes_per_vertex*len(meshReader.vertex_data)
             meshReader.weighted_bone_data_start_ptr = virtual_pos
-            meshReader.weighted_bone_idxs = [vgroup.bone_idx for vgroup in mesh.vertex_groups]
+            meshReader.weighted_bone_idxs = vgroup_idxs
             virtual_pos += 4*len(meshReader.weighted_bone_idxs)
             meshReader.polygon_data_start_ptr = virtual_pos
             meshReader.polygon_data = polys_to_triangles(mesh.polygons)
@@ -212,13 +213,14 @@ def make_geomreader(filepath, model_data):
         geomReader.write()
 
 
-def calculate_vertex_properties(example_vertex):
+def calculate_vertex_properties(vertices, all_bones_used_by_vertices):
     """
     Contains some nasty repetition of non-trivial data but I just want to get this done at this point
     """
     bytes_per_vertex = 0
     vertex_components = []
     vertex_generators = []
+    example_vertex = vertices[0]
     if example_vertex.position is not None:
         vertex_components.append(VertexComponent([1, 3, 6, 20, bytes_per_vertex]))
         bytes_per_vertex += 12
@@ -238,7 +240,7 @@ def calculate_vertex_properties(example_vertex):
     if example_vertex.UV is not None:
         vertex_components.append(VertexComponent([5, 2, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 4
-        vertex_generators.append(lambda vtx: {'UV': vtx.UV})
+        vertex_generators.append(lambda vtx: {'UV': (vtx.UV[0], 1 - vtx.UV[-1]) if vtx.UV is not None else vtx.UV})
     if 'UnknownVertexUsage3' in example_vertex.unknown_data:
         vertex_components.append(VertexComponent([6, 2, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 4
@@ -252,15 +254,16 @@ def calculate_vertex_properties(example_vertex):
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'UnknownVertexUsage5': vtx.unknown_data['UnknownVertexUsage5']})
     if example_vertex.vertex_groups is not None:
-        vertex_components.append(VertexComponent([10, len(example_vertex.vertex_groups), 1, 20, bytes_per_vertex]))
-        nominal_bytes = len(example_vertex.vertex_groups)
+        num_grps = max([len(vtx.vertex_groups) for vtx in vertices])
+        vertex_components.append(VertexComponent([10, max((num_grps, 2)), 1, 20, bytes_per_vertex]))
+        nominal_bytes = num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
-        vertex_generators.append(lambda vtx: {'WeightedBoneID': mk_extended_boneids(vtx)})
+        vertex_generators.append(lambda vtx: {'WeightedBoneID': mk_extended_boneids(vtx, num_grps, all_bones_used_by_vertices)})
 
-        vertex_components.append(VertexComponent([11, len(example_vertex.vertex_groups), 11, 20, bytes_per_vertex]))
-        nominal_bytes = 2*len(example_vertex.vertex_groups)
+        vertex_components.append(VertexComponent([11, max((num_grps, 2)), 11, 20, bytes_per_vertex]))
+        nominal_bytes = 2*num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
-        vertex_generators.append(lambda vtx: {'BoneWeight': mk_extended_boneweights(vtx)})
+        vertex_generators.append(lambda vtx: {'BoneWeight': mk_extended_boneweights(vtx, num_grps)})
 
     return bytes_per_vertex, vertex_components, vertex_generators
 
@@ -277,15 +280,15 @@ def polys_to_triangles(polys):
     return [sublist for list in [poly.indices for poly in polys] for sublist in list]
 
 
-def mk_extended_boneids(vtx):
-    use_groups = [grp*3 for grp in vtx.vertex_groups]
-    if len(vtx.vertex_groups) < 2:
-        use_groups.extend([0]*(2-len(vtx.vertex_groups)))
+def mk_extended_boneids(vtx, num_grps, all_bones_used_by_vertices):
+    use_groups = [all_bones_used_by_vertices.index(grp)*3 for grp in vtx.vertex_groups]
+    if len(vtx.vertex_groups) < num_grps:
+        use_groups.extend([0]*(num_grps-len(vtx.vertex_groups)))
     return use_groups
 
 
-def mk_extended_boneweights(vtx):
+def mk_extended_boneweights(vtx, num_grps):
     use_groups = [grp for grp in vtx.vertex_group_weights]
-    if len(vtx.vertex_group_weights) < 2:
-        use_groups.extend([0]*(2-len(vtx.vertex_group_weights)))
+    if len(vtx.vertex_group_weights) < num_grps:
+        use_groups.extend([0.]*(num_grps-len(vtx.vertex_group_weights)))
     return use_groups
