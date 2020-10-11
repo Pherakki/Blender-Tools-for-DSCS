@@ -17,13 +17,19 @@ class IntermediateFormat:
         self.unknown_data = {}
         
     def new_mesh(self):
-        self.meshes.append(MeshData())
+        md = MeshData()
+        self.meshes.append(md)
+        return md
         
     def new_material(self):
-        self.materials.append(MaterialData())
+        md = MaterialData()
+        self.materials.append(md)
+        return md
         
     def new_texture(self):
-        self.textures.append(TextureData())
+        td = TextureData()
+        self.textures.append(td)
+        return td
 
         
 class MeshData:
