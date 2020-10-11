@@ -110,7 +110,6 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             # print(IF_material.textureID)
             # print(model_data.textures)
             # tex_name = model_data.textures[IF_material.textureID].name
-
             new_material = bpy.data.materials.new(name=IF_material.name)
             # Unknown data
             new_material['unknown_0x00'] = IF_material.unknown_data['unknown_0x00']
@@ -133,7 +132,8 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             # Get nodes to work with
             bsdf_node = new_material.node_tree.nodes.get('Principled BSDF')
             connect = new_material.node_tree.links.new
-
+            if IF_material.specular_coeff is not None:
+                bsdf_node.inputs['Specular'].default_value = IF_material.specular_coeff
             # Set texture
             if IF_material.texture_id is not None:
                 texture_node = new_material.node_tree.nodes.new('ShaderNodeTexImage')
@@ -157,6 +157,8 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             #    rgba_node.outputs['Color'].default_value = IF_material.emission_rgba
             #    connect(rgba_node.outputs['Color'], bsdf_node.inputs['Emission'])
 
+            new_material.use_backface_culling = True
+
         for i, IF_mesh in enumerate(model_data.meshes):
             verts = [Vector(vertex.position) for vertex in IF_mesh.vertices]
             edges = []
@@ -168,19 +170,11 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             mesh_object.data.from_pydata(verts, edges, faces)
             bpy.context.collection.objects.link(mesh_object)
 
-            mesh.use_auto_smooth = True
-            mesh.auto_smooth_angle = np.pi
-            for polygon in mesh.polygons:
-                polygon.use_smooth = True
-
             # NO IDEA how to do the normals properly - this is probably a hack?!
             vertex_normals = [Vector(vertex.normal) for vertex in IF_mesh.vertices]
-            #mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
-            #mesh.normals_split_custom_set_from_vertices(vertex_normals)
-            for pos, normal, vec in zip(verts, vertex_normals, mesh.vertices):
-                vec.normal.zero()
-                vec.normal = normal
-
+            mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
+            #mesh_object.data.normals_split_custom_set(vertex_normals)
+            mesh.normals_split_custom_set_from_vertices(vertex_normals)
 
             material_name = model_data.materials[IF_mesh.material_id].name
             active_material = bpy.data.materials[material_name]
@@ -212,8 +206,13 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             # I would prefer to do this by directly calling object methods if possible
             bpy.context.view_layer.objects.active = bpy.data.objects[armature_name]
             bpy.ops.object.parent_set(type='ARMATURE')
+
             mesh.validate(verbose=True)
             mesh.update()
+            for pos, normal, vec in zip(verts, vertex_normals, mesh.vertices):
+                vec.normal = normal
+            mesh.use_auto_smooth = True
+
             bpy.data.objects[meshobj_name].select_set(False)
             bpy.data.objects[armature_name].select_set(False)
 

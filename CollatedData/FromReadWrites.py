@@ -29,7 +29,7 @@ def generate_intermediate_format_from_files(filepath):
 
     model_data = IntermediateFormat()
     add_meshes(model_data, imported_geomdata)
-    add_materials(model_data, imported_namedata, imported_geomdata)
+    add_materials(model_data, imported_namedata, imported_geomdata, os.path.split(filepath)[-1])
     add_textures(model_data, imported_geomdata, images_directory)
     add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata)
 
@@ -115,14 +115,14 @@ def add_meshes(model_data, imported_geomdata):
     model_data.unknown_data['unknown_footer_data'] = imported_geomdata.unknown_footer_data
 
 
-def add_materials(model_data, imported_namedata, imported_geomdata):
+def add_materials(model_data, imported_namedata, imported_geomdata, filename):
     #assert len(imported_namedata.material_names) == len(imported_geomdata.material_data), \
     #    f"Mismatch between material names and unique material data. {len(imported_namedata.material_names)} {len(imported_geomdata.material_data)}"
     model_data.unknown_data['material names'] = imported_namedata.material_names
     for i, material in enumerate(imported_geomdata.material_data):
         model_data.new_material()
         # I can't figure out how to match up the material names to the materials yet when there are fewer names than materials
-        model_data.materials[-1].name = str(i)  # model_data.unknown_data['material names'][i]
+        model_data.materials[-1].name = filename + "_mat_{:03d}".format(i)  # str(i)  # model_data.unknown_data['material names'][i]
 
         # Add unknown data
         model_data.materials[-1].unknown_data['unknown_0x00'] = material.unknown_0x00
@@ -135,12 +135,11 @@ def add_materials(model_data, imported_namedata, imported_geomdata):
             # Appears to mark the block as identifying a texture ID
             if material_component.component_type == 50:
                 model_data.materials[-1].texture_id = material_component.data[0]
-                model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
             elif material_component.component_type == 51:
                 model_data.materials[-1].rgba = material_component.data
-                model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
-            else:
-                model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
+            elif material_component.component_type == 56:
+                model_data.materials[-1].specular_coeff = material_component.data[0]
+            model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
 
         for i, material_component in enumerate(material.unknown_data):
             model_data.materials[-1].unknown_data[f'type_2_component_{material_component.maybe_component_type}'] = material_component.data
