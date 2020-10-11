@@ -79,6 +79,7 @@ class MaterialData:
         self.name = None
         self.texture_id = None
         self.rgba = None
+        self.specular_coeff = None
 
         self.unknown_data = {}
 
