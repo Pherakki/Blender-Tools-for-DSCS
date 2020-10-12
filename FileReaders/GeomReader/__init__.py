@@ -1,6 +1,7 @@
 from ..BaseRW import BaseRW
 from .MeshReader import MeshReader
 from .MaterialReader import MaterialReader
+import typing
 
 
 class GeomReader(BaseRW):
@@ -227,6 +228,10 @@ class GeomReader(BaseRW):
         self.unknown_cam_data_2 = self.chunk_list(self.unknown_cam_data_2, 24)
 
     def reinterpret_geom_data(self):
+        self.texture_data: typing.List[str]
+
+        for texture_name in self.texture_data:
+            assert len(texture_name) < 32, f"Texture name {texture_name} is longer than 32 characters; please shorten the filename."
         texture_data = [texture_name.encode('ascii') + self.pad_byte * (32 - len(texture_name))
                         for texture_name in self.texture_data]
         self.texture_data = b''.join(texture_data)
