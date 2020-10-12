@@ -171,10 +171,18 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             bpy.context.collection.objects.link(mesh_object)
 
             # NO IDEA how to do the normals properly - this is probably a hack?!
-            vertex_normals = [Vector(vertex.normal) for vertex in IF_mesh.vertices]
-            mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
-            #mesh_object.data.normals_split_custom_set(vertex_normals)
-            mesh.normals_split_custom_set_from_vertices(vertex_normals)
+            vertex_normals = [vertex.normal for vertex in IF_mesh.vertices]
+            if all([normal is not None for normal in vertex_normals]):
+                try:
+                    vertex_normals = [Vector(normal) for normal in vertex_normals]
+                except Exception as e:
+                    print("Bad normals:", vertex_normals)
+                    raise e
+                mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
+                #mesh_object.data.normals_split_custom_set(vertex_normals)
+                mesh.normals_split_custom_set_from_vertices(vertex_normals)
+            else:
+                vertex_normals = []
 
             material_name = model_data.materials[IF_mesh.material_id].name
             active_material = bpy.data.materials[material_name]
