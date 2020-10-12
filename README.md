@@ -51,6 +51,8 @@ Most of the remaining unknown data either breaks the files or appears to have no
 ## Contact
 e-mail: pherakki@gmail.com
 
+reddit: [u/Pherakki](https://www.reddit.com/user/Pherakki)
+
 ## Notes
 1. I have next to no experience with Blender or its API. The import script is a bit of a mess which will hopefully get cleaner over time.
 2. Images are stored in a 'img' format, which is secretly a DDS (BC2; Linear DXT3 codec) **with mipmaps**. The game will not enjoy the experience of trying to load anything else and will present you with blank textures in retaliation. Save your edited (or new) textures as a BC2 DDS and rename the extension (I have not yet checked if renaming the extension is necessary).
