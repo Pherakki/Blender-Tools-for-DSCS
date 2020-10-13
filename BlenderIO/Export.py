@@ -39,9 +39,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             model_data.skeleton.bone_names.append(name)
             model_data.skeleton.bone_positions.append(pos)
             model_data.skeleton.bone_relations.append([i, parent_id])
-            model_data.skeleton.bone_xvecs.append(list(bone['xvecs']))
-            model_data.skeleton.bone_yvecs.append(list(bone['yvecs']))
-            model_data.skeleton.bone_zvecs.append(list(bone['zvecs']))
+            model_data.skeleton.bone_xaxes.append(list(bone['xvecs']))
+            model_data.skeleton.bone_yaxes.append(list(bone['yvecs']))
+            model_data.skeleton.bone_zaxes.append(list(bone['zvecs']))
 
         # Get the unknown data
         model_data.skeleton.unknown_data['unknown_0x0C'] = model_armature['unknown_0x0C']

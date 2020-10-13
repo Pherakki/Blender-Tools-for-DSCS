@@ -72,9 +72,9 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             bone = model_armature.data.edit_bones.new(child_name)
 
             # Add the unknown vectors... might define the local coordinate system?!
-            bone['xvecs'] = model_data.skeleton.bone_xvecs[i]
-            bone['yvecs'] = model_data.skeleton.bone_yvecs[i]
-            bone['zvecs'] = model_data.skeleton.bone_zvecs[i]
+            bone['xvecs'] = model_data.skeleton.bone_xaxes[i]
+            bone['yvecs'] = model_data.skeleton.bone_yaxes[i]
+            bone['zvecs'] = model_data.skeleton.bone_zaxes[i]
 
             list_of_bones[child_name] = bone
             bone.head = child_pos

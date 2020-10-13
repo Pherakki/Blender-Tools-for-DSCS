@@ -196,13 +196,13 @@ def make_geomreader(filepath, model_data):
 
         geomReader.bone_data_start_ptr = virtual_pos if len(model_data.skeleton.bone_positions) > 0 else 0
         for bone, xvec, yvec, zvec, boneReader in zip(model_data.skeleton.bone_positions,
-                                                      model_data.skeleton.bone_xvecs,
-                                                      model_data.skeleton.bone_yvecs,
-                                                      model_data.skeleton.bone_zvecs,
+                                                      model_data.skeleton.bone_xaxes,
+                                                      model_data.skeleton.bone_yaxes,
+                                                      model_data.skeleton.bone_zaxes,
                                                       geomReader.bone_data):
-            boneReader.unknown_0x00, boneReader.unknown_0x04, boneReader.unknown_0x08 = xvec
-            boneReader.unknown_0x0C, boneReader.unknown_0x10, boneReader.unknown_0x14 = yvec
-            boneReader.unknown_0x1A, boneReader.unknown_0x1E, boneReader.unknown_0x22 = zvec
+            boneReader.x_axis = xvec
+            boneReader.y_axis = yvec
+            boneReader.z_axis = zvec
             boneReader.xpos, boneReader.ypos, boneReader.zpos = [-item for item in bone]
         virtual_pos += geomReader.num_bones*12*4
 

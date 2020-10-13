@@ -159,9 +159,9 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     for bone_data in imported_geomdata.bone_data:
         position = (-bone_data.xpos, -bone_data.ypos, -bone_data.zpos)
         model_data.skeleton.bone_positions.append(position)
-        model_data.skeleton.bone_xvecs.append((bone_data.unknown_0x00, bone_data.unknown_0x04, bone_data.unknown_0x08))
-        model_data.skeleton.bone_yvecs.append((bone_data.unknown_0x0C, bone_data.unknown_0x10, bone_data.unknown_0x14))
-        model_data.skeleton.bone_zvecs.append((bone_data.unknown_0x1A, bone_data.unknown_0x1E, bone_data.unknown_0x22))
+        model_data.skeleton.bone_xaxes.append(bone_data.x_axis)
+        model_data.skeleton.bone_yaxes.append(bone_data.y_axis)
+        model_data.skeleton.bone_zaxes.append(bone_data.z_axis)
 
     # Put the unknown data into the skeleton
     model_data.skeleton.unknown_data['unknown_0x0C'] = imported_skeldata.unknown_0x0C

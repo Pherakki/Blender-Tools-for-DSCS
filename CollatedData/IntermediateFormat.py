@@ -94,9 +94,9 @@ class Skeleton:
     def __init__(self):
         self.bone_names = []
         self.bone_positions = []
-        self.bone_xvecs = []
-        self.bone_yvecs = []
-        self.bone_zvecs = []
+        self.bone_xaxes = []
+        self.bone_yaxes = []
+        self.bone_zaxes = []
         self.bone_relations = []
 
         self.unknown_data = {}

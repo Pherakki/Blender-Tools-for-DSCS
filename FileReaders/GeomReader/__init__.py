@@ -243,19 +243,13 @@ class BoneDataReader(BaseRW):
     def __init__(self, io_stream):
         super().__init__(io_stream)
 
-        self.unknown_0x00 = None
-        self.unknown_0x04 = None
-        self.unknown_0x08 = None
+        self.x_axis = None
         self.xpos = None
 
-        self.unknown_0x0C = None
-        self.unknown_0x10 = None
-        self.unknown_0x14 = None
+        self.y_axis = None
         self.ypos = None
 
-        self.unknown_0x1A = None
-        self.unknown_0x1E = None
-        self.unknown_0x22 = None
+        self.z_axis = None
         self.zpos = None
 
     def read(self):
@@ -267,17 +261,11 @@ class BoneDataReader(BaseRW):
     def rw_header(self, rw_operator):
         # (3D unit vector, value) * 3
         # 1st is principally in x, 2nd principally in y, 3rd principally in z...?
-        rw_operator('unknown_0x00', 'f')
-        rw_operator('unknown_0x04', 'f')
-        rw_operator('unknown_0x08', 'f')
+        rw_operator('x_axis', 'fff')
         rw_operator('xpos', 'f')
 
-        rw_operator('unknown_0x0C', 'f')
-        rw_operator('unknown_0x10', 'f')
-        rw_operator('unknown_0x14', 'f')
+        rw_operator('y_axis', 'fff')
         rw_operator('ypos', 'f')
 
-        rw_operator('unknown_0x1A', 'f')
-        rw_operator('unknown_0x1E', 'f')
-        rw_operator('unknown_0x22', 'f')
+        rw_operator('z_axis', 'f')
         rw_operator('zpos', 'f')
