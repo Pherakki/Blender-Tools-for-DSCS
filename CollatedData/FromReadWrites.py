@@ -70,7 +70,7 @@ def add_meshes(model_data, imported_geomdata):
         current_IF_mesh = model_data.meshes[-1]
         for bone_id in mesh.weighted_bone_idxs:
             current_IF_mesh.add_vertex_group(bone_id, [], [])
-            
+
         for i, vertex in enumerate(mesh.vertex_data):
             pos = vertex.get('Position')
             if len(pos) > 3:

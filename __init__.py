@@ -2,6 +2,7 @@ import bpy
 from .BlenderIO.Import import ImportDSCS
 from .BlenderIO.Export import ExportDSCS
 
+
 bl_info = {
         "name": "Digimon Story: Cyber Sleuth (.name)",
         "description": "Imports model files from Digimon Story: Cyber Sleuth (PC)",
