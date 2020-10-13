@@ -102,6 +102,7 @@ def make_geomreader(filepath, model_data):
             vgroup_idxs = sorted([vgroup.bone_idx for vgroup in mesh.vertex_groups])
             meshReader.bytes_per_vertex, meshReader.vertex_components, vertex_generators = calculate_vertex_properties(mesh.vertices, vgroup_idxs)
             meshReader.vertex_data = generate_vertex_data(mesh.vertices, vertex_generators)
+
             virtual_pos += meshReader.bytes_per_vertex*len(meshReader.vertex_data)
             meshReader.weighted_bone_data_start_ptr = virtual_pos
             meshReader.weighted_bone_idxs = vgroup_idxs
@@ -254,13 +255,13 @@ def calculate_vertex_properties(vertices, all_bones_used_by_vertices):
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'UnknownVertexUsage5': vtx.unknown_data['UnknownVertexUsage5']})
     if example_vertex.vertex_groups is not None:
-        num_grps = max([len(vtx.vertex_groups) for vtx in vertices])
-        vertex_components.append(VertexComponent([10, max((num_grps, 2)), 1, 20, bytes_per_vertex]))
+        num_grps = max(max([len(vtx.vertex_groups) for vtx in vertices]), 2)
+        vertex_components.append(VertexComponent([10, num_grps, 1, 20, bytes_per_vertex]))
         nominal_bytes = num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
-        vertex_generators.append(lambda vtx: {'WeightedBoneID': mk_extended_boneids(vtx, num_grps, all_bones_used_by_vertices)})
+        vertex_generators.append(lambda vtx: {'WeightedBoneID': mk_extended_boneids(vtx, num_grps, None)})
 
-        vertex_components.append(VertexComponent([11, max((num_grps, 2)), 11, 20, bytes_per_vertex]))
+        vertex_components.append(VertexComponent([11, num_grps, 11, 20, bytes_per_vertex]))
         nominal_bytes = 2*num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
         vertex_generators.append(lambda vtx: {'BoneWeight': mk_extended_boneweights(vtx, num_grps)})
@@ -281,7 +282,7 @@ def polys_to_triangles(polys):
 
 
 def mk_extended_boneids(vtx, num_grps, all_bones_used_by_vertices):
-    use_groups = [all_bones_used_by_vertices.index(grp)*3 for grp in vtx.vertex_groups]
+    use_groups = [grp*3 for grp in vtx.vertex_groups]
     if len(vtx.vertex_groups) < num_grps:
         use_groups.extend([0]*(num_grps-len(vtx.vertex_groups)))
     return use_groups

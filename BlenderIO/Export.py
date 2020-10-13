@@ -69,29 +69,31 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             for j, (vertex, bvertex) in enumerate(zip(mesh.vertices, bm.verts)):
                 # UV help from :
                 # https://blender.stackexchange.com/questions/49341/how-to-get-the-uv-corresponding-to-a-vertex-via-the-python-api
-                group_ids = [get_group(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups]
-                group_ids = None if len(group_ids) == 0 else group_ids
+                group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups]
+                group_bone_ids = None if len(group_bone_ids) == 0 else group_bone_ids
                 group_weights = [grp.weight for grp in vertex.groups]
                 group_weights = None if len(group_weights) == 0 else group_weights
 
                 md.add_vertex(list(vertex.co),
                               list(vertex.normal),
                               uv_from_vert_first(uv_layer, bvertex) if has_uvs else None,
-                              group_ids,
+                              [grp.group for grp in vertex.groups],
                               group_weights)
-                if group_ids is not None:
-                    for group_id, weight in zip(group_ids, group_weights):
-                        if group_id not in vgroup_verts:
-                            vgroup_verts[group_id] = []
-                            vgroup_wgts[group_id] = []
-                        vgroup_verts[group_id].append(j)
-                        vgroup_wgts[group_id].append(weight)
+                if group_bone_ids is not None:
+                    for group_bone_id, weight in zip(group_bone_ids, group_weights):
+                        if group_bone_id not in vgroup_verts:
+                            vgroup_verts[group_bone_id] = []
+                            vgroup_wgts[group_bone_id] = []
+                        vgroup_verts[group_bone_id].append(j)
+                        vgroup_wgts[group_bone_id].append(weight)
 
             for polygon in mesh.polygons:
                 md.add_polygon(list(polygon.vertices))
 
-            for bone_id in vgroup_verts:
-                md.add_vertex_group(bone_id, vgroup_verts[bone_id], vgroup_wgts)
+            for group in mesh_obj.vertex_groups:
+                bone_name = group.name
+                bone_id = model_data.skeleton.bone_names.index(bone_name)
+                md.add_vertex_group(bone_id, vgroup_verts[bone_id], vgroup_wgts[bone_id])
 
             # Do the material id later...
             md.material_id = mesh.materials[0]
@@ -192,7 +194,7 @@ def uv_from_vert_first(uv_layer, v):
     return [0., 1.]
 
 
-def get_group(mesh_obj, bone_names, grp):
+def get_bone_id(mesh_obj, bone_names, grp):
     group_idx = grp.group
     bone_name = mesh_obj.vertex_groups[group_idx].name
     bone_id = bone_names.index(bone_name)
