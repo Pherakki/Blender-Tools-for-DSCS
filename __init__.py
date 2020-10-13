@@ -14,7 +14,6 @@ bl_info = {
         "category": "Import-Export",
         }
 
-    
 def menu_func_import(self, context):
     self.layout.operator(ImportDSCS.bl_idname, text="DSCS Model (.name)")
 
