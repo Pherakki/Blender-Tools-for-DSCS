@@ -47,8 +47,8 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             child_name = model_data.skeleton.bone_names[child]
             if child_name in list_of_bones:
                 continue
-            child_pos = bone_pos[child]
 
+            child_pos = np.array(bone_pos[child])
             # Now fake some bone tails to make Blender happy
             grandchildren_positions = []
             for relation_2 in model_data.skeleton.bone_relations:
@@ -59,15 +59,18 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             if len(grandchildren_positions) > 0:
                 tail_pos = np.mean(grandchildren_positions, axis=0)
             elif parent == -1:
-                tail_pos = [item for item in child_pos]
+                tail_pos = np.array([item for item in child_pos])
                 tail_pos[2] += 0.05
             else:
                 # Get the vector from the parent to the child (i.e. the bone length), and just repeat it for the child
-                parent_pos = bone_pos[parent]
-                parent_bone_vec = np.array(child_pos) - np.array(parent_pos)
-                if np.sqrt(np.sum(parent_bone_vec**2)) < 0.0001:
-                    parent_bone_vec[2] += 0.05
-                tail_pos = np.array(child_pos) + parent_bone_vec
+                parent_pos = np.array(bone_pos[parent])
+                parent_bone_vec = child_pos - parent_pos
+                tail_pos = child_pos + parent_bone_vec
+
+            # Blender automatically deletes 0-D bones for some reason...
+            # So hack a 'tail' length in to keep it happy if the above does not generate a 1-D bone
+            if np.sqrt(np.sum((child_pos-tail_pos) ** 2)) < 0.0001:
+                tail_pos[2] += 0.05
 
             bone = model_armature.data.edit_bones.new(child_name)
 
