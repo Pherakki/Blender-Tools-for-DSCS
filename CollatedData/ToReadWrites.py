@@ -135,9 +135,8 @@ def make_geomreader(filepath, model_data):
         geomReader.materials_start_ptr = virtual_pos if len(model_data.materials) > 0 else 0
         for material, materialReader in zip(model_data.materials, geomReader.material_data):
             materialReader.unknown_0x00 = material.unknown_data['unknown_0x00']
-            materialReader.unknown_0x10 = material.unknown_data['unknown_0x10']
-            materialReader.unknown_0x11 = material.unknown_data['unknown_0x11']
-            materialReader.unknown_0x12 = material.unknown_data['unknown_0x12']
+            materialReader.unknown_0x02 = material.unknown_data['unknown_0x02']
+            materialReader.shader_hex = material.shader_hex
             materialReader.unknown_0x16 = material.unknown_data['unknown_0x16']
 
             for key in material.unknown_data:

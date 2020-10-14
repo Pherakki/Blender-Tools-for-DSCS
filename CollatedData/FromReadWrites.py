@@ -126,9 +126,8 @@ def add_materials(model_data, imported_namedata, imported_geomdata, filename):
 
         # Add unknown data
         model_data.materials[-1].unknown_data['unknown_0x00'] = material.unknown_0x00
-        model_data.materials[-1].unknown_data['unknown_0x10'] = material.unknown_0x10
-        model_data.materials[-1].unknown_data['unknown_0x11'] = material.unknown_0x11
-        model_data.materials[-1].unknown_data['unknown_0x12'] = material.unknown_0x12
+        model_data.materials[-1].unknown_data['unknown_0x02'] = material.unknown_0x00
+        model_data.materials[-1].shader_hex = material.shader_hex
         model_data.materials[-1].unknown_data['unknown_0x16'] = material.unknown_0x16
 
         for i, material_component in enumerate(material.material_components):

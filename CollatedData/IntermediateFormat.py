@@ -80,6 +80,7 @@ class MaterialData:
         self.texture_id = None
         self.rgba = None
         self.specular_coeff = None
+        self.shader_hex = None
 
         self.unknown_data = {}
 

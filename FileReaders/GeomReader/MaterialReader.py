@@ -30,15 +30,7 @@ class MaterialReader(BaseRW):
         # Header variables
         self.unknown_0x00 = None
         self.unknown_0x02 = None
-        self.unknown_0x04 = None
-        self.unknown_0x06 = None
-        self.unknown_0x08 = None
-        self.unknown_0x0A = None
-        self.unknown_0x0C = None
-        self.unknown_0x0E = None
-        self.unknown_0x10 = None
-        self.unknown_0x11 = None
-        self.unknown_0x12 = None
+        self.shader_hex = None
         self.num_material_components = None
         self.num_unknown_data = None
         self.unknown_0x16 = None
@@ -51,8 +43,10 @@ class MaterialReader(BaseRW):
 
     def read(self):
         self.read_write(self.read_buffer, 'read', self.read_raw, self.prepare_material_read)
+        self.interpret_material()
 
     def write(self):
+        self.reinterpret_material()
         self.read_write(self.write_buffer, 'write', self.write_raw, lambda: None)
 
     def read_write(self, rw_operator, rw_method_name, rw_operator_raw, preparation_operator):
@@ -62,20 +56,9 @@ class MaterialReader(BaseRW):
         self.rw_unknown_data(rw_method_name)
 
     def rw_header(self, rw_operator, rw_operator_raw):
-        # Changing 0x04 - 0x0E to random values results in no material drawn
-        # unknown_0x12 must be exactly correct - might be a data type or material type
-        # changing 0x16 to the other values seems to have no effect
-        rw_operator_raw('unknown_0x00', 16) #self.unpack('e')
-        #self.unknown_0x02 = self.unpack('e')
-        #self.unknown_0x04 = self.unpack('H')
-        #self.unknown_0x06 = self.unpack('H')
-        #self.unknown_0x08 = self.unpack('H')
-        #self.unknown_0x0A = self.unpack('H')
-        #self.unknown_0x0C = self.unpack('H'
-        #self.unknown_0x0E = self.unpack('H')  # These are all multiples of 4. Highly suggestive.
-        rw_operator('unknown_0x10', 'B')  # 0, except for one file, where it is 1
-        rw_operator('unknown_0x11', 'B')  # 0 or 128.
-        rw_operator('unknown_0x12', 'H')  # 0, 3, 4, 5, 6... possibly data type? No obvious pattern though...
+        rw_operator('unknown_0x00', 'H')
+        rw_operator('unknown_0x02', 'H')
+        rw_operator_raw('shader_hex', 16)
         rw_operator('num_material_components', 'B')  # Known
         rw_operator('num_unknown_data', 'B')  # Known
         rw_operator('unknown_0x16', 'H')  # 1, 3, or 5
@@ -93,6 +76,33 @@ class MaterialReader(BaseRW):
     def prepare_material_read(self):
         self.material_components = [MaterialComponent(self.bytestream) for _ in range(self.num_material_components)]
         self.unknown_data = [UnknownMaterialData(self.bytestream) for _ in range(self.num_unknown_data)]
+
+    def interpret_material(self):
+        self.shader_hex: bytes
+        shader_hex_pt_1 = self.shader_hex[0:4][::-1].hex()
+        shader_hex_pt_2 = self.shader_hex[4:8][::-1].hex()
+        shader_hex_pt_3 = self.shader_hex[8:12][::-1].hex()
+        shader_hex_pt_4 = self.shader_hex[12:16][::-1].hex()
+
+        self.shader_hex = '_'.join((shader_hex_pt_1, shader_hex_pt_2, shader_hex_pt_3, shader_hex_pt_4))
+
+    def reinterpret_material(self):
+        self.shader_hex: str
+        hex_parts = self.shader_hex.split('_')
+        shader_hex_pt_1 = bytes.fromhex(hex_parts[0])[::-1]
+        shader_hex_pt_2 = bytes.fromhex(hex_parts[1])[::-1]
+        shader_hex_pt_3 = bytes.fromhex(hex_parts[2])[::-1]
+        shader_hex_pt_4 = bytes.fromhex(hex_parts[3])[::-1]
+
+        self.shader_hex = b''.join((shader_hex_pt_1, shader_hex_pt_2, shader_hex_pt_3, shader_hex_pt_4))
+
+
+def byte_to_hexstring(byteval):
+    return '{:02d}'.format(int(hex(byteval)))
+
+
+def hexstring_to_byte(byteval):
+    return '{:02d}'.format(int(hex(byteval)))
 
 
 class MaterialComponent(BaseRW):

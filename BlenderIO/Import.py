@@ -116,9 +116,9 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             new_material = bpy.data.materials.new(name=IF_material.name)
             # Unknown data
             new_material['unknown_0x00'] = IF_material.unknown_data['unknown_0x00']
-            new_material['unknown_0x10'] = IF_material.unknown_data['unknown_0x10']
-            new_material['unknown_0x11'] = IF_material.unknown_data['unknown_0x11']
-            new_material['unknown_0x12'] = IF_material.unknown_data['unknown_0x12']
+            new_material['unknown_0x02'] = IF_material.unknown_data['unknown_0x02']
+            new_material['shader_hex'] = IF_material.shader_hex
+            new_material['shaders_folder'] = os.path.join(*os.path.split(filepath)[:-1], 'shaders')
             new_material['unknown_0x16'] = IF_material.unknown_data['unknown_0x16']
             new_material['temp_reference_textures'] = [tex.name for tex in model_data.textures]
             for key in IF_material.unknown_data:

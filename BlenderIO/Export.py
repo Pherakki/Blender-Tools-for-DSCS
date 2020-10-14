@@ -20,6 +20,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
     def export_file(self, context, filepath):
         model_data = IntermediateFormat()
+        export_folder = os.path.join(*os.path.split(filepath)[:-1])
+        export_shaders_folder = os.path.join(export_folder, 'shaders')
+        os.makedirs(export_shaders_folder, exist_ok=True)
 
         parent_obj = bpy.context.selected_objects[0]
         sel_obj = None
@@ -119,10 +122,15 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             node_tree = bmat.node_tree
             material.name = bmat.name
             material.unknown_data['unknown_0x00'] = bmat['unknown_0x00']
-            material.unknown_data['unknown_0x10'] = bmat['unknown_0x10']
-            material.unknown_data['unknown_0x11'] = bmat['unknown_0x11']
-            material.unknown_data['unknown_0x12'] = bmat['unknown_0x12']
+            material.unknown_data['unknown_0x02'] = bmat['unknown_0x02']
+            material.shader_hex = bmat['shader_hex']
             material.unknown_data['unknown_0x16'] = bmat['unknown_0x16']
+
+            for shader_filename in os.listdir(bmat['shaders_folder']):
+                if shader_filename[:35] == material.shader_hex:
+                    shutil.copy2(os.path.join(bmat['shaders_folder'], shader_filename),
+                                 os.path.join(export_shaders_folder, shader_filename))
+
             for key in bmat.keys():
                 cstring_1 = 'type_1_component_'
                 cstring_2 = 'type_2_component_'
