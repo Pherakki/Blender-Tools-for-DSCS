@@ -201,7 +201,7 @@ class UnknownMaterialData(BaseRW):
     possibly_types = {160: 'If',  # 516, then one of eight float values between 0 and 0.5..?
                       161: 'II',  # Always (1, 0)
                       162: 'II',  # (0, 768) or (770, 1)
-                      163: 'II',  # (32779, 0) or (32774, 0)
+                      163: 'BBI',  # (32779, 0) or (32774, 0)
                       164: 'II',  # Always (1, 0)
                       166: 'II',  # Always (0, 0)
                       167: 'II',  # Always (516, 0)
