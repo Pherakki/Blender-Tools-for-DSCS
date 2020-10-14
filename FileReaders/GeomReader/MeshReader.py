@@ -219,11 +219,11 @@ def validate_weighted_bone_id(component_data):
 class VertexComponent:
     vertex_types = {1: 'Position',  # 3 floats
                     2: 'Normal',  # 3 half-floats
-                    3: 'UnknownVertexUsage1',  # 4 half-floats, appears in chr, d, eff, npc, t, ui files # colour?
-                    4: 'UnknownVertexUsage2',  # 3 half-floats, appears in eff and ui files
+                    3: 'UnknownVertexUsage1',  # 4 half-floats, appears in chr, d, eff, npc, t, ui files # colour? # tangent?
+                    4: 'UnknownVertexUsage2',  # 3 half-floats, appears in eff and ui files # binormal?
                     5: 'UV',  # 2 half-floats
-                    6: 'UnknownVertexUsage3',  # 2 half-floats, appears in block, chr, d, e, eff, f, h, npc, scenario, t, ui files
-                    7: 'UnknownVertexUsage4',  # 2 half-floats, appears in chr, d, f, h, t
+                    6: 'UnknownVertexUsage3',  # 2 half-floats, appears in block, chr, d, e, eff, f, h, npc, scenario, t, ui files # uv2?
+                    7: 'UnknownVertexUsage4',  # 2 half-floats, appears in chr, d, f, h, t # uv3?
                     9: 'UnknownVertexUsage5',  # 4 half-floats, appears in block, blok, chr, d, e, eff, ev, eve, f, h, line, medal, mob, npc, scenario, t, ui, # colour?
                     10: 'WeightedBoneID',  # Variable number of bytes. This is 3X THE INDEX of a bone id in MeshReader.weighted_bone_idxs
                     11: 'BoneWeight'}  # Variable number of half-floats
