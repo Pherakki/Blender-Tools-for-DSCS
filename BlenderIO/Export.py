@@ -154,7 +154,10 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                         bmat_data[0] = bsdf_node.inputs['Specular'].default_value
                     material.unknown_data[key] = bmat_data
                 elif key[:len(cstring_2)] == cstring_2:
-                    material.unknown_data[key] = bmat[key]
+                    if key[:-2] not in material.unknown_data:
+                        material.unknown_data[key[:-2]] = []
+                    material.unknown_data[key[:-2]].append(bmat[key])
+
 
         # Now get the material ids after all used material have been parsed
         used_materials = [um[1] for um in used_materials]

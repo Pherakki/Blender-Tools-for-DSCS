@@ -124,7 +124,8 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                 if key[:len(cstring_1)] == cstring_1:
                     new_material[key] = IF_material.unknown_data[key]
                 elif key[:len(cstring_2)] == cstring_2:
-                    new_material[key] = IF_material.unknown_data[key]
+                    for i, elem in enumerate(IF_material.unknown_data[key]):
+                        new_material[f"{key}_{i}"] = elem
 
 
             new_material.use_nodes = True
