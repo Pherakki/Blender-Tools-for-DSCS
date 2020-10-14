@@ -18,7 +18,8 @@ This repository provides a work-in-progress addon for Blender 2.8 that can (to s
 ## Export Usage
 1. Once you are done editing, pack files into the blend by ensuring File > External Data > Automatically pack into .blend is checked before saving the file. **The textures are saved as temporary files so they will be deleted when you exit Blender unless you do this!**
 2. If you have saved the file as a .blend, click File > External Data > Unpack all into files to extract any textures you may want to edit outside Blender.
-3. To export, select any part of the model in object mode and navigate to File > Export > Export DSCS.
+3. Required shaders should be copied into your export folder.
+4. To export, select any part of the model in object mode and navigate to File > Export > Export DSCS.
 
 ## Installing your edited models
 1. Currently, only model replacement is available. Give your files the same name as those they are intended to replace (e.g. to replace the male main character in Cyber Sleuth, name your files pc001.name, pc001.skel, pc001.geom).
@@ -29,8 +30,7 @@ This repository provides a work-in-progress addon for Blender 2.8 that can (to s
 4. **You *might* also have some success using [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) to do this automatically.**
 
 ## Potential fixes for common "bugs"
-1. Some materials fail to show up in-game. **This is not a `Blender Tools for DSCS` Bug. You can demonstrate this by moving the vanilla files for pc002 into the DSDBA archive.** You may be able to fix this by locating the offending material in a Blender 'Properties' window, scrolling down to the material's 'Custom Properties', and changing 'unknown_0x11' to 0. If it is already 0, this method will not work.
-2. If your mesh has a few highly distorted polygons that converge at the centre of your current room, ensure that none of your meshes have empty or unnecessary vertex groups. Delete any the are not needed.
+1 If your mesh has a few highly distorted polygons that converge at the centre of your current room, ensure that none of your meshes have empty or unnecessary vertex groups. Delete any the are not needed.
 
 ## Some Known Bugs and Limitations
 1. **Currently you can only use, mix, and edit models that are ripped from the game using `Blender Tools for DSCS`.** Adding custom meshes and materials will not work, because the ones loaded from the game files contain unknown and undecoded data that will not be present in any new meshes or materials initialised in Blender. Editing meshes and transferring meshes between models *should* be fine, but there will certainly be some issues somewhere at this early stage..!
