@@ -12,8 +12,9 @@ This repository provides a work-in-progress addon for Blender 2.8 that can (to s
 ## Import Usage
 1. The model files are split into name, skel, and geom files. Currently, these must all be in the same directory in order for the import to be successful.
 2. Textures are expected to be located in a directory named 'images' in the same directory as the name, skel, and geom files.
-3. Open Blender, navigate to File > Import > Import DSCS and open the appropriate name, skel, or geom file (all three will currently be simultaneously imported).
-4. If you point the import function towards the unpacked game files, all the files will be already in a location understandable by the import script.
+3. Shaders are expected to be located in a directory named 'shaders' in the same directory as the name, skel, and geom files.
+4. Open Blender, navigate to File > Import > Import DSCS and open the appropriate name, skel, or geom file (all three will currently be simultaneously imported).
+5. If you point the import function towards the unpacked game files, all the files will be already in a location understandable by the import script.
 
 ## Export Usage
 1. Once you are done editing, pack files into the blend by ensuring File > External Data > Automatically pack into .blend is checked before saving the file. **The textures are saved as temporary files so they will be deleted when you exit Blender unless you do this!**
