@@ -87,13 +87,15 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                         vgroup_verts[group_bone_id].append(j)
                         vgroup_wgts[group_bone_id].append(weight)
 
-            for polygon in mesh.polygons:
-                md.add_polygon(list(polygon.vertices))
+            for i, polygon in enumerate(mesh.polygons):
+                polyverts = list(polygon.vertices)
+                assert len(polyverts) == 3, f"Polygon {i} is not a triangle."
+                md.add_polygon(polyverts)
 
             for group in mesh_obj.vertex_groups:
                 bone_name = group.name
                 bone_id = model_data.skeleton.bone_names.index(bone_name)
-                md.add_vertex_group(bone_id, vgroup_verts[bone_id], vgroup_wgts[bone_id])
+                md.add_vertex_group(bone_id, vgroup_verts.get(bone_id, []), vgroup_wgts.get(bone_id, []))
 
             # Do the material id later...
             md.material_id = mesh.materials[0]
