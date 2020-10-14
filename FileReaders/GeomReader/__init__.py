@@ -245,10 +245,8 @@ class BoneDataReader(BaseRW):
 
         self.x_axis = None
         self.xpos = None
-
         self.y_axis = None
         self.ypos = None
-
         self.z_axis = None
         self.zpos = None
 
@@ -267,5 +265,5 @@ class BoneDataReader(BaseRW):
         rw_operator('y_axis', 'fff')
         rw_operator('ypos', 'f')
 
-        rw_operator('z_axis', 'f')
+        rw_operator('z_axis', 'fff')
         rw_operator('zpos', 'f')
