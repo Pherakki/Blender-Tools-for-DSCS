@@ -25,9 +25,10 @@ This repository provides a work-in-progress addon for Blender 2.8 that can (to s
 1. Currently, only model replacement is available. Give your files the same name as those they are intended to replace (e.g. to replace the male main character in Cyber Sleuth, name your files pc001.name, pc001.skel, pc001.geom).
 2. Put the files into the DSDBA archive, which you need to extract with [DSCSTools](https://github.com/SydMontague/DSCSTools).
 3. Put any replaced textures in DSDBA/images
-4. Re-pack the DSDBA archive with [DSCSTools](https://github.com/SydMontague/DSCSTools).
-5. Overwrite you game's DSDBA archive you your edited one (as always, make a backup!).
-4. **You *might* also have some success using [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) to do this automatically.**
+4. Put any exported shaders in DSDBA/shaders
+5. Re-pack the DSDBA archive with [DSCSTools](https://github.com/SydMontague/DSCSTools).
+6. Overwrite you game's DSDBA archive you your edited one (as always, make a backup!).
+7. **You *might* also have some success using [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) to do this automatically.**
 
 ## Potential fixes for common "bugs"
 1 If your mesh has a few highly distorted polygons that converge at the centre of your current room, ensure that none of your meshes have empty or unnecessary vertex groups. Delete any the are not needed.
