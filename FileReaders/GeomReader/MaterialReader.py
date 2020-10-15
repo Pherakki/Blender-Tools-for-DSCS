@@ -56,8 +56,8 @@ class MaterialReader(BaseRW):
         self.rw_unknown_data(rw_method_name)
 
     def rw_header(self, rw_operator, rw_operator_raw):
-        rw_operator('unknown_0x00', 'H')
-        rw_operator('unknown_0x02', 'H')
+        rw_operator('unknown_0x00', 'e')
+        rw_operator('unknown_0x02', 'e')
         rw_operator_raw('shader_hex', 16)
         rw_operator('num_material_components', 'B')  # Known
         rw_operator('num_unknown_data', 'B')  # Known
