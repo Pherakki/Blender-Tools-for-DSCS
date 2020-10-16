@@ -53,8 +53,8 @@ class MeshReader(BaseRW):
 
         self.num_polygon_idxs = None
         self.unknown_0x44 = None
-        self.unknown_0x50 = None
-        self.unknown_0x5C = None
+        self.mesh_centre = None
+        self.bounding_box_lengths = None
 
         # Data holders
         self.vertex_data = None
@@ -105,8 +105,8 @@ class MeshReader(BaseRW):
         rw_operator('num_polygon_idxs', 'I')
         # Experiments have been inconclusive. Modifying these seems to have no effect on the mesh...
         rw_operator('unknown_0x44', 'fff')  # All over the place
-        rw_operator('unknown_0x50', 'fff')  # All over the place
-        rw_operator('unknown_0x5C', 'fff')  # All over the place
+        rw_operator('mesh_centre', 'fff')  # All over the place
+        rw_operator('bounding_box_lengths', 'fff')  # All over the place
 
         self.polygon_data_type = MeshReader.polygon_type_defs[self.polygon_numeric_data_type]
 

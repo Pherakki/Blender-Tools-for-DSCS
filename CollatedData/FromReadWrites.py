@@ -102,8 +102,10 @@ def add_meshes(model_data, imported_geomdata):
         current_IF_mesh.unknown_data['unknown_0x34'] = mesh.unknown_0x34
         current_IF_mesh.unknown_data['unknown_0x36'] = mesh.unknown_0x36
         current_IF_mesh.unknown_data['unknown_0x44'] = mesh.unknown_0x44
-        current_IF_mesh.unknown_data['unknown_0x50'] = mesh.unknown_0x50
-        current_IF_mesh.unknown_data['unknown_0x5C'] = mesh.unknown_0x5C
+
+        # Calculable
+        #current_IF_mesh.unknown_data['mesh_centre'] = mesh.mesh_centre
+        #current_IF_mesh.unknown_data['bounding_box_lengths'] = mesh.bounding_box_lengths
 
         model_data.meshes[-1] = current_IF_mesh
     model_data.unknown_data['geom_unknown_0x14'] = imported_geomdata.unknown_0x14

@@ -210,8 +210,8 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             mesh_object['unknown_0x34'] = IF_mesh.unknown_data['unknown_0x34']
             mesh_object['unknown_0x36'] = IF_mesh.unknown_data['unknown_0x36']
             mesh_object['unknown_0x44'] = IF_mesh.unknown_data['unknown_0x44']
-            mesh_object['unknown_0x50'] = IF_mesh.unknown_data['unknown_0x50']
-            mesh_object['unknown_0x5C'] = IF_mesh.unknown_data['unknown_0x5C']
+            #  mesh_object['unknown_0x50'] = IF_mesh.unknown_data['unknown_0x50']
+            #  mesh_object['unknown_0x5C'] = IF_mesh.unknown_data['unknown_0x5C']
 
             bpy.data.objects[meshobj_name].select_set(True)
             bpy.data.objects[armature_name].select_set(True)

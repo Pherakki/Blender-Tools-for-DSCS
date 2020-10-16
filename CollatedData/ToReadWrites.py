@@ -3,6 +3,7 @@ from ..FileReaders.SkelReader import SkelReader
 from ..FileReaders.GeomReader import GeomReader
 from ..FileReaders.GeomReader.MeshReader import VertexComponent
 from ..FileReaders.GeomReader.MaterialReader import MaterialComponent, UnknownMaterialData
+import numpy as np
 
 
 def generate_files_from_intermediate_format(filepath, model_data):
@@ -129,8 +130,13 @@ def make_geomreader(filepath, model_data):
 
             meshReader.num_polygon_idxs = len(meshReader.polygon_data)
             meshReader.unknown_0x44 = mesh.unknown_data['unknown_0x44']
-            meshReader.unknown_0x50 = mesh.unknown_data['unknown_0x50']
-            meshReader.unknown_0x5C = mesh.unknown_data['unknown_0x5C']
+
+            vertices = np.array([v.position for v in mesh.vertices])
+            minvs = np.min(vertices, axis=0)
+            maxvs = np.max(vertices, axis=0)
+
+            meshReader.mesh_centre = (maxvs + minvs)/2
+            meshReader.bounding_box_lengths = (maxvs - minvs)/2
 
         geomReader.materials_start_ptr = virtual_pos if len(model_data.materials) > 0 else 0
         for material, materialReader in zip(model_data.materials, geomReader.material_data):
