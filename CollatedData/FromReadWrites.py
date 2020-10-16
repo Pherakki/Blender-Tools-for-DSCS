@@ -130,7 +130,8 @@ def add_materials(model_data, imported_namedata, imported_geomdata, filename):
         model_data.materials[-1].unknown_data['unknown_0x00'] = material.unknown_0x00
         model_data.materials[-1].unknown_data['unknown_0x02'] = material.unknown_0x00
         model_data.materials[-1].shader_hex = material.shader_hex
-        model_data.materials[-1].unknown_data['unknown_0x16'] = material.unknown_0x16
+        # Might be calculable?!
+        #  model_data.materials[-1].unknown_data['unknown_0x16'] = material.unknown_0x16
 
         for i, material_component in enumerate(material.material_components):
             # Appears to mark the block as identifying a texture ID

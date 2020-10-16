@@ -145,7 +145,14 @@ def make_geomreader(filepath, model_data):
             materialReader.unknown_0x00 = material.unknown_data['unknown_0x00']
             materialReader.unknown_0x02 = material.unknown_data['unknown_0x02']
             materialReader.shader_hex = material.shader_hex
-            materialReader.unknown_0x16 = material.unknown_data['unknown_0x16']
+            # No idea if this is anything close to correct...
+            if materialReader.shader_hex[20:22] == '08':
+                materialReader.unknown_0x16 = 5
+            elif materialReader.shader_hex[12:14] == '08' or materialReader.shader_hex[12:14] == '88':
+                materialReader.unknown_0x16 = 3
+            else:
+                materialReader.unknown_0x16 = 1
+            #  materialReader.unknown_0x16 = material.unknown_data['unknown_0x16']
 
             for key in material.unknown_data:
                 if 'type_1_component_' in key:

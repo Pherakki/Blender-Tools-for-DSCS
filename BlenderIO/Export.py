@@ -124,7 +124,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             material.unknown_data['unknown_0x00'] = bmat['unknown_0x00']
             material.unknown_data['unknown_0x02'] = bmat['unknown_0x02']
             material.shader_hex = bmat['shader_hex']
-            material.unknown_data['unknown_0x16'] = bmat['unknown_0x16']
+            #  material.unknown_data['unknown_0x16'] = bmat['unknown_0x16']
 
             for shader_filename in os.listdir(bmat['shaders_folder']):
                 if shader_filename[:35] == material.shader_hex:
