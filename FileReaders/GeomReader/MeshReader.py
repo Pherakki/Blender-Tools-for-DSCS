@@ -52,7 +52,9 @@ class MeshReader(BaseRW):
         self.num_vertices = None
 
         self.num_polygon_idxs = None
-        self.unknown_0x44 = None
+        self.padding_0x44 = None
+        self.padding_0x48 = None
+        self.unknown_0x5A = None
         self.mesh_centre = None
         self.bounding_box_lengths = None
 
