@@ -103,10 +103,13 @@ class MeshReader(BaseRW):
         rw_operator('num_vertices', 'I')
 
         rw_operator('num_polygon_idxs', 'I')
-        # Experiments have been inconclusive. Modifying these seems to have no effect on the mesh...
-        rw_operator('unknown_0x44', 'fff')  # All over the place
-        rw_operator('mesh_centre', 'fff')  # All over the place
-        rw_operator('bounding_box_lengths', 'fff')  # All over the place
+        rw_operator('padding_0x44', 'I')
+        self.assert_is_zero('padding_0x44')
+        rw_operator('padding_0x48', 'I')
+        self.assert_is_zero('padding_0x48')
+        rw_operator('unknown_0x5A', 'f')  # May be related to the two below?!
+        rw_operator('mesh_centre', 'fff')
+        rw_operator('bounding_box_lengths', 'fff')
 
         self.polygon_data_type = MeshReader.polygon_type_defs[self.polygon_numeric_data_type]
 

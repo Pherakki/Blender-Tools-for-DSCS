@@ -209,7 +209,7 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             mesh_object['unknown_0x31'] = IF_mesh.unknown_data['unknown_0x31']
             mesh_object['unknown_0x34'] = IF_mesh.unknown_data['unknown_0x34']
             mesh_object['unknown_0x36'] = IF_mesh.unknown_data['unknown_0x36']
-            mesh_object['unknown_0x44'] = IF_mesh.unknown_data['unknown_0x44']
+            mesh_object['unknown_0x5A'] = IF_mesh.unknown_data['unknown_0x5A']
             #  mesh_object['unknown_0x50'] = IF_mesh.unknown_data['unknown_0x50']
             #  mesh_object['unknown_0x5C'] = IF_mesh.unknown_data['unknown_0x5C']
 

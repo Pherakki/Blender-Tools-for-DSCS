@@ -108,7 +108,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             md.unknown_data['unknown_0x31'] = mesh_obj['unknown_0x31']
             md.unknown_data['unknown_0x34'] = mesh_obj['unknown_0x34']
             md.unknown_data['unknown_0x36'] = mesh_obj['unknown_0x36']
-            md.unknown_data['unknown_0x44'] = mesh_obj['unknown_0x44']
+            md.unknown_data['unknown_0x5A'] = mesh_obj['unknown_0x5A']
             #  md.unknown_data['unknown_0x50'] = mesh_obj['unknown_0x50']
             #  md.unknown_data['unknown_0x5C'] = mesh_obj['unknown_0x5C']
             bpy.ops.object.mode_set(mode='OBJECT')

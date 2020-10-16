@@ -129,7 +129,9 @@ def make_geomreader(filepath, model_data):
             meshReader.num_vertices = len(meshReader.vertex_data)
 
             meshReader.num_polygon_idxs = len(meshReader.polygon_data)
-            meshReader.unknown_0x44 = mesh.unknown_data['unknown_0x44']
+            meshReader.padding_0x44 = 0
+            meshReader.padding_0x48 = 0
+            meshReader.unknown_0x5A = mesh.unknown_data['unknown_0x5A']
 
             vertices = np.array([v.position for v in mesh.vertices])
             minvs = np.min(vertices, axis=0)

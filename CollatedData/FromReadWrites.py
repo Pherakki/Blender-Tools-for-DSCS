@@ -101,7 +101,7 @@ def add_meshes(model_data, imported_geomdata):
         current_IF_mesh.unknown_data['unknown_0x31'] = mesh.unknown_0x31
         current_IF_mesh.unknown_data['unknown_0x34'] = mesh.unknown_0x34
         current_IF_mesh.unknown_data['unknown_0x36'] = mesh.unknown_0x36
-        current_IF_mesh.unknown_data['unknown_0x44'] = mesh.unknown_0x44
+        current_IF_mesh.unknown_data['unknown_0x5A'] = mesh.unknown_0x5A
 
         # Calculable
         #current_IF_mesh.unknown_data['mesh_centre'] = mesh.mesh_centre
