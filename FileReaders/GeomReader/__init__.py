@@ -107,8 +107,8 @@ class GeomReader(BaseRW):
         rw_operator('num_bones', 'I')
 
         rw_operator('num_bytes_in_texture_names_section', 'I')
-        rw_operator('unknown_0x14', 'fff')  # Unknown: huge variation
-        rw_operator('unknown_0x20', 'fff')  # Unknown: huge variation
+        rw_operator('geom_centre', 'fff')
+        rw_operator('geom_bounding_box_lengths', 'fff')
         rw_operator('padding_0x2C', 'I')  # Always 0
         self.assert_is_zero('padding_0x2C')
 

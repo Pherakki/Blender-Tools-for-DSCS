@@ -229,8 +229,6 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             bpy.data.objects[armature_name].select_set(False)
 
         # Top-level unknown data
-        parent_obj['geom_unknown_0x14'] = model_data.unknown_data['geom_unknown_0x14']
-        parent_obj['geom_unknown_0x20'] = model_data.unknown_data['geom_unknown_0x20']
         parent_obj['unknown_cam_data_1'] = model_data.unknown_data['unknown_cam_data_1']
         parent_obj['unknown_cam_data_2'] = model_data.unknown_data['unknown_cam_data_2']
         parent_obj['unknown_footer_data'] = model_data.unknown_data['unknown_footer_data']

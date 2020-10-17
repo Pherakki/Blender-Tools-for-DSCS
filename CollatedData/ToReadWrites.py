@@ -89,8 +89,13 @@ def make_geomreader(filepath, model_data):
         geomReader.num_bones = len(model_data.skeleton.bone_positions)
 
         geomReader.num_bytes_in_texture_names_section = 32*len(model_data.textures)
-        geomReader.unknown_0x14 = model_data.unknown_data['geom_unknown_0x14']
-        geomReader.unknown_0x20 = model_data.unknown_data['geom_unknown_0x20']
+
+        vertices = np.array([v.position for mesh in model_data.meshes for v in mesh.vertices])
+        minvs = np.min(vertices, axis=0)
+        maxvs = np.max(vertices, axis=0)
+
+        geomReader.geom_centre = (maxvs + minvs) / 2
+        geomReader.geom_bounding_box_lengths = (maxvs - minvs) / 2
         geomReader.padding_0x2C = 0
 
         geomReader.prepare_read_op()
