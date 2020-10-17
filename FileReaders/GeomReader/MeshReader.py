@@ -44,7 +44,7 @@ class MeshReader(BaseRW):
         self.bytes_per_vertex = None
         self.always_5123 = None
 
-        self.unknown_0x30 = None
+        self.max_vertex_groups_per_vertex = None
         self.unknown_0x31 = None
         self.polygon_numeric_data_type = None
         self.unknown_0x34 = None
@@ -95,12 +95,15 @@ class MeshReader(BaseRW):
         # Same with unknown_0x34
         # Setting unknown_0x31 to 4 makes pc002 mesh disappear, setting to 5 seems to remap the bone weights.
         # Might describe how to build the polygons?
-        rw_operator('unknown_0x30', 'B')  # takes values 0, 1, 2, 3, 4
+        rw_operator('max_vertex_groups_per_vertex', 'B')  # takes values 0, 1, 2, 3, 4
         rw_operator('unknown_0x31', 'B')  # ditto # values 1, 4, 5
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
         # Definitely not a float... could be B, H, or e.
-        rw_operator('unknown_0x34', 'H')  # All over the place - I have no idea.
-        rw_operator('unknown_0x36', 'H')  # All over the place - I have no idea.
+        rw_operator('unknown_0x34', 'B')  # All over the place - I have no idea.
+        rw_operator('unknown_0x35', 'B')  # All over the place - I have no idea.
+        rw_operator('unknown_0x36', 'B')  # All over the place - I have no idea.
+        rw_operator('unknown_0x37', 'B')  # All over the place - I have no idea.
+
         rw_operator('material_id', 'I')
         rw_operator('num_vertices', 'I')
 
@@ -148,12 +151,12 @@ class MeshReader(BaseRW):
         rw_operator('vertex_components', 'HHBBH'*self.num_vertex_components)
 
     def interpret_vertices(self):
-        add_implied_vertex_group = ('WeightedBoneID' not in [vc.vertex_type for vc in self.vertex_components]) and (len(self.weighted_bone_idxs) == 1)
+        add_implied_vertex_group = ('WeightedBoneID' not in [vc.vertex_type for vc in self.vertex_components]) and (self.max_vertex_groups_per_vertex == 1)
         # Since bools are 0 or 1, this is a concise way of implementing the converse implication operator
         # I.e. is False if *and only if* "cond_1 == False cond_2 == True" implemented without if/else statements
         # Fun fact: ** seems to be marginally faster, but both have highly variable performance so you'd only notice it
         # with a colossal amount of calls..!
-        assert (add_implied_vertex_group) <= (len(self.weighted_bone_idxs) <= 1)
+        # assert (add_implied_vertex_group) <= (len(self.weighted_bone_idxs) <= 1)
         for i, raw_vertex_data in enumerate(self.vertex_data):
             interpreted_vertex = {}
             bounds = [vertex_component.data_start_ptr for vertex_component in self.vertex_components]

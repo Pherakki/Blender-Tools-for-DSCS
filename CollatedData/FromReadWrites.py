@@ -97,7 +97,6 @@ def add_meshes(model_data, imported_geomdata):
         current_IF_mesh.material_id = mesh.material_id
 
         # Add unknown data
-        current_IF_mesh.unknown_data['unknown_0x30'] = mesh.unknown_0x30
         current_IF_mesh.unknown_data['unknown_0x31'] = mesh.unknown_0x31
         current_IF_mesh.unknown_data['unknown_0x34'] = mesh.unknown_0x34
         current_IF_mesh.unknown_data['unknown_0x36'] = mesh.unknown_0x36
@@ -108,8 +107,6 @@ def add_meshes(model_data, imported_geomdata):
         #current_IF_mesh.unknown_data['bounding_box_lengths'] = mesh.bounding_box_lengths
 
         model_data.meshes[-1] = current_IF_mesh
-    model_data.unknown_data['geom_unknown_0x14'] = imported_geomdata.unknown_0x14
-    model_data.unknown_data['geom_unknown_0x20'] = imported_geomdata.unknown_0x20
 
     model_data.unknown_data['unknown_cam_data_1'] = imported_geomdata.unknown_cam_data_1
     model_data.unknown_data['unknown_cam_data_2'] = imported_geomdata.unknown_cam_data_2

@@ -125,7 +125,7 @@ def make_geomreader(filepath, model_data):
             meshReader.num_vertex_components = len(meshReader.vertex_components)
             meshReader.always_5123 = 5123
 
-            meshReader.unknown_0x30 = mesh.unknown_data['unknown_0x30']
+            meshReader.max_vertex_groups_per_vertex = max([len(vtx.vertex_groups) for vtx in mesh.vertices])
             meshReader.unknown_0x31 = mesh.unknown_data['unknown_0x31']
             meshReader.polygon_numeric_data_type = 4  # Can only write to triangles atm
             meshReader.unknown_0x34 = mesh.unknown_data['unknown_0x34']
