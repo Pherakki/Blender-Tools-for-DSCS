@@ -205,7 +205,6 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                     vertex_group.add([vert_idx], vert_weight, 'REPLACE')
 
             # Add unknown data
-            mesh_object['unknown_0x30'] = IF_mesh.unknown_data['unknown_0x30']
             mesh_object['unknown_0x31'] = IF_mesh.unknown_data['unknown_0x31']
             mesh_object['unknown_0x34'] = IF_mesh.unknown_data['unknown_0x34']
             mesh_object['unknown_0x36'] = IF_mesh.unknown_data['unknown_0x36']

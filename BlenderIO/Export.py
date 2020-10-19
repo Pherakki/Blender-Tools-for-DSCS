@@ -104,7 +104,6 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             md.material_id = mesh.materials[0]
             used_materials.add((i, mesh.materials[0]))
             # Add unknown data
-            md.unknown_data['unknown_0x30'] = mesh_obj['unknown_0x30']
             md.unknown_data['unknown_0x31'] = mesh_obj['unknown_0x31']
             md.unknown_data['unknown_0x34'] = mesh_obj['unknown_0x34']
             md.unknown_data['unknown_0x36'] = mesh_obj['unknown_0x36']
