@@ -125,7 +125,7 @@ def make_geomreader(filepath, model_data):
             meshReader.num_vertex_components = len(meshReader.vertex_components)
             meshReader.always_5123 = 5123
 
-            meshReader.max_vertex_groups_per_vertex = max([len(vtx.vertex_groups) for vtx in mesh.vertices])
+            meshReader.max_vertex_groups_per_vertex = max([len(vtx.vertex_groups) if vtx.vertex_groups is not None else 0 for vtx in mesh.vertices])
             meshReader.unknown_0x31 = mesh.unknown_data['unknown_0x31']
             meshReader.polygon_numeric_data_type = 4  # Can only write to triangles atm
             meshReader.unknown_0x34 = mesh.unknown_data['unknown_0x34']
@@ -153,7 +153,7 @@ def make_geomreader(filepath, model_data):
             # No idea if this is anything close to correct...
             if materialReader.shader_hex[20:22] == '08':
                 materialReader.unknown_0x16 = 5
-            elif materialReader.shader_hex[12:14] == '08' or materialReader.shader_hex[12:14] == '88':
+            elif materialReader.shader_hex[11:13] == '08' or materialReader.shader_hex[11:13] == '88':
                 materialReader.unknown_0x16 = 3
             else:
                 materialReader.unknown_0x16 = 1
@@ -249,14 +249,6 @@ def calculate_vertex_properties(vertices, all_bones_used_by_vertices):
         vertex_components.append(VertexComponent([2, 3, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'Normal': vtx.normal})
-    if 'UnknownVertexUsage1' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([3, 4, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 8
-        vertex_generators.append(lambda vtx: {'UnknownVertexUsage1': vtx.unknown_data['UnknownVertexUsage1']})
-    if 'UnknownVertexUsage2' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([4, 3, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 8
-        vertex_generators.append(lambda vtx: {'UnknownVertexUsage2': vtx.unknown_data['UnknownVertexUsage2']})
     if example_vertex.UV is not None:
         vertex_components.append(VertexComponent([5, 2, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 4
@@ -273,6 +265,14 @@ def calculate_vertex_properties(vertices, all_bones_used_by_vertices):
         vertex_components.append(VertexComponent([9, 4, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'UnknownVertexUsage5': vtx.unknown_data['UnknownVertexUsage5']})
+    if 'UnknownVertexUsage1' in example_vertex.unknown_data:
+        vertex_components.append(VertexComponent([3, 4, 11, 20, bytes_per_vertex]))
+        bytes_per_vertex += 8
+        vertex_generators.append(lambda vtx: {'UnknownVertexUsage1': vtx.unknown_data['UnknownVertexUsage1']})
+    if 'UnknownVertexUsage2' in example_vertex.unknown_data:
+        vertex_components.append(VertexComponent([4, 3, 11, 20, bytes_per_vertex]))
+        bytes_per_vertex += 8
+        vertex_generators.append(lambda vtx: {'UnknownVertexUsage2': vtx.unknown_data['UnknownVertexUsage2']})
     if example_vertex.vertex_groups is not None:
         num_grps = max(max([len(vtx.vertex_groups) for vtx in vertices]), 2)
         vertex_components.append(VertexComponent([10, num_grps, 1, 20, bytes_per_vertex]))

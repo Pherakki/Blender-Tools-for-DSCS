@@ -71,6 +71,7 @@ def add_meshes(model_data, imported_geomdata):
         for bone_id in mesh.weighted_bone_idxs:
             current_IF_mesh.add_vertex_group(bone_id, [], [])
 
+        uk_keys = ['UnknownVertexUsage1', 'UnknownVertexUsage2', 'UnknownVertexUsage3', 'UnknownVertexUsage4', 'UnknownVertexUsage5']
         for i, vertex in enumerate(mesh.vertex_data):
             pos = vertex.get('Position')
             if len(pos) > 3:
@@ -79,6 +80,7 @@ def add_meshes(model_data, imported_geomdata):
             uv = vertex.get('UV')
             vgroups = vertex.get('WeightedBoneID')
             weights = vertex.get('BoneWeight')
+
             if uv is not None:
                 uv = (uv[0], 1 - uv[-1])
             if 'WeightedBoneID' in vertex:
@@ -90,6 +92,9 @@ def add_meshes(model_data, imported_geomdata):
                     current_IF_mesh.vertex_groups[vertex_group_idx].vertex_indices.append(i)
                     current_IF_mesh.vertex_groups[vertex_group_idx].weights.append(weight)
             current_IF_mesh.add_vertex(pos, norm, uv, vgroups, weights)
+            for key in uk_keys:
+                if key in vertex:
+                    current_IF_mesh.vertices[-1].unknown_data[key] = vertex[key]
 
         triangles = triangle_converters[mesh.polygon_data_type](mesh.polygon_data)
         for tri in triangles:
@@ -125,7 +130,7 @@ def add_materials(model_data, imported_namedata, imported_geomdata, filename):
 
         # Add unknown data
         model_data.materials[-1].unknown_data['unknown_0x00'] = material.unknown_0x00
-        model_data.materials[-1].unknown_data['unknown_0x02'] = material.unknown_0x00
+        model_data.materials[-1].unknown_data['unknown_0x02'] = material.unknown_0x02
         model_data.materials[-1].shader_hex = material.shader_hex
         # Might be calculable?!
         #  model_data.materials[-1].unknown_data['unknown_0x16'] = material.unknown_0x16

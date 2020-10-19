@@ -91,18 +91,15 @@ class MeshReader(BaseRW):
         # Unknown0x34, Unknown0x36 the same for meshes 0-6: these are individual body parts with a single material each
         # They are also the same for meshes 7-8: these seem to be 'outline' meshes.
         # 0x30, 0x31 look like switches of some variety...
-        # Changing unknown_0x30 doesn't seem to affect the mesh...
         # Same with unknown_0x34
         # Setting unknown_0x31 to 4 makes pc002 mesh disappear, setting to 5 seems to remap the bone weights.
         # Might describe how to build the polygons?
         rw_operator('max_vertex_groups_per_vertex', 'B')  # takes values 0, 1, 2, 3, 4
-        rw_operator('unknown_0x31', 'B')  # ditto # values 1, 4, 5
+        rw_operator('unknown_0x31', 'B')  # values 1, 4, 5: 4 means pos and normal only, diff between 1 nad 5 is what?? 1 doesn't have unk vt 2...
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
         # Definitely not a float... could be B, H, or e.
-        rw_operator('unknown_0x34', 'B')  # All over the place - I have no idea.
-        rw_operator('unknown_0x35', 'B')  # All over the place - I have no idea.
-        rw_operator('unknown_0x36', 'B')  # All over the place - I have no idea.
-        rw_operator('unknown_0x37', 'B')  # All over the place - I have no idea.
+        rw_operator('unknown_0x34', 'H')  # All over the place - I have no idea.
+        rw_operator('unknown_0x36', 'H')  # All over the place - I have no idea.
 
         rw_operator('material_id', 'I')
         rw_operator('num_vertices', 'I')
