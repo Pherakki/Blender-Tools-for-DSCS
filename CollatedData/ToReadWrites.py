@@ -107,7 +107,11 @@ def make_geomreader(filepath, model_data):
 
             vgroup_idxs = sorted([vgroup.bone_idx for vgroup in mesh.vertex_groups])
             meshReader.bytes_per_vertex, meshReader.vertex_components, vertex_generators = calculate_vertex_properties(mesh.vertices, vgroup_idxs)
-            meshReader.vertex_data = generate_vertex_data(mesh.vertices, vertex_generators)
+            try:
+                meshReader.vertex_data = generate_vertex_data(mesh.vertices, vertex_generators)
+            except MissingWeightsError as mwe:
+                print("Bad mesh is mesh", model_data.meshes.index(mesh))
+                raise mwe
 
             virtual_pos += meshReader.bytes_per_vertex*len(meshReader.vertex_data)
             meshReader.weighted_bone_data_start_ptr = virtual_pos
@@ -308,7 +312,15 @@ def mk_extended_boneids(vtx, num_grps, all_bones_used_by_vertices):
 
 
 def mk_extended_boneweights(vtx, num_grps):
-    use_groups = [grp for grp in vtx.vertex_group_weights]
+    try:
+        use_groups = [grp for grp in vtx.vertex_group_weights]
+    except TypeError as te:
+        print("bad vertex is at", vtx.position, "with vertex groups", vtx.vertex_groups)
+        raise MissingWeightsError
     if len(vtx.vertex_group_weights) < num_grps:
         use_groups.extend([0.]*(num_grps-len(vtx.vertex_group_weights)))
     return use_groups
+
+
+class MissingWeightsError(TypeError):
+    pass

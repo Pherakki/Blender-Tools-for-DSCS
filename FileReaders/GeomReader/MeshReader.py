@@ -148,7 +148,7 @@ class MeshReader(BaseRW):
         rw_operator('vertex_components', 'HHBBH'*self.num_vertex_components)
 
     def interpret_vertices(self):
-        add_implied_vertex_group = ('WeightedBoneID' not in [vc.vertex_type for vc in self.vertex_components]) and (self.max_vertex_groups_per_vertex == 1)
+        add_implied_vertex_group = ('WeightedBoneID' not in [vc.vertex_type for vc in self.vertex_components]) and len(self.weighted_bone_idxs)
         # Since bools are 0 or 1, this is a concise way of implementing the converse implication operator
         # I.e. is False if *and only if* "cond_1 == False cond_2 == True" implemented without if/else statements
         # Fun fact: ** seems to be marginally faster, but both have highly variable performance so you'd only notice it
@@ -176,7 +176,7 @@ class MeshReader(BaseRW):
                     assert unused_data == self.pad_byte * len(unused_data), f"Presumed junk data is non-zero: {unused_data}"
             if add_implied_vertex_group:
                 interpreted_vertex['WeightedBoneID'] = [0]
-                interpreted_vertex['BoneWeight'] = [1.]
+                interpreted_vertex['BoneWeight'] = [1]
             self.vertex_data[i] = interpreted_vertex
 
     def reinterpret_vertices(self):
