@@ -63,7 +63,6 @@ class MaterialReader(BaseRW):
         rw_operator('num_unknown_data', 'B')  # Known
         rw_operator('unknown_0x16', 'H')  # 1, 3, or 5... has a 1:1 correspondence with the shader hex
 
-
     def rw_material_components(self, rw_method_name):
         for component_reader in self.material_components:
             getattr(component_reader, rw_method_name)()
