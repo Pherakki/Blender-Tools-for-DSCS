@@ -37,6 +37,7 @@ This repository provides a work-in-progress addon for Blender 2.8 that can (to s
 ## Some Known Bugs and Limitations
 1. **Currently you can only use, mix, and edit models that are ripped from the game using `Blender Tools for DSCS`.** Adding custom meshes and materials will not work, because the ones loaded from the game files contain unknown and undecoded data that will not be present in any new meshes or materials initialised in Blender. Editing meshes and transferring meshes between models *should* be fine, but there will certainly be some issues somewhere at this early stage..!
 2. **Blender appears to re-calculate vertex normals incorrectly for these models.** If you edit meshes, you may find that they appear blocky. I'm looking into a writing a custom calculator to alleviate this issue.
+   * Blender runs into trouble because a lot of DSCS models are contain *non-manifold data*. Much of this can be fixed by 'merging vertices by distance'. However, this messes with the UV export, which needs to be fixed before this is a viable solution...
 3. Splitting meshes can lead to incorrectly displayed polygons - cause unclear.
 4. Material names are not yet those found within the files.
 5. There are five types of data attached to vertices not currently understood.
