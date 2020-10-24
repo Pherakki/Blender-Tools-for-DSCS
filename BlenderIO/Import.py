@@ -192,10 +192,14 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             active_material = bpy.data.materials[material_name]
             bpy.data.objects[f"{filename}_{i}"].active_material = active_material
 
-            uv_layer = mesh.uv_layers.new(name="UVMap", do_init=True)
-            for face in mesh.polygons:
-                for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
-                    if IF_mesh.vertices[vert_idx].UV is not None:
+            all_verts_have_no_uvs = all(vert.UV is None for vert in IF_mesh.vertices)
+            at_least_one_vert_has_uvs = any(vert.UV is not None for vert in IF_mesh.vertices)
+            if all_verts_have_no_uvs:
+                assert not at_least_one_vert_has_uvs, f"Some vertices in mesh {i} have UVs and some don't!"
+            else:
+                uv_layer = mesh.uv_layers.new(name="UVMap", do_init=True)
+                for face in mesh.polygons:
+                    for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
                         uv_layer.data[loop_idx].uv = IF_mesh.vertices[vert_idx].UV
 
             for IF_vertex_group in IF_mesh.vertex_groups:
