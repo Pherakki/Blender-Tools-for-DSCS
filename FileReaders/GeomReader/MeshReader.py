@@ -48,6 +48,7 @@ class MeshReader(BaseRW):
         self.unknown_0x31 = None
         self.polygon_numeric_data_type = None
         self.unknown_0x34 = None
+        self.unknown_0x36 = None
         self.material_id = None
         self.num_vertices = None
 
