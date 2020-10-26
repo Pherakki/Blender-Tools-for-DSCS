@@ -293,7 +293,7 @@ def split_verts_with_multiple_uvs(bm, uv_layer, backup_normals):
     for vert_to_split in verts_to_split:
         bm.verts.ensure_lookup_table()
         normal = backup_normals[vert_to_split]
-        del backup_normals[vert_to_split]
+        #  del backup_normals[vert_to_split]
 
         bpy.ops.mesh.select_mode(type="VERT")
         bpy.ops.mesh.select_all(action='DESELECT')
@@ -316,7 +316,7 @@ def split_verts_with_multiple_uvs(bm, uv_layer, backup_normals):
 
         new_verts = [vert for vert in bm.verts if vert not in old_verts]
 
-        # Just make sure nothing has done horribly wrong... (and also sneakily assign the old normals)
+        # Just make sure nothing has done horribly wrong...
         for bvert in new_verts:
             assert len(set(get_associated_uvs(uv_layer, bvert))) == 1
-            backup_normals[bvert] = normal
+            #  backup_normals[bvert] = normal
