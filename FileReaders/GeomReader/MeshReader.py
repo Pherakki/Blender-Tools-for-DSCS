@@ -55,7 +55,7 @@ class MeshReader(BaseRW):
         self.num_polygon_idxs = None
         self.padding_0x44 = None
         self.padding_0x48 = None
-        self.unknown_0x5A = None
+        self.unknown_0x4C = None
         self.mesh_centre = None
         self.bounding_box_lengths = None
 
@@ -110,7 +110,7 @@ class MeshReader(BaseRW):
         self.assert_is_zero('padding_0x44')
         rw_operator('padding_0x48', 'I')
         self.assert_is_zero('padding_0x48')
-        rw_operator('unknown_0x5A', 'f')  # May be related to the two below?!
+        rw_operator('unknown_0x4C', 'f')  # May be related to the two below?!
         rw_operator('mesh_centre', 'fff')
         rw_operator('bounding_box_lengths', 'fff')
 
