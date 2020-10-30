@@ -40,8 +40,8 @@ class GeomReader(BaseRW):
         self.num_bones = None
 
         self.num_bytes_in_texture_names_section = None
-        self.unknown_0x14 = None
-        self.unknown_0x20 = None
+        self.geom_centre = None
+        self.geom_bounding_box_lengths = None
         self.padding_0x2C = None
 
         self.meshes_start_ptr = None
@@ -80,8 +80,8 @@ class GeomReader(BaseRW):
         self.rw_meshes(rw_operator, rw_method_name)
         self.rw_material_data(rw_method_name)
         self.rw_texture_names(rw_operator_raw)
-        self.rw_unknown_cam_data_1(rw_operator)
-        self.rw_unknown_cam_data_2(rw_operator)
+        self.rw_unknown_cam_data_1(rw_method_name)
+        self.rw_unknown_cam_data_2(rw_method_name)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
         self.rw_bone_data(rw_method_name)
         self.rw_footer_data(rw_operator_raw)
@@ -168,7 +168,7 @@ class GeomReader(BaseRW):
 
         rw_operator_raw('texture_data', self.num_bytes_in_texture_names_section)
 
-    def rw_unknown_cam_data_1(self, rw_operator):
+    def rw_unknown_cam_data_1(self, rw_method_name):
         if self.is_ndef(self.unknown_cam_data_1_start_ptr, 'num_unknown_cam_data_1'):
             return
         self.assert_file_pointer_now_at(self.unknown_cam_data_1_start_ptr)
@@ -176,26 +176,21 @@ class GeomReader(BaseRW):
         # clearly some structural alignment between (14, 15) and (16, 17)
         # 15 looks like a count, as does 17... everything past this is 0
         # 64 bytes per unknown_cam_data_1
-        rw_operator('unknown_cam_data_1', 'hhhhhhhhffffHHHHHHHHHHHHHHHH'*self.num_unknown_cam_data_1)
-        #for _ in range(self.num_unknown_cam_data_1):
-        #    read_bytes = self.bytestream.read(64)
-        #    data = read_bytes  # struct.unpack('hhhhhhhhffffHHHHHHHHHHHHHHHH', read_bytes)
-        #    # clearly some structural alignment between (14, 15) and (16, 17)
-        #    # 15 looks like a count, as does 17... everything past this is 0
-        #    self.unknown_cam_data_1.append(data)
+        for unk_cam_data_1_reader in self.unknown_cam_data_1:
+            getattr(unk_cam_data_1_reader, rw_method_name)()
 
-    def rw_unknown_cam_data_2(self, rw_operator):
+    def rw_unknown_cam_data_2(self, rw_method_name):
         if self.is_ndef(self.unknown_cam_data_2_start_ptr, 'num_unknown_cam_data_2'):
             return
         self.assert_file_pointer_now_at(self.unknown_cam_data_2_start_ptr)
 
-        # 48 bytes per unknown_cam_data_2
-        rw_operator('unknown_cam_data_2', 'HHHHHHHHhhhhHHHHHHHHHHHH'*self.num_unknown_cam_data_2)
-        #for _ in range(self.num_unknown_cam_data_2):
-        #    read_bytes = self.bytestream.read(48)
-        #    data = read_bytes  # struct.unpack('HHHHHHHHhhhhHHHHHHHHHHHH', read_bytes)
         #    # 12 is 0 or 1, everything after is 0
         #    self.unknown_cam_data_2.append(data)
+        # 48 bytes per unknown_cam_data_2
+        for unk_cam_data_2_reader in self.unknown_cam_data_2:
+            getattr(unk_cam_data_2_reader, rw_method_name)()
+
+
 
     def rw_bone_data(self, rw_method_name):
         if self.is_ndef(self.bone_data_start_ptr, 'num_bones'):
@@ -220,6 +215,8 @@ class GeomReader(BaseRW):
         self.meshes = [MeshReader(self.bytestream) for _ in range(self.num_meshes)]
         self.material_data = [MaterialReader(self.bytestream) for _ in range(self.num_materials)]
         self.bone_data = [BoneDataReader(self.bytestream) for _ in range(self.num_bones)]
+        self.unknown_cam_data_1 = [UnknownCamData1Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_1)]
+        self.unknown_cam_data_2 = [UnknownCamData2Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_2)]
 
     def interpret_geom_data(self):
         texture_data = self.chunk_list(self.texture_data, 32)
@@ -267,3 +264,117 @@ class BoneDataReader(BaseRW):
 
         rw_operator('z_axis', 'fff')
         rw_operator('zpos', 'f')
+
+
+class UnknownCamData1Reader(BaseRW):
+    def __init__(self, io_stream):
+        super().__init__(io_stream)
+
+        self.unknown_0x00 = None
+        self.unknown_0x02 = None
+        self.unknown_0x04 = None
+        self.unknown_0x06 = None
+        self.unknown_0x08 = None
+        self.unknown_0x0A = None
+        self.unknown_0x0C = None
+        self.unknown_0x0E = None
+
+        self.unknown_0x10 = None
+        self.unknown_0x14 = None
+        self.unknown_0x18 = None
+        self.unknown_0x1C = None
+
+        self.unknown_0x20 = None
+        self.unknown_0x22 = None
+        self.unknown_0x24 = None
+        self.unknown_0x26 = None
+        self.unknown_0x28 = None
+        self.unknown_0x2A = None
+
+        self.padding_0x2C = None
+        self.padding_0x30 = None
+        self.padding_0x38 = None
+
+    def read(self):
+        self.rw_header(self.read_buffer)
+
+    def write(self):
+        self.rw_header(self.write_buffer)
+
+    def rw_header(self, rw_operator):
+        rw_operator('unknown_0x00', 'h')
+        rw_operator('unknown_0x02', 'h')
+        rw_operator('unknown_0x04', 'h')
+        rw_operator('unknown_0x06', 'h')
+        rw_operator('unknown_0x08', 'h')
+        rw_operator('unknown_0x0A', 'e')
+        rw_operator('unknown_0x0C', 'h')
+        rw_operator('unknown_0x0E', 'e')
+
+        rw_operator('unknown_0x10', 'f')
+        rw_operator('unknown_0x14', 'f')
+        rw_operator('unknown_0x18', 'f')
+        rw_operator('unknown_0x1C', 'f')
+
+        rw_operator('unknown_0x20', 'H')
+        rw_operator('unknown_0x22', 'H')
+        rw_operator('unknown_0x24', 'H')
+        rw_operator('unknown_0x26', 'H')
+        rw_operator('unknown_0x28', 'H')
+        rw_operator('unknown_0x2A', 'H')
+
+        rw_operator('padding_0x2C', 'I')
+        rw_operator('padding_0x30', 'Q')
+        rw_operator('padding_0x38', 'Q')
+
+
+class UnknownCamData2Reader(BaseRW):
+    def __init__(self, io_stream):
+        super().__init__(io_stream)
+
+        self.unknown_0x00 = None
+        self.unknown_0x02 = None
+        self.unknown_0x04 = None
+        self.unknown_0x06 = None
+        self.unknown_0x08 = None
+        self.unknown_0x0A = None
+        self.unknown_0x0C = None
+        self.unknown_0x0E = None
+
+        self.unknown_0x10 = None
+        self.unknown_0x12 = None
+        self.unknown_0x14 = None
+        self.unknown_0x16 = None
+        self.unknown_0x18 = None
+        self.padding_0x1A = None
+        self.padding_0x1C = None
+
+        self.padding_0x20 = None
+        self.padding_0x28 = None
+
+    def read(self):
+        self.rw_header(self.read_buffer)
+
+    def write(self):
+        self.rw_header(self.write_buffer)
+
+    def rw_header(self, rw_operator):
+        rw_operator('unknown_0x00', 'H')
+        rw_operator('unknown_0x02', 'H')
+        rw_operator('unknown_0x04', 'H')
+        rw_operator('unknown_0x06', 'e')  # approx. 2 - 3
+        rw_operator('unknown_0x08', 'H')
+        rw_operator('unknown_0x0A', 'e')  # approx. 2
+        rw_operator('unknown_0x0C', 'H')
+        rw_operator('unknown_0x0E', 'e')  # approx. 1
+
+        rw_operator('unknown_0x10', 'h')
+        rw_operator('unknown_0x12', 'e')  # approx. 4 - 7
+        rw_operator('unknown_0x14', 'h')
+        rw_operator('unknown_0x16', 'e')  # approx. 2 - 3
+        rw_operator('unknown_0x18', 'h')  # 0 or 1
+        rw_operator('padding_0x1A', 'H')
+        rw_operator('padding_0x1C', 'I')
+
+        rw_operator('padding_0x20', 'Q')
+        rw_operator('padding_0x28', 'Q')
