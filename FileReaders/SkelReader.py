@@ -50,9 +50,8 @@ class SkelReader(BaseRW):
 
         # These hold the data stored within the file
         self.unknown_parent_child_data = None
-        self.bone_rotation_quaternions_xyz = None
+        self.bone_data = None
         self.parent_bones = None
-        self.parent_bones_junk = None
         self.unknown_data_1 = None
         self.unknown_data_2 = None
         self.unknown_data_3 = None
@@ -138,9 +137,13 @@ class SkelReader(BaseRW):
         rw_operator('unknown_parent_child_data', 'h'*int16s_to_read)
 
     def rw_bone_data(self, rw_operator):
+        # Rot quaternion, pos, scale?
         self.assert_file_pointer_now_at(self.abs_ptr_bone_defs)
         floats_to_read = self.num_bones * 12  # * 4
-        rw_operator('bone_rotation_quaternions_xyz', 'f'*floats_to_read)
+        rw_operator('bone_data', 'f'*floats_to_read)
+        # No idea if these should always be 1, but they are 1 for every file...
+        assert self.bone_data[7] == 1.
+        assert self.bone_data[11] == 1.
 
     def rw_parent_bones(self, rw_operator):
         self.assert_file_pointer_now_at(self.abs_ptr_parent_bones)
@@ -148,7 +151,7 @@ class SkelReader(BaseRW):
 
     def rw_unknown_data_1(self, rw_operator):
         #self.assert_file_pointer_now_at()
-        rw_operator('unknown_data_1', 'B'*self.unknown_0x0C)
+        rw_operator('unknown_data_1', 'B'*self.unknown_0x0C, force_1d=True)
 
     def rw_unknown_data_2(self, rw_operator_raw):
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_2)
@@ -169,7 +172,7 @@ class SkelReader(BaseRW):
 
     def interpret_skel_data(self):
         self.unknown_parent_child_data = self.chunk_list(self.unknown_parent_child_data, 8)
-        self.bone_rotation_quaternions_xyz = self.chunk_list(self.chunk_list(self.bone_rotation_quaternions_xyz, 4), 3)
+        self.bone_data = self.chunk_list(self.chunk_list(self.bone_data, 4), 3)
         self.parent_bones = [(i, idx) for i, idx in enumerate(self.parent_bones)]
         # Basic error checking - make sure no bone idx exceeds the known number of bones
         if len(self.parent_bones) != 0:
@@ -180,5 +183,5 @@ class SkelReader(BaseRW):
 
     def reinterpret_skel_data(self):
         self.unknown_parent_child_data = self.flatten_list(self.unknown_parent_child_data)
-        self.bone_rotation_quaternions_xyz = self.flatten_list(self.flatten_list(self.bone_rotation_quaternions_xyz))
+        self.bone_data = self.flatten_list(self.flatten_list(self.bone_data))
         self.parent_bones = [parent for child, parent in self.parent_bones]
