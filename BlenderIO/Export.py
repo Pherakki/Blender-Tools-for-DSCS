@@ -75,10 +75,12 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             vgroup_verts = {}
             vgroup_wgts = {}
             uv_layer = bm.loops.layers.uv.active
-            has_uvs = not all([uv_from_vert_first(uv_layer, bvertex) == [0., 1.] for bvertex in bm.verts])
+            if uv_layer is not None:
+                has_uvs = not all([uv_from_vert_first(uv_layer, bvertex) == [0., 1.] for bvertex in bm.verts])
+            else:
+                has_uvs = False
 
             if has_uvs:
-                print("Splitting verts")
                 split_verts_with_multiple_uvs(bm, uv_layer, backup_normals)
 
             backup_normals = [(bvert.index, backup_normals[bvert]) for bvert in backup_normals]
@@ -289,7 +291,6 @@ def split_verts_with_multiple_uvs(bm, uv_layer, backup_normals):
         if len(set(uvs)) > 1:
             verts_to_split.append(bvertex)
 
-    print("verts to split:", verts_to_split)
     for vert_to_split in verts_to_split:
         bm.verts.ensure_lookup_table()
         normal = backup_normals[vert_to_split]
