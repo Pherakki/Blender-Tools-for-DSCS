@@ -95,12 +95,7 @@ class MaterialReader(BaseRW):
         self.shader_hex = b''.join((shader_hex_pt_1, shader_hex_pt_2, shader_hex_pt_3, shader_hex_pt_4))
 
 
-def byte_to_hexstring(byteval):
-    return '{:02d}'.format(int(hex(byteval)))
 
-
-def hexstring_to_byte(byteval):
-    return '{:02d}'.format(int(hex(byteval)))
 
 
 class MaterialComponent(BaseRW):
