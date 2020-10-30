@@ -1,0 +1,27 @@
+These files are split into eight main sections:
+        1. The header, which gives file pointers to split the file into its major sections, plus counts of what appears
+           in each section.
+        2. A section that describes the geometry of each mesh.
+        3. A section that describes each defined material.
+        4. A section of file names for texture images.
+        5. A section of unknown data that appears in CAM-type files, amongst others.
+        6. Another section of unknown data that appears in CAM-type files, amongst others.
+        7. A section of bone data which includes bone positions.
+        8. A section of unknown data that appears to be largely filler.
+
+The first section is handled by the MeshReader class.
+The second section is handled by the MaterialReader class.
+The third section is a series of 32-byte null-terminated strings of texture filenames.
+The fourth section is handled by the UnknownCamData1Reader class.
+The fifth section is handled by the UnknownCamData2Reader class.
+The sixth section is handled by the BoneReader class.
+The seventh section is confusing and documented in UnknownFooterData.
+
+The header appears to be fully decoded; however it is possible that for some file the
+geom_centre and geom_bounding_box_lengths are not accurate or indeed all 0s.
+This needs to be signed off, and if necessary, fixed before the class is marked complete.
+
+Incomplete sections:
+ - unknown_cam_data_1
+ - unknown_cam_data_2
+ - unknown_footer_data

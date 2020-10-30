@@ -1,0 +1,42 @@
+These files are split into five main sections:
+        1. The header, which gives file pointers to split the file into its major sections, plus counts of what appears
+           in each section.
+        2. A section that contains raw byte data for each vertex.
+        3. A section that contains bone indices which have vertices assigned to them by this mesh.
+        4. A section that defines the polygons.
+        5. A section that states how to construct meaningful information out of the raw vertex bytes.
+
+There are eight unknown bytes still in the header:
+    - 0x31 - 0x32: a uint16 that takes the values 1, 4, 5. Appears to describe which vertex components are 
+                   avaiable; 4 corresponds to only Position and Normal, but the distinction between 1 and 5 
+                   is unclear.
+    - 0x34 - 0x37: Highly variable with no obvious data type, might refer to something in an external table.
+    - 0x4C - 0x50: Appears to be a float. Correlated with the bounding box lengths, always smaller than the
+                   norm of the lengths interpreted as a vector.
+
+In addition, max_vertex_groups_per_vertex needs verifying; and mesh_centre and bounding_box_lengths are only 
+sometimes correct for unknown reasons.
+
+The section on vertices contains a number of bytes per vertex as defined in the header. What this data means is described
+by the fourth and final section.
+
+The second section lists all the vertex groups of the mesh, by listing bone indices.
+
+The third section contains a string of vertex indices that describes the polygons.
+
+The final section describes how to interpret the vertex data.
+There are 10 different types of data that can be attached to vertices:
+    - Position
+    - Normal vector
+    - Unknown 1
+    - Unknown 2
+    - UV coordinates
+    - Unknown 3
+    - Unknown 4
+    - Unknown 5
+    - Vertex group
+    - Vertex weight
+
+The position sometimes contains 3 floats, and sometimes contains 4. The purpose of the fourth is totally unclear.
+Unknown 3 appears to be used for defining the UVs of animated textures: unverified.
+Unknown 5 appears to be vertex colours: unverified.
