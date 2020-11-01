@@ -101,7 +101,7 @@ class MaterialReader(BaseRW):
 class MaterialComponent(BaseRW):
     component_types = {
                         #      Name       numfloats
-                        50: ('TextureID', 0),  # idx 0 is texture id, rest are...?
+                        50: ('DiffuseTextureID', 0),  # idx 0 is texture id, rest are...?
                         51: ('Colour', 4),  # RBGA? RBG at least seems to be correct, not sure about the last float
                         53: ('NormalMapTextureID', 0),
                         54: ('unknown_component_type', 1),
@@ -117,23 +117,23 @@ class MaterialComponent(BaseRW):
                         65: ('unknown_component_type', 1),  # Only appears in chr435, chr912
                         66: ('unknown_component_type', 1),  # Only appears in chr435, chr912
                         67: ('unknown_component_type', 0),
-                        68: ('unknown_component_type', 0),
+                        68: ('unknown_component_type', 0),  # UV2 texture? Always appears with 71.
                         69: ('unknown_component_type', 0),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
                         70: ('unknown_component_type', 1),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
-                        71: ('unknown_component_type', 1),
+                        71: ('UV2_Alpha?', 1),  # Float sets the alpha
                         72: ('ToonTextureID?', 0),  # idx 0 is texture id, rest are...?
                         75: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
                         76: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
                         77: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
                         79: ('unknown_component_type', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
                         80: ('unknown_component_type', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
-                        84: ('unknown_component_type', 1),
-                        85: ('unknown_component_type', 2),
-                        88: ('unknown_component_type', 2),
+                        84: ('unknown_component_type', 1),  # Jitter effect: Granularity?
+                        85: ('unknown_component_type', 2),  # Jitter effect: Unknown, Unknown
+                        88: ('unknown_component_type', 2),  # Jitter effect: Horiz. scroll speed, vert. jitter speed
                         91: ('unknown_component_type', 2),
-                        94: ('EnableUVManipulation?', 2),  # Allows the material to change UV coordinates? Appears so with pc002!
-                        97: ('unknown_component_type', 2),
-                        100: ('unknown_component_type', 1),
+                        94: ('EnableUVManipulation?', 2),  # Allows the material to change UV coordinates? Appears so with pc002, lucemon sm, control of UV change not obvious
+                        97: ('MeramonAnimatedUVs', 2),  # Uv, causes a mirage-like waving of the texture in slot 2
+                        100: ('unknown_component_type', 1),  # Jitter effect: jitter amplitude
                         113: ('unknown_component_type', 1),
                         114: ('unknown_component_type', 1),
                         116: ('unknown_component_type', 2),
