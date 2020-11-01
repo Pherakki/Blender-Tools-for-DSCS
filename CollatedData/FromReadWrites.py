@@ -71,7 +71,7 @@ def add_meshes(model_data, imported_geomdata):
         for bone_id in mesh.weighted_bone_idxs:
             current_IF_mesh.add_vertex_group(bone_id, [], [])
 
-        uk_keys = ['UnknownVertexUsage1', 'UnknownVertexUsage2', 'UnknownVertexUsage3', 'UnknownVertexUsage4', 'UnknownVertexUsage5']
+        uk_keys = ['UnknownVertexUsage1', 'UnknownVertexUsage2', 'UV2', 'UnknownVertexUsage4', 'UnknownVertexUsage5']
         for i, vertex in enumerate(mesh.vertex_data):
             pos = vertex.get('Position')
             if len(pos) > 3:
@@ -105,7 +105,7 @@ def add_meshes(model_data, imported_geomdata):
         current_IF_mesh.unknown_data['unknown_0x31'] = mesh.unknown_0x31
         current_IF_mesh.unknown_data['unknown_0x34'] = mesh.unknown_0x34
         current_IF_mesh.unknown_data['unknown_0x36'] = mesh.unknown_0x36
-        current_IF_mesh.unknown_data['unknown_0x5A'] = mesh.unknown_0x4C
+        current_IF_mesh.unknown_data['unknown_0x4C'] = mesh.unknown_0x4C
 
         # Calculable
         #current_IF_mesh.unknown_data['mesh_centre'] = mesh.mesh_centre

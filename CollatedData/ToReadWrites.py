@@ -140,7 +140,7 @@ def make_geomreader(filepath, model_data):
             meshReader.num_polygon_idxs = len(meshReader.polygon_data)
             meshReader.padding_0x44 = 0
             meshReader.padding_0x48 = 0
-            meshReader.unknown_0x4C = mesh.unknown_data['unknown_0x5A']
+            meshReader.unknown_0x4C = mesh.unknown_data['unknown_0x4C']
 
             vertices = np.array([v.position for v in mesh.vertices])
             minvs = np.min(vertices, axis=0)
@@ -257,10 +257,10 @@ def calculate_vertex_properties(vertices, all_bones_used_by_vertices):
         vertex_components.append(VertexComponent([5, 2, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 4
         vertex_generators.append(lambda vtx: {'UV': (vtx.UV[0], 1 - vtx.UV[-1]) if vtx.UV is not None else vtx.UV})
-    if 'UnknownVertexUsage3' in example_vertex.unknown_data:
+    if 'UV2' in example_vertex.unknown_data:
         vertex_components.append(VertexComponent([6, 2, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 4
-        vertex_generators.append(lambda vtx: {'UnknownVertexUsage3': vtx.unknown_data['UnknownVertexUsage3']})
+        vertex_generators.append(lambda vtx: {'UV2': vtx.unknown_data['UV2']})
     if 'UnknownVertexUsage4' in example_vertex.unknown_data:
         vertex_components.append(VertexComponent([7, 2, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 4

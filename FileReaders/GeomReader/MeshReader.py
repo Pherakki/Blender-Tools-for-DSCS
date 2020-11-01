@@ -226,9 +226,9 @@ class VertexComponent:
     vertex_types = {1: 'Position',  # 3 floats
                     2: 'Normal',  # 3 half-floats
                     3: 'UnknownVertexUsage1',  # 4 half-floats, appears in chr, d, eff, npc, t, ui files # colour? # tangent?
-                    4: 'UnknownVertexUsage2',  # 3 half-floats, appears in eff and ui files # binormal?
+                    4: 'UnknownVertexUsage2',  # 3 half-floats, appears in eff and ui files # binormal? has something to do with lighting.
                     5: 'UV',  # 2 half-floats
-                    6: 'UnknownVertexUsage3',  # 2 half-floats, appears in block, chr, d, e, eff, f, h, npc, scenario, t, ui files # uv2?
+                    6: 'UV2',  # 2 half-floats
                     7: 'UnknownVertexUsage4',  # 2 half-floats, appears in chr, d, f, h, t # uv3?
                     9: 'UnknownVertexUsage5',  # 4 half-floats, appears in block, blok, chr, d, e, eff, ev, eve, f, h, line, medal, mob, npc, scenario, t, ui, # colour?
                     10: 'WeightedBoneID',  # Variable number of bytes. This is 3X THE INDEX of a bone id in MeshReader.weighted_bone_idxs
@@ -239,7 +239,7 @@ class VertexComponent:
                     'UnknownVertexUsage1': 3,  # 4 half-floats, appears in chr, d, eff, npc, t, ui files # colour?
                     'UnknownVertexUsage2': 4,  # 3 half-floats, appears in eff and ui files
                     'UV': 5,  # 2 half-floats
-                    'UnknownVertexUsage3': 6,  # 2 half-floats, appears in block, chr, d, e, eff, f, h, npc, scenario, t, ui files
+                    'UV2': 6,  # 2 half-floats
                     'UnknownVertexUsage4': 7,  # 2 half-floats, appears in chr, d, f, h, t
                     'UnknownVertexUsage5': 9,  # 4 half-floats, appears in block, blok, chr, d, e, eff, ev, eve, f, h, line, medal, mob, npc, scenario, t, ui, # colour?
                     'WeightedBoneID': 10,  # Variable number of bytes. This is 3X THE INDEX of a bone id in MeshReader.weighted_bone_idxs
