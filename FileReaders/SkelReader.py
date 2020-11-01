@@ -1,6 +1,5 @@
 from .BaseRW import BaseRW
 
-
 class SkelReader(BaseRW):
     """
     A class to read skel files. These files are split into eight main sections:
@@ -142,9 +141,7 @@ class SkelReader(BaseRW):
         self.assert_file_pointer_now_at(self.abs_ptr_bone_defs)
         floats_to_read = self.num_bones * 12  # * 4
         rw_operator('bone_data', 'f'*floats_to_read)
-        # No idea if these should always be 1, but they are 1 for every file...
-        assert self.bone_data[7] == 1.
-        assert self.bone_data[11] == 1.
+
 
     def rw_parent_bones(self, rw_operator):
         self.assert_file_pointer_now_at(self.abs_ptr_parent_bones)
@@ -181,6 +178,12 @@ class SkelReader(BaseRW):
         else:
             max_idx = -1
         assert max_idx == self.num_bones - 1, f'{max_idx}, {self.num_bones - 1}'
+        
+        # final elem of 'pos' and 'scale' always 1 - these are nominally 4-vectors,
+        # so the final elem is presumably either unused or part of an affine transform
+        for i, bone_set in enumerate(self.bone_data):
+            assert bone_set[1][-1] == 1., bone_set
+            assert bone_set[2][-1] == 1., bone_set
 
     def reinterpret_skel_data(self):
         self.unknown_parent_child_data = self.flatten_list(self.unknown_parent_child_data)
