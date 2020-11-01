@@ -129,10 +129,10 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             md.material_id = mesh.materials[0]
             used_materials.add((i, mesh.materials[0]))
             # Add unknown data
-            md.unknown_data['unknown_0x31'] = mesh_obj['unknown_0x31']
-            md.unknown_data['unknown_0x34'] = mesh_obj['unknown_0x34']
-            md.unknown_data['unknown_0x36'] = mesh_obj['unknown_0x36']
-            md.unknown_data['unknown_0x4C'] = mesh_obj['unknown_0x4C']
+            md.unknown_data['unknown_0x31'] = mesh_obj.get('unknown_0x31', 1)
+            md.unknown_data['unknown_0x34'] = mesh_obj.get('unknown_0x34', 0)
+            md.unknown_data['unknown_0x36'] = mesh_obj.get('unknown_0x36', 0)
+            md.unknown_data['unknown_0x4C'] = mesh_obj.get('unknown_0x4C', 0)
             #  md.unknown_data['unknown_0x50'] = mesh_obj['unknown_0x50']
             #  md.unknown_data['unknown_0x5C'] = mesh_obj['unknown_0x5C']
 
@@ -150,9 +150,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             material = model_data.new_material()
             node_tree = bmat.node_tree
             material.name = bmat.name
-            material.unknown_data['unknown_0x00'] = bmat['unknown_0x00']
-            material.unknown_data['unknown_0x02'] = bmat['unknown_0x02']
-            material.shader_hex = bmat['shader_hex']
+            material.unknown_data['unknown_0x00'] = bmat.get('unknown_0x00', 0)
+            material.unknown_data['unknown_0x02'] = bmat.get('unknown_0x02', 0)
+            material.shader_hex = bmat.get('shader_hex', '088100c1_00880111_00000000_00058000')
             #  material.unknown_data['unknown_0x16'] = bmat['unknown_0x16']
 
             for shader_filename in os.listdir(bmat['shaders_folder']):
