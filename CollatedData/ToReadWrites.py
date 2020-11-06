@@ -226,7 +226,11 @@ def make_geomreader(filepath, model_data):
             boneReader.x_axis = xvec
             boneReader.y_axis = yvec
             boneReader.z_axis = zvec
-            boneReader.xpos, boneReader.ypos, boneReader.zpos = [-item for item in bone]
+
+            transform = np.array([xvec, yvec, zvec])
+            position = -np.dot(np.linalg.inv(transform.T), np.array(bone))
+
+            boneReader.xpos, boneReader.ypos, boneReader.zpos = position
         virtual_pos += geomReader.num_bones*12*4
 
         geomReader.padding_0x58 = 0
