@@ -26,6 +26,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         export_shaders_folder = os.path.join(export_folder, 'shaders')
         os.makedirs(export_shaders_folder, exist_ok=True)
 
+        export_images_folder = os.path.join(export_folder, 'images')
+        os.makedirs(export_images_folder, exist_ok=True)
+
         parent_obj = bpy.context.selected_objects[0]
         sel_obj = None
         while parent_obj is not None:
@@ -146,6 +149,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
         used_materials = sorted(list(used_materials), key=lambda x: x[0])
         used_textures = []
+        used_texture_paths = []
         for _, bmat in used_materials:
             material = model_data.new_material()
             node_tree = bmat.node_tree
@@ -171,6 +175,8 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                     if key[len(cstring_1):] == '50':
                         texture_node = node_tree.nodes["Image Texture"]
                         bimg = texture_node.image
+                        bimg_loc = bpy.data.images[bimg.name].filepath
+                        used_texture_paths.append(bimg_loc)
                         texname = clean_texname(bimg.name)
                         texname, tex_ext = os.path.splitext(texname)
                         if tex_ext != '.dds':
@@ -182,6 +188,22 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                             material.texture_id = used_textures.index(texname)
                         # This stuff should go in the to/from readwrites but w/e...
                         bmat_data[0] = material.texture_id
+                    elif key[len(cstring_1):] == '72':
+                        texture_node = node_tree.nodes["Image Texture.001"]
+                        bimg = texture_node.image
+                        bimg_loc = bpy.data.images[bimg.name].filepath
+                        used_texture_paths.append(bimg_loc)
+                        texname = clean_texname(bimg.name)
+                        texname, tex_ext = os.path.splitext(texname)
+                        if tex_ext != '.dds':
+                            print(f"WARNING: texture {texname} is not a .dds file, is {tex_ext}")
+                        if texname not in used_textures:
+                            material.toon_texture_id = len(used_textures)
+                            used_textures.append(texname)
+                        else:
+                            material.toon_texture_id = used_textures.index(texname)
+                        # This stuff should go in the to/from readwrites but w/e...
+                        bmat_data[0] = material.toon_texture_id
                     elif all(type(elem) == int for elem in bmat_data):
                         texname = bmat['temp_reference_textures'][bmat_data[0]]
                         if texname not in used_textures:
@@ -206,9 +228,14 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         for md in model_data.meshes:
             md.material_id = used_materials.index(md.material_id)
 
-        for texture in used_textures:
+        for texture, texture_path in zip(used_textures, used_texture_paths):
             tex = model_data.new_texture()
             tex.name = texture
+            try:
+                shutil.copy2(texture_path,
+                             os.path.join(export_images_folder, texture + ".img"))
+            except shutil.SameFileError:
+                continue
 
         model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data
