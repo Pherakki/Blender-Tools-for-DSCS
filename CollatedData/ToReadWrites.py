@@ -130,6 +130,7 @@ def make_geomreader(filepath, model_data):
             meshReader.always_5123 = 5123
 
             meshReader.max_vertex_groups_per_vertex = max([len(vtx.vertex_groups) if vtx.vertex_groups is not None else 0 for vtx in mesh.vertices])
+            meshReader.max_vertex_groups_per_vertex = 0 if len(meshReader.weighted_bone_idxs) == 1 else meshReader.max_vertex_groups_per_vertex
             meshReader.unknown_0x31 = mesh.unknown_data['unknown_0x31']
             meshReader.polygon_numeric_data_type = 4  # Can only write to triangles atm
             meshReader.unknown_0x34 = mesh.unknown_data['unknown_0x34']
@@ -252,7 +253,6 @@ def calculate_vertex_properties(vertices, num_vertex_groups):
     max_vtx_groups = max([len(vtx.vertex_groups) for vtx in vertices])
     if example_vertex.position is not None:
         if max_vtx_groups == 1 and len(num_vertex_groups) > 1:
-            print("Weeeeewp")
             vertex_components.append(VertexComponent([1, 4, 6, 20, bytes_per_vertex]))
             bytes_per_vertex += 16
             vertex_generators.append(lambda vtx: {'Position': [*vtx.position, float(3*vtx.vertex_groups[0])]})

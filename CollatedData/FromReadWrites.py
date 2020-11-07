@@ -70,7 +70,6 @@ def add_meshes(model_data, imported_geomdata):
         current_IF_mesh = model_data.meshes[-1]
         for bone_id in mesh.weighted_bone_idxs:
             current_IF_mesh.add_vertex_group(bone_id, [], [])
-
         uk_keys = ['UnknownVertexUsage1', 'UnknownVertexUsage2', 'UV2', 'UnknownVertexUsage4', 'UnknownVertexUsage5']
         for i, vertex in enumerate(mesh.vertex_data):
             pos = vertex.get('Position')
@@ -122,7 +121,6 @@ def add_meshes(model_data, imported_geomdata):
         #current_IF_mesh.unknown_data['bounding_box_lengths'] = mesh.bounding_box_lengths
 
         model_data.meshes[-1] = current_IF_mesh
-
     model_data.unknown_data['unknown_cam_data_1'] = imported_geomdata.unknown_cam_data_1
     model_data.unknown_data['unknown_cam_data_2'] = imported_geomdata.unknown_cam_data_2
 
