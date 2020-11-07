@@ -74,8 +74,8 @@ def add_meshes(model_data, imported_geomdata):
         uk_keys = ['UnknownVertexUsage1', 'UnknownVertexUsage2', 'UV2', 'UnknownVertexUsage4', 'UnknownVertexUsage5']
         for i, vertex in enumerate(mesh.vertex_data):
             pos = vertex.get('Position')
-            if len(pos) > 3:
-                assert 0
+            #if len(pos) > 3:
+            #    assert 0
             norm = vertex.get('Normal')
             uv = vertex.get('UV')
             vgroups = vertex.get('WeightedBoneID')
@@ -91,7 +91,17 @@ def add_meshes(model_data, imported_geomdata):
                     vgroups[j] = vertex_group_idx
                     current_IF_mesh.vertex_groups[vertex_group_idx].vertex_indices.append(i)
                     current_IF_mesh.vertex_groups[vertex_group_idx].weights.append(weight)
-            current_IF_mesh.add_vertex(pos, norm, uv, vgroups, weights)
+            elif mesh.max_vertex_groups_per_vertex == 0:
+                bone_idx = 0
+                vgroups = [bone_idx]
+                current_IF_mesh.vertex_groups[bone_idx].vertex_indices.append(i)
+                current_IF_mesh.vertex_groups[bone_idx].weights.append(1)
+            elif mesh.max_vertex_groups_per_vertex == 1:
+                bone_idx = int(pos[3]) // 3
+                vgroups = [bone_idx]
+                current_IF_mesh.vertex_groups[bone_idx].vertex_indices.append(i)
+                current_IF_mesh.vertex_groups[bone_idx].weights.append(1)
+            current_IF_mesh.add_vertex(pos[:3], norm, uv, vgroups, weights)
             for key in uk_keys:
                 if key in vertex:
                     current_IF_mesh.vertices[-1].unknown_data[key] = vertex[key]
@@ -143,6 +153,8 @@ def add_materials(model_data, imported_namedata, imported_geomdata, filename):
                 model_data.materials[-1].rgba = material_component.data
             elif material_component.component_type == 56:
                 model_data.materials[-1].specular_coeff = material_component.data[0]
+            elif material_component.component_type == 72:
+                model_data.materials[-1].toon_texture_id = material_component.data[0]
             model_data.materials[-1].unknown_data[f'type_1_component_{material_component.component_type}'] = material_component.data
 
         for i, material_component in enumerate(material.unknown_data):

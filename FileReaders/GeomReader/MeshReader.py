@@ -149,9 +149,6 @@ class MeshReader(BaseRW):
         rw_operator('vertex_components', 'HHBBH'*self.num_vertex_components)
 
     def interpret_vertices(self):
-        add_implied_vertex_group = self.max_vertex_groups_per_vertex == 0
-        get_vertex_groups_from_posvector = self.max_vertex_groups_per_vertex == 1
-
         for i, raw_vertex_data in enumerate(self.vertex_data):
             interpreted_vertex = {}
             bounds = [vertex_component.data_start_ptr for vertex_component in self.vertex_components]
@@ -172,45 +169,19 @@ class MeshReader(BaseRW):
                 unused_data = raw_vertex_subdata[used_data:]
                 if len(unused_data) > 0:
                     assert unused_data == self.pad_byte * len(unused_data), f"Presumed junk data is non-zero: {unused_data}"
-            if add_implied_vertex_group:
-                assert 'WeightedBoneID' not in interpreted_vertex
-                interpreted_vertex['WeightedBoneID'] = [0]
-                interpreted_vertex['BoneWeight'] = [1]
-            elif get_vertex_groups_from_posvector:
-                assert 'WeightedBoneID' not in interpreted_vertex
-                bone_idx = int(interpreted_vertex['Position'][3])
-                interpreted_vertex['Position'] = interpreted_vertex['Position'][:3]
-                interpreted_vertex['WeightedBoneID'] = [bone_idx]
-                interpreted_vertex['BoneWeight'] = [1]
+
             self.vertex_data[i] = interpreted_vertex
 
     def reinterpret_vertices(self):
         reinterpreted_vertices = []
-        add_implied_vertex_group = self.max_vertex_groups_per_vertex == 0
-        get_vertex_groups_from_posvector = self.max_vertex_groups_per_vertex == 1
-
         for i, vertex_data in enumerate(self.vertex_data):
             reinterpreted_vertex = b''
             bounds = [vertex_component.data_start_ptr for vertex_component in self.vertex_components]
             bounds.append(self.bytes_per_vertex)
 
-            if add_implied_vertex_group:
-                assert len(vertex_data['WeightedBoneID']) == 1
-                del vertex_data['WeightedBoneID']
-                assert len(vertex_data['BoneWeight']) == 1
-                del vertex_data['BoneWeight']
-            elif get_vertex_groups_from_posvector:
-                vertex_data['Position'].num_elements = 4
-                vertex_data['Position'] = [*vertex_data['Position'], float(vertex_data['WeightedBoneID'][0])]
-                assert len(vertex_data['WeightedBoneID']) == 1
-                del vertex_data['WeightedBoneID']
-                assert len(vertex_data['BoneWeight']) == 1
-                del vertex_data['BoneWeight']
-
             for j, vertex_component in enumerate(self.vertex_components):
                 if vertex_component.validate is not None:
                     vertex_component.validate(vertex_data[vertex_component.vertex_type])
-
                 reinterpreted_vertex += struct.pack(f'{vertex_component.num_elements}{vertex_component.vertex_dtype}',
                                                    *vertex_data[vertex_component.vertex_type])
                 reinterpreted_vertex += self.pad_byte * (bounds[j+1] - len(reinterpreted_vertex))

@@ -241,7 +241,7 @@ def make_geomreader(filepath, model_data):
         geomReader.write()
 
 
-def calculate_vertex_properties(vertices, all_bones_used_by_vertices):
+def calculate_vertex_properties(vertices, num_vertex_groups):
     """
     Contains some nasty repetition of non-trivial data but I just want to get this done at this point
     """
@@ -249,10 +249,17 @@ def calculate_vertex_properties(vertices, all_bones_used_by_vertices):
     vertex_components = []
     vertex_generators = []
     example_vertex = vertices[0]
+    max_vtx_groups = max([len(vtx.vertex_groups) for vtx in vertices])
     if example_vertex.position is not None:
-        vertex_components.append(VertexComponent([1, 3, 6, 20, bytes_per_vertex]))
-        bytes_per_vertex += 12
-        vertex_generators.append(lambda vtx: {'Position': vtx.position})
+        if max_vtx_groups == 1 and len(num_vertex_groups) > 1:
+            print("Weeeeewp")
+            vertex_components.append(VertexComponent([1, 4, 6, 20, bytes_per_vertex]))
+            bytes_per_vertex += 16
+            vertex_generators.append(lambda vtx: {'Position': [*vtx.position, float(3*vtx.vertex_groups[0])]})
+        else:
+            vertex_components.append(VertexComponent([1, 3, 6, 20, bytes_per_vertex]))
+            bytes_per_vertex += 12
+            vertex_generators.append(lambda vtx: {'Position': vtx.position})
     if example_vertex.normal is not None:
         vertex_components.append(VertexComponent([2, 3, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
@@ -281,12 +288,12 @@ def calculate_vertex_properties(vertices, all_bones_used_by_vertices):
         vertex_components.append(VertexComponent([4, 3, 11, 20, bytes_per_vertex]))
         bytes_per_vertex += 8
         vertex_generators.append(lambda vtx: {'UnknownVertexUsage2': vtx.unknown_data['UnknownVertexUsage2']})
-    if example_vertex.vertex_groups is not None:
-        num_grps = max(max([len(vtx.vertex_groups) for vtx in vertices]), 2)
+    if example_vertex.vertex_groups is not None and max_vtx_groups >= 2:
+        num_grps = max_vtx_groups
         vertex_components.append(VertexComponent([10, num_grps, 1, 20, bytes_per_vertex]))
         nominal_bytes = num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
-        vertex_generators.append(lambda vtx: {'WeightedBoneID': mk_extended_boneids(vtx, num_grps, None)})
+        vertex_generators.append(lambda vtx: {'WeightedBoneID': mk_extended_boneids(vtx, num_grps)})
 
         vertex_components.append(VertexComponent([11, num_grps, 11, 20, bytes_per_vertex]))
         nominal_bytes = 2*num_grps
@@ -308,7 +315,7 @@ def polys_to_triangles(polys):
     return [sublist for list in [poly.indices for poly in polys] for sublist in list]
 
 
-def mk_extended_boneids(vtx, num_grps, all_bones_used_by_vertices):
+def mk_extended_boneids(vtx, num_grps):
     use_groups = [grp*3 for grp in vtx.vertex_groups]
     if len(vtx.vertex_groups) < num_grps:
         use_groups.extend([0]*(num_grps-len(vtx.vertex_groups)))
