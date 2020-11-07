@@ -30,11 +30,18 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         os.makedirs(export_images_folder, exist_ok=True)
 
         parent_obj = bpy.context.selected_objects[0]
+
         sel_obj = None
         while parent_obj is not None:
             sel_obj = parent_obj
             parent_obj = sel_obj.parent
         parent_obj = sel_obj
+
+        parent_obj.rotation_euler = (-np.pi / 2, 0, 0)
+        parent_obj.select_set(True)
+        bpy.ops.object.transform_apply(rotation=True)
+        parent_obj.select_set(False)
+
         # Rig
         model_armature = parent_obj.children[0]
         bone_name_list = [bone.name for bone in model_armature.data.bones]
@@ -243,6 +250,11 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         model_data.unknown_data['unknown_cam_data_2'] = parent_obj['unknown_cam_data_2']
         model_data.unknown_data['unknown_footer_data'] = parent_obj['unknown_footer_data']
         generate_files_from_intermediate_format(filepath, model_data)
+
+        parent_obj.rotation_euler = (np.pi / 2, 0, 0)
+        parent_obj.select_set(True)
+        bpy.ops.object.transform_apply(rotation=True)
+        parent_obj.select_set(False)
 
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
