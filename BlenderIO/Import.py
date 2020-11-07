@@ -130,11 +130,12 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                     for i, elem in enumerate(IF_material.unknown_data[key]):
                         new_material[f"{key}_{i}"] = elem
 
-
             new_material.use_nodes = True
 
             # Get nodes to work with
             bsdf_node = new_material.node_tree.nodes.get('Principled BSDF')
+            output_node = new_material.node_tree.nodes.get('Material Output')
+            new_material.node_tree.links.clear()
             connect = new_material.node_tree.links.new
             if IF_material.specular_coeff is not None:
                 bsdf_node.inputs['Specular'].default_value = IF_material.specular_coeff
@@ -160,6 +161,29 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             #    rgba_node.location = (-350, 100)
             #    rgba_node.outputs['Color'].default_value = IF_material.emission_rgba
             #    connect(rgba_node.outputs['Color'], bsdf_node.inputs['Emission'])
+            if IF_material.toon_texture_id is not None:
+                toon_texture_node = new_material.node_tree.nodes.new('ShaderNodeTexImage')
+                toon_node = new_material.node_tree.nodes.new('ShaderNodeBsdfToon')
+
+                connect(toon_texture_node.outputs['Color'], toon_node.inputs['Color'])
+
+                IF_toon_texture = model_data.textures[IF_material.toon_texture_id]
+                tex_filepath, tex_fileext = os.path.splitext(IF_toon_texture.filepath)
+                tex_filename = os.path.split(tex_filepath)[-1]
+                tempdir = bpy.app.tempdir
+                # The img files are just dds obscured by a different file extension...
+                dds_loc = os.path.join(tempdir, tex_filename) + '.dds'
+                shutil.copy2(IF_toon_texture.filepath, dds_loc)
+                toon_texture_node.image = bpy.data.images.load(dds_loc)
+
+                mix_node = new_material.node_tree.nodes.new('ShaderNodeMixShader')
+
+                connect(bsdf_node.outputs['BSDF'], mix_node.inputs['Shader'])
+                connect(toon_node.outputs['BSDF'], mix_node.inputs[2])  # "Shader_001"
+
+                connect(mix_node.outputs['Shader'], output_node.inputs['Surface'])
+            else:
+                connect(bsdf_node.outputs['BSDF'], output_node.inputs['Surface'])
 
             new_material.use_backface_culling = True
 

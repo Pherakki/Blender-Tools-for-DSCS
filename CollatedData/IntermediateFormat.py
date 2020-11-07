@@ -78,6 +78,7 @@ class MaterialData:
     def __init__(self):
         self.name = None
         self.texture_id = None
+        self.toon_texture_id = None
         self.rgba = None
         self.specular_coeff = None
         self.shader_hex = None
