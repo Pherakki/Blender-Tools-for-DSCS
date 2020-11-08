@@ -144,6 +144,7 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                 texture_node = new_material.node_tree.nodes.new('ShaderNodeTexImage')
                 texture_node.location = (-350, 220)
                 connect(texture_node.outputs['Color'], bsdf_node.inputs['Base Color'])
+                connect(texture_node.outputs['Alpha'], bsdf_node.inputs['Alpha'])
                 # texture_node.image = bpy.data.images[tex_name]
 
                 IF_texture = model_data.textures[IF_material.texture_id]
@@ -186,6 +187,8 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                 connect(bsdf_node.outputs['BSDF'], output_node.inputs['Surface'])
 
             new_material.use_backface_culling = True
+            new_material.blend_method = 'CLIP'
+            new_material.alpha_threshold = 0.7
 
         for i, IF_mesh in enumerate(model_data.meshes):
             verts = [Vector(vertex.position) for vertex in IF_mesh.vertices]
