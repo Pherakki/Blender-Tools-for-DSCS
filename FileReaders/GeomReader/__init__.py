@@ -80,8 +80,8 @@ class GeomReader(BaseRW):
         self.rw_meshes(rw_operator, rw_method_name)
         self.rw_material_data(rw_method_name)
         self.rw_texture_names(rw_operator_raw)
-        self.rw_unknown_cam_data_1(rw_method_name)
-        self.rw_unknown_cam_data_2(rw_method_name)
+        self.rw_unknown_cam_data_1(rw_method_name, rw_operator)
+        self.rw_unknown_cam_data_2(rw_method_name, rw_operator)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
         self.rw_bone_data(rw_method_name)
         self.rw_footer_data(rw_operator_raw)
@@ -168,27 +168,33 @@ class GeomReader(BaseRW):
 
         rw_operator_raw('texture_data', self.num_bytes_in_texture_names_section)
 
-    def rw_unknown_cam_data_1(self, rw_method_name):
+    def rw_unknown_cam_data_1(self, rw_method_name, rw_operator):
         if self.is_ndef(self.unknown_cam_data_1_start_ptr, 'num_unknown_cam_data_1'):
             return
         self.assert_file_pointer_now_at(self.unknown_cam_data_1_start_ptr)
 
+        rw_operator('unknown_cam_data_1', 'hhhhheheffffHHHHHHIQQ'*self.num_unknown_cam_data_1)
         # clearly some structural alignment between (14, 15) and (16, 17)
         # 15 looks like a count, as does 17... everything past this is 0
         # 64 bytes per unknown_cam_data_1
-        for unk_cam_data_1_reader in self.unknown_cam_data_1:
-            getattr(unk_cam_data_1_reader, rw_method_name)()
 
-    def rw_unknown_cam_data_2(self, rw_method_name):
+        # Support proper readers when you know more about the format
+        #for unk_cam_data_1_reader in self.unknown_cam_data_1:
+        #    getattr(unk_cam_data_1_reader, rw_method_name)()
+
+    def rw_unknown_cam_data_2(self, rw_method_name, rw_operator):
         if self.is_ndef(self.unknown_cam_data_2_start_ptr, 'num_unknown_cam_data_2'):
             return
         self.assert_file_pointer_now_at(self.unknown_cam_data_2_start_ptr)
 
+        rw_operator('unknown_cam_data_2', 'HHHeHeHehehehHIQQ'*self.num_unknown_cam_data_2)
         #    # 12 is 0 or 1, everything after is 0
         #    self.unknown_cam_data_2.append(data)
         # 48 bytes per unknown_cam_data_2
-        for unk_cam_data_2_reader in self.unknown_cam_data_2:
-            getattr(unk_cam_data_2_reader, rw_method_name)()
+
+        # Support proper readers when you know more about the format
+        #for unk_cam_data_2_reader in self.unknown_cam_data_2:
+        #    getattr(unk_cam_data_2_reader, rw_method_name)()
 
 
 
@@ -215,8 +221,10 @@ class GeomReader(BaseRW):
         self.meshes = [MeshReader(self.bytestream) for _ in range(self.num_meshes)]
         self.material_data = [MaterialReader(self.bytestream) for _ in range(self.num_materials)]
         self.bone_data = [BoneDataReader(self.bytestream) for _ in range(self.num_bones)]
-        self.unknown_cam_data_1 = [UnknownCamData1Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_1)]
-        self.unknown_cam_data_2 = [UnknownCamData2Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_2)]
+
+        # Support this when you know more about the format
+        #self.unknown_cam_data_1 = [UnknownCamData1Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_1)]
+        #self.unknown_cam_data_2 = [UnknownCamData2Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_2)]
 
     def interpret_geom_data(self):
         texture_data = self.chunk_list(self.texture_data, 32)
