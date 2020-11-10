@@ -229,8 +229,8 @@ class GeomReader(BaseRW):
     def interpret_geom_data(self):
         texture_data = self.chunk_list(self.texture_data, 32)
         self.texture_data = [datum.rstrip(self.pad_byte).decode('ascii') for datum in texture_data]
-        self.unknown_cam_data_1 = self.chunk_list(self.unknown_cam_data_1, 28)
-        self.unknown_cam_data_2 = self.chunk_list(self.unknown_cam_data_2, 24)
+        self.unknown_cam_data_1 = self.chunk_list(self.unknown_cam_data_1, 21)
+        self.unknown_cam_data_2 = self.chunk_list(self.unknown_cam_data_2, 17)
 
     def reinterpret_geom_data(self):
         self.texture_data: typing.List[str]
