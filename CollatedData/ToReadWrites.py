@@ -90,9 +90,13 @@ def make_geomreader(filepath, model_data):
 
         geomReader.num_bytes_in_texture_names_section = 32*len(model_data.textures)
 
-        vertices = np.array([v.position for mesh in model_data.meshes for v in mesh.vertices])
-        minvs = np.min(vertices, axis=0)
-        maxvs = np.max(vertices, axis=0)
+        vertices = np.array([v.position[:3] for mesh in model_data.meshes for v in mesh.vertices])
+        if len(vertices) > 0:
+            minvs = np.min(vertices, axis=0)
+            maxvs = np.max(vertices, axis=0)
+        else:
+            minvs = np.zeros(3)
+            maxvs = np.zeros(3)
 
         geomReader.geom_centre = (maxvs + minvs) / 2
         geomReader.geom_bounding_box_lengths = (maxvs - minvs) / 2
