@@ -75,8 +75,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             bpy.context.view_layer.objects.active = mesh_obj
             mesh = mesh_obj.data
 
-            backup_normals = [vertex.normal for vertex in mesh.vertices]
-
+            # This is currently non-functional, backup_normals is just a dummy that gets passed around
+            #backup_normals = [vertex.normal for vertex in mesh.vertices]
+            backup_normals = []
             bpy.ops.object.mode_set(mode='EDIT')
             bm = bmesh.from_edit_mesh(mesh)
 
@@ -93,9 +94,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             if has_uvs:
                 split_verts_with_multiple_uvs(bm, uv_layer, backup_normals)
 
-            backup_normals = [(bvert.index, backup_normals[bvert]) for bvert in backup_normals]
-            backup_normals = sorted(backup_normals, key=lambda x: x[0])
-            backup_normals = [normal_tuple[1] for normal_tuple in backup_normals]
+            #backup_normals = [(bvert.index, backup_normals[bvert]) for bvert in backup_normals]
+            #backup_normals = sorted(backup_normals, key=lambda x: x[0])
+            #backup_normals = [normal_tuple[1] for normal_tuple in backup_normals]
 
             # Hopefully it will update the vertices?!
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -332,7 +333,7 @@ def split_verts_with_multiple_uvs(bm, uv_layer, backup_normals):
 
     for vert_to_split in verts_to_split:
         bm.verts.ensure_lookup_table()
-        normal = backup_normals[vert_to_split]
+        #normal = backup_normals[vert_to_split]
         #  del backup_normals[vert_to_split]
 
         bpy.ops.mesh.select_mode(type="VERT")
