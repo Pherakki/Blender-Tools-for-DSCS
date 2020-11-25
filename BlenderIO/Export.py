@@ -244,6 +244,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                              os.path.join(export_images_folder, texture + ".img"))
             except shutil.SameFileError:
                 continue
+            except FileNotFoundError:
+                print(texture_path, "not found.")
+                continue
 
         model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data
