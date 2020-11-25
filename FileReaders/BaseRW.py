@@ -168,7 +168,7 @@ class BaseRW:
         lst = self.decode_data_as(buf, data, endianness)
         return self.chunk_list(lst, chunksize)
 
-    def cleanup_ragged_chunk_read(self, position, chunksize):
+    def cleanup_ragged_chunk_read(self, position, chunksize, stepsize=1, bytevalue=b'\x00'):
         """
         If 'position' is partially through a chunk, this function will check that the remaining bytes in the chunk
         are pad bytes.
@@ -176,17 +176,18 @@ class BaseRW:
         bytes_read_from_final_chunk = position % chunksize
         # The modulo maps {bytes_read_from_final_chunk == 0} to {0} rather than {chunksize}
         num_bytes_left_to_read = (chunksize - bytes_read_from_final_chunk) % chunksize
-        should_be_pad_bytes = self.bytestream.read(num_bytes_left_to_read)
-        assert should_be_pad_bytes == self.pad_byte * num_bytes_left_to_read, f"Assumed padding data was not pad bytes: {should_be_pad_bytes}"
+        should_be_value_bytes = self.bytestream.read(num_bytes_left_to_read)
+        assert should_be_value_bytes == bytevalue * (num_bytes_left_to_read // stepsize),\
+            f"Assumed padding data was not {bytevalue * (num_bytes_left_to_read // stepsize)}: {should_be_value_bytes}"
 
-    def cleanup_ragged_chunk_write(self, position, chunksize):
+    def cleanup_ragged_chunk_write(self, position, chunksize, stepsize=1, bytevalue=b'\x00'):
         """
         If 'position' is partially through a chunk, this function will complete the chunk with pad bytes.
         """
         bytes_read_from_final_chunk = position % chunksize
         # The modulo maps {bytes_read_from_final_chunk == 0} to {0} rather than {chunksize}
         num_bytes_left_to_read = (chunksize - bytes_read_from_final_chunk) % chunksize
-        self.bytestream.write(self.pad_byte*num_bytes_left_to_read)
+        self.bytestream.write(bytevalue * (num_bytes_left_to_read // stepsize))
 
     def chunk_list(self, lst, chunksize):
         """
