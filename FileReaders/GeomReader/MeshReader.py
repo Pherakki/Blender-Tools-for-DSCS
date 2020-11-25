@@ -28,6 +28,7 @@ class MeshReader(BaseRW):
        Setting all the floats to 0 (unknowns 0x48 - 0x68) has no observable effect.
     """
     polygon_type_defs = {4: 'Triangles', 5: 'TriangleStrips'}
+    # PS4: polygon_type_defs = {4: 'Triangles', 0: 'TriangleStrips'}
 
     def __init__(self, io_stream):
         super().__init__(io_stream)
@@ -87,6 +88,7 @@ class MeshReader(BaseRW):
         rw_operator('bytes_per_vertex', 'H')
         rw_operator('always_5123', 'H')  # Always 5123?!
         self.assert_equal('always_5123', 5123)
+        # PS4: self.assert_equal('always_5123', 0)
 
         # pc002:
         # Unknown0x34, Unknown0x36 the same for meshes 0-6: these are individual body parts with a single material each
@@ -226,24 +228,18 @@ class VertexComponent:
                     10: 'WeightedBoneID',  # Variable number of bytes. This is 3X THE INDEX of a bone id in MeshReader.weighted_bone_idxs
                     11: 'BoneWeight'}  # Variable number of half-floats
 
-    reverse_vertex_types = {'Position': 1,  # 3 floats
-                    'Normal' : 2,  # 3 half-floats
-                    'UnknownVertexUsage1': 3,  # 4 half-floats, appears in chr, d, eff, npc, t, ui files # colour?
-                    'UnknownVertexUsage2': 4,  # 3 half-floats, appears in eff and ui files
-                    'UV': 5,  # 2 half-floats
-                    'UV2': 6,  # 2 half-floats
-                    'UnknownVertexUsage4': 7,  # 2 half-floats, appears in chr, d, f, h, t
-                    'UnknownVertexUsage5': 9,  # 4 half-floats, appears in block, blok, chr, d, e, eff, ev, eve, f, h, line, medal, mob, npc, scenario, t, ui, # colour?
-                    'WeightedBoneID': 10,  # Variable number of bytes. This is 3X THE INDEX of a bone id in MeshReader.weighted_bone_idxs
-                    'BoneWeight': 11}  # Variable number of half-floats
+    reverse_vertex_types = dict([reversed(i) for i in vertex_types.items()])
 
     dtypes = {6: 'f',
               11: 'e',
               1: 'B'}
 
-    reverse_dtypes = {'f': 6,
-                      'e': 11,
-                      'B': 1}
+    reverse_dtypes = dict([reversed(i) for i in dtypes.items()])
+
+#    # PS4
+#    dtypes = {9: 'f',
+#              8: 'e',
+#              0: 'B'}
 
     validation_policies = {#'Position': validate_position,
                            'WeightedBoneID': validate_weighted_bone_id}
