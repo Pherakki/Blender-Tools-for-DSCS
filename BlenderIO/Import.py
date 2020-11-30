@@ -143,7 +143,6 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
             if IF_material.texture_id is not None:
                 texture_node = new_material.node_tree.nodes.new('ShaderNodeTexImage')
                 texture_node.location = (-350, 220)
-                connect(texture_node.outputs['Color'], bsdf_node.inputs['Base Color'])
                 connect(texture_node.outputs['Alpha'], bsdf_node.inputs['Alpha'])
                 # texture_node.image = bpy.data.images[tex_name]
 
@@ -177,14 +176,20 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                 shutil.copy2(IF_toon_texture.filepath, dds_loc)
                 toon_texture_node.image = bpy.data.images.load(dds_loc)
 
-                mix_node = new_material.node_tree.nodes.new('ShaderNodeMixShader')
+                converter_node = new_material.node_tree.nodes.new('ShaderNodeShaderToRGB')
+                connect(toon_node.outputs['BSDF'], converter_node.inputs['Shader'])
 
-                connect(bsdf_node.outputs['BSDF'], mix_node.inputs['Shader'])
-                connect(toon_node.outputs['BSDF'], mix_node.inputs[2])  # "Shader_001"
+                mix_node = new_material.node_tree.nodes.new('ShaderNodeMixRGB')
+                mix_node.blend_type = 'MULTIPLY'
 
-                connect(mix_node.outputs['Shader'], output_node.inputs['Surface'])
+                connect(texture_node.outputs['Color'], mix_node.inputs['Color1'])
+                connect(converter_node.outputs['Color'], mix_node.inputs['Color2'])
+
+                connect(mix_node.outputs['Color'], bsdf_node.inputs['Base Color'])
             else:
-                connect(bsdf_node.outputs['BSDF'], output_node.inputs['Surface'])
+                connect(texture_node.outputs['Color'], bsdf_node.inputs['Base Color'])
+
+            connect(bsdf_node.outputs['BSDF'], output_node.inputs['Surface'])
 
             new_material.use_backface_culling = True
             new_material.blend_method = 'CLIP'
