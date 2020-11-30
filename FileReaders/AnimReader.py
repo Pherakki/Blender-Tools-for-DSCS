@@ -35,9 +35,6 @@ class AnimReader(BaseRW):
     3.  Section 8 contains a cumulative count plus and increment: this might state which keyframe the animation data is
         attached to and the gap until the next keyframe.
     4.  If the above hypothesis is correct, this would make each substructure a pose delta defined for each keyframe.
-    5.  **There is ONE thing preventing this read-writer from being completed***. The substructures contain a chunk of
-        data which has no obvious relationship to any other variables. The read operation cannot be handled cleanly
-        until this is dealt with, and a write operation is impossible.
     """
     def __init__(self, bytestream, skelReader):
         super().__init__(bytestream)
