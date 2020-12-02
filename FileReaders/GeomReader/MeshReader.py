@@ -3,7 +3,7 @@ import numpy as np
 import struct
 
 
-class MeshReader(BaseRW):
+class MeshReaderBase(BaseRW):
     """
     A class to read mesh data within geom files. These files are split into five main sections:
         1. The header, which gives file pointers to split the file into its major sections, plus counts of what appears
@@ -27,9 +27,6 @@ class MeshReader(BaseRW):
        No visual changes have been seen, except in the case of unknown_0x31, which may affect bone weights.
        Setting all the floats to 0 (unknowns 0x48 - 0x68) has no observable effect.
     """
-    polygon_type_defs = {4: 'Triangles', 5: 'TriangleStrips'}
-    # PS4: polygon_type_defs = {4: 'Triangles', 0: 'TriangleStrips'}
-
     def __init__(self, io_stream):
         super().__init__(io_stream)
 
@@ -87,7 +84,7 @@ class MeshReader(BaseRW):
         rw_operator('num_vertex_components', 'H')
         rw_operator('bytes_per_vertex', 'H')
         rw_operator('always_5123', 'H')  # Always 5123?!
-        self.assert_equal('always_5123', 5123)
+        self.assert_equal('always_5123', self.header_breaker)
         # PS4: self.assert_equal('always_5123', 0)
 
         # pc002:
@@ -116,7 +113,7 @@ class MeshReader(BaseRW):
         rw_operator('mesh_centre', 'fff')
         rw_operator('bounding_box_lengths', 'fff')
 
-        self.polygon_data_type = MeshReader.polygon_type_defs[self.polygon_numeric_data_type]
+        self.polygon_data_type = self.get_polygon_type_defs()[self.polygon_numeric_data_type]
 
     def read(self):
         self.read_write(self.read_buffer, self.read_raw, self.cleanup_ragged_chunk_read)
@@ -192,18 +189,58 @@ class MeshReader(BaseRW):
         self.vertex_data = b''.join(reinterpreted_vertices)
 
     def interpret_mesh_data(self):
-        self.vertex_components = [VertexComponent(data) for data in self.chunk_list(self.vertex_components, 5)]
+        self.vertex_components = [self.get_vertex_component()(data) for data in self.chunk_list(self.vertex_components, 5)]
         self.vertex_data = self.chunk_list(self.vertex_data, self.bytes_per_vertex)
         self.interpret_vertices()
 
     def reinterpret_mesh_data(self):
         self.reinterpret_vertices()
-        vertex_components = [(VertexComponent.reverse_vertex_types[vc.vertex_type],
+        vertex_components = [(self.get_vertex_component().reverse_vertex_types[vc.vertex_type],
                               vc.num_elements,
-                              VertexComponent.reverse_dtypes[vc.vertex_dtype],
+                              self.get_vertex_component().get_reverse_dtypes()[vc.vertex_dtype],
                               vc.always_20, vc.data_start_ptr)
                              for vc in self.vertex_components]
         self.vertex_components = self.flatten_list(vertex_components)
+
+    @staticmethod
+    def get_polygon_type_defs():
+        raise NotImplementedError
+
+    @staticmethod
+    def get_vertex_component():
+        raise NotImplementedError
+
+    @property
+    def header_breaker(self):
+        raise NotImplementedError
+
+
+class MeshReaderPC(MeshReaderBase):
+    @staticmethod
+    def get_polygon_type_defs():
+        return {4: 'Triangles', 5: 'TriangleStrips'}
+
+    @staticmethod
+    def get_vertex_component():
+        return VertexComponentPC
+
+    @property
+    def header_breaker(self):
+        return 5123
+
+
+class MeshReaderPS4(MeshReaderBase):
+    @staticmethod
+    def get_polygon_type_defs():
+        return {4: 'Triangles', 0: 'TriangleStrips'}
+
+    @staticmethod
+    def get_vertex_component():
+        return VertexComponentPS4
+
+    @property
+    def header_breaker(self):
+        return 0
 
 
 def validate_position(component_data):
@@ -216,7 +253,7 @@ def validate_weighted_bone_id(component_data):
     return component_data
 
 
-class VertexComponent:
+class VertexComponentBase:
     vertex_types = {1: 'Position',  # 3 floats
                     2: 'Normal',  # 3 half-floats
                     3: 'UnknownVertexUsage1',  # 4 half-floats, appears in chr, d, eff, npc, t, ui files # colour? # tangent?
@@ -230,27 +267,39 @@ class VertexComponent:
 
     reverse_vertex_types = dict([reversed(i) for i in vertex_types.items()])
 
-    dtypes = {6: 'f',
-              11: 'e',
-              1: 'B'}
-
-    reverse_dtypes = dict([reversed(i) for i in dtypes.items()])
-
-#    # PS4
-#    dtypes = {9: 'f',
-#              8: 'e',
-#              0: 'B'}
-
     validation_policies = {#'Position': validate_position,
                            'WeightedBoneID': validate_weighted_bone_id}
 
     def __init__(self, data):
-        self.vertex_type = VertexComponent.vertex_types[data[0]]
+        self.vertex_type = VertexComponentBase.vertex_types[data[0]]
         self.num_elements = data[1]
-        self.vertex_dtype = VertexComponent.dtypes[data[2]]
+        self.vertex_dtype = self.get_dtypes()[data[2]]
         self.always_20 = data[3]  # Always 20, no idea what for. Possibly a weird value for a junk byte.
         self.data_start_ptr = data[4]
 
         # Utility func
-        self.validate = VertexComponent.validation_policies.get(self.vertex_type)
+        self.validate = VertexComponentBase.validation_policies.get(self.vertex_type)
 
+    @staticmethod
+    def get_dtypes():
+        raise NotImplementedError
+
+    @classmethod
+    def get_reverse_dtypes(cls):
+        return dict([reversed(i) for i in cls.get_dtypes().items()])
+
+
+class VertexComponentPC(VertexComponentBase):
+    @staticmethod
+    def get_dtypes():
+        return {6: 'f',
+               11: 'e',
+               1: 'B'}
+
+
+class VertexComponentPS4(VertexComponentBase):
+    @staticmethod
+    def get_dtypes():
+        return {9: 'f',
+                8: 'e',
+                0: 'B'}

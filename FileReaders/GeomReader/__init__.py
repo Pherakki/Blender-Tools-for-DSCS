@@ -1,5 +1,5 @@
 from ..BaseRW import BaseRW
-from .MeshReader import MeshReader
+from .MeshReader import MeshReaderPC, MeshReaderPS4
 from .MaterialReader import MaterialReader
 import typing
 
@@ -65,6 +65,12 @@ class GeomReader(BaseRW):
         self.unknown_footer_data = []
 
         self.subreaders = [self.meshes, self.material_data, self.bone_data]
+
+    @staticmethod
+    def for_platform(bytestream, platform):
+        platform_table = {'PC': GeomReaderPC,
+                          'PS4': GeomReaderPS4}
+        return platform_table[platform](bytestream)
 
     def read(self):
         self.read_write(self.read_buffer, 'read', self.read_raw, self.prepare_read_op, self.cleanup_ragged_chunk_read)
@@ -196,8 +202,6 @@ class GeomReader(BaseRW):
         #for unk_cam_data_2_reader in self.unknown_cam_data_2:
         #    getattr(unk_cam_data_2_reader, rw_method_name)()
 
-
-
     def rw_bone_data(self, rw_method_name):
         if self.is_ndef(self.bone_data_start_ptr, 'num_bones'):
             return
@@ -218,7 +222,7 @@ class GeomReader(BaseRW):
         # then 12 \x00 bytes
 
     def prepare_read_op(self):
-        self.meshes = [MeshReader(self.bytestream) for _ in range(self.num_meshes)]
+        self.meshes = [self.new_meshreader()(self.bytestream) for _ in range(self.num_meshes)]
         self.material_data = [MaterialReader(self.bytestream) for _ in range(self.num_materials)]
         self.bone_data = [BoneDataReader(self.bytestream) for _ in range(self.num_bones)]
 
@@ -242,6 +246,25 @@ class GeomReader(BaseRW):
         self.texture_data = b''.join(texture_data)
         self.unknown_cam_data_1 = self.flatten_list(self.unknown_cam_data_1)
         self.unknown_cam_data_2 = self.flatten_list(self.unknown_cam_data_2)
+
+    def new_meshreader(self):
+        raise NotImplementedError
+
+
+class GeomReaderPC(GeomReader):
+    def __init__(self, bytestream):
+        super().__init__(bytestream)
+
+    def new_meshreader(self):
+        return MeshReaderPC
+
+
+class GeomReaderPS4(GeomReader):
+    def __init__(self, bytestream):
+        super().__init__(bytestream)
+
+    def new_meshreader(self):
+        return MeshReaderPS4
 
 
 class BoneDataReader(BaseRW):

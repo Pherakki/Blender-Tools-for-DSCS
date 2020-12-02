@@ -1,12 +1,14 @@
 from ..FileReaders.NameReader import NameReader
 from ..FileReaders.SkelReader import SkelReader
 from ..FileReaders.GeomReader import GeomReader
+from ..FileReaders.AnimReader import AnimReader
 from .IntermediateFormat import IntermediateFormat
 
 import os
 import numpy as np
 
-def generate_intermediate_format_from_files(filepath):
+
+def generate_intermediate_format_from_files(filepath, platform):
     """
     Opens name, skel, and geom files associated with the given filename and generates an IntermediateFormat object.
     Images are assumed to be in a sub-directory of the given file's directory named 'images'.
@@ -22,8 +24,23 @@ def generate_intermediate_format_from_files(filepath):
         imported_skeldata = SkelReader(F)
         imported_skeldata.read()
     with open(filepath + '.geom', 'rb') as F:
-        imported_geomdata = GeomReader(F)
+        imported_geomdata = GeomReader.for_platform(F, platform=platform)
+        print(type(imported_geomdata))
         imported_geomdata.read()
+
+    directory = os.path.split(filepath)
+    filename = directory[-1]
+    directory = os.path.join(*directory[:-1])
+
+    imported_animdata = {}
+    for afile in os.listdir(directory):
+        afilepath = os.path.join(directory, afile)
+        if afile[-4:] == 'anim' and afile[:len(filename)] == filename:
+            afile_name, afile_ext = os.path.splitext(afile)
+            with open(afilepath, 'rb') as F:
+                iar = AnimReader(F, imported_skeldata)
+                iar.read()
+            imported_animdata[afile_name] = iar
 
     images_directory = os.path.join(*os.path.split(filepath)[:-1], 'images')
 
@@ -32,6 +49,7 @@ def generate_intermediate_format_from_files(filepath):
     add_materials(model_data, imported_namedata, imported_geomdata, os.path.split(filepath)[-1])
     add_textures(model_data, imported_geomdata, images_directory)
     add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata)
+    add_anims(model_data, imported_animdata)
 
     return model_data
 
@@ -190,3 +208,19 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     model_data.skeleton.unknown_data['unknown_data_2'] = imported_skeldata.unknown_data_2
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
     model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4
+
+
+def add_anims(model_data, imported_animdata):
+    for key, imp_ad in imported_animdata.items():
+        ad = model_data.new_anim(key)
+        ad.bone_names = imp_ad.unknown_bone_idxs_2
+        ad.values = imp_ad.unknown_data_2
+
+        for framekey, frame in zip(imp_ad.unknown_data_6, imp_ad.unknown_data_8):
+            fr = ad.add_frame()
+            fr.keyframe = framekey[0]
+            fr.bone_names = imp_ad.unknown_bone_idxs_6
+            fr.values = frame.unknown_data_2
+            fr.bone_names2 = imp_ad.unknown_bone_idxs_7
+            fr.values2 = frame.unknown_data_3
+            fr.data_5 = frame.unknown_data_5

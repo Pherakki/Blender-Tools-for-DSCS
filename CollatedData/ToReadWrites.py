@@ -1,15 +1,14 @@
 from ..FileReaders.NameReader import NameReader
 from ..FileReaders.SkelReader import SkelReader
 from ..FileReaders.GeomReader import GeomReader
-from ..FileReaders.GeomReader.MeshReader import VertexComponent
 from ..FileReaders.GeomReader.MaterialReader import MaterialComponent, UnknownMaterialData
 import numpy as np
 
 
-def generate_files_from_intermediate_format(filepath, model_data):
+def generate_files_from_intermediate_format(filepath, model_data, platform='PC'):
     make_namereader(filepath, model_data)
     make_skelreader(filepath, model_data)
-    make_geomreader(filepath, model_data)
+    make_geomreader(filepath, model_data, platform)
 
 
 def make_namereader(filepath, model_data):
@@ -77,9 +76,9 @@ def make_skelreader(filepath, model_data):
         skelReader.write()
 
 
-def make_geomreader(filepath, model_data):
+def make_geomreader(filepath, model_data, platform):
     with open(filepath + '.geom', 'wb') as F:
-        geomReader = GeomReader(F)
+        geomReader = GeomReader.for_platform(F, platform)
 
         geomReader.filetype = 100
         geomReader.num_meshes = len(model_data.meshes)
@@ -110,7 +109,7 @@ def make_geomreader(filepath, model_data):
             meshReader.vertex_data_start_ptr = virtual_pos
 
             vgroup_idxs = sorted([vgroup.bone_idx for vgroup in mesh.vertex_groups])
-            meshReader.bytes_per_vertex, meshReader.vertex_components, vertex_generators = calculate_vertex_properties(mesh.vertices, vgroup_idxs)
+            meshReader.bytes_per_vertex, meshReader.vertex_components, vertex_generators = calculate_vertex_properties(mesh.vertices, vgroup_idxs, geomReader.meshes[0].get_vertex_component())
             try:
                 meshReader.vertex_data = generate_vertex_data(mesh.vertices, vertex_generators)
             except MissingWeightsError as mwe:
@@ -246,7 +245,7 @@ def make_geomreader(filepath, model_data):
         geomReader.write()
 
 
-def calculate_vertex_properties(vertices, num_vertex_groups):
+def calculate_vertex_properties(vertices, num_vertex_groups, VertexComponent):
     """
     Contains some nasty repetition of non-trivial data but I just want to get this done at this point
     """

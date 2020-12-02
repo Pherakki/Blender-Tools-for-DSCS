@@ -14,6 +14,7 @@ class IntermediateFormat:
         self.meshes = []
         self.materials = []
         self.textures = []
+        self.animations = {}
         self.unknown_data = {}
         
     def new_mesh(self):
@@ -30,6 +31,11 @@ class IntermediateFormat:
         td = TextureData()
         self.textures.append(td)
         return td
+
+    def new_anim(self, key):
+        ad = Animation()
+        self.animations[key] = ad
+        return ad
 
         
 class MeshData:
@@ -102,3 +108,25 @@ class Skeleton:
         self.bone_relations = []
 
         self.unknown_data = {}
+
+
+class Animation:
+    def __init__(self):
+        self.bone_names = []
+        self.values = []
+
+        self.frames = []
+
+    def add_frame(self):
+        fr = Frame()
+        self.frames.append(fr)
+        return fr
+
+
+class Frame:
+    def __init__(self):
+        self.keyframe = None
+        self.bone_names = []
+        self.values = []
+        self.bone_names2 = []
+        self.values2 = []

@@ -9,8 +9,7 @@ from mathutils import Vector
 from ..CollatedData.FromReadWrites import generate_intermediate_format_from_files
 
 
-class ImportDSCS(bpy.types.Operator, ImportHelper):
-    bl_idname = 'import_file.import_dscs'
+class ImportDSCSBase:
     bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
     bl_options = {'REGISTER', 'UNDO'}
     # This will actually work with any file extension since the code just looks for the right ones...
@@ -21,9 +20,9 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                                              options={'HIDDEN'},
                                          )
 
-    def import_file(self, context, filepath):
+    def import_file(self, context, filepath, platform):
         bpy.ops.object.select_all(action='DESELECT')
-        model_data = generate_intermediate_format_from_files(filepath)
+        model_data = generate_intermediate_format_from_files(filepath, platform)
         filename = os.path.split(filepath)[-1]
         parent_obj = bpy.data.objects.new(filename, None)
 
@@ -276,10 +275,24 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
         bpy.ops.object.transform_apply(rotation=True)
         parent_obj.select_set(False)
 
-    def execute(self, context):
+    def execute_func(self, context, platform):
         filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in
                     ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
-        self.import_file(context, filepath)
+        self.import_file(context, filepath, platform)
 
         return {'FINISHED'}
+
+
+class ImportDSCSPC(ImportDSCSBase, bpy.types.Operator, ImportHelper):
+    bl_idname = 'import_file.import_dscs_pc'
+
+    def execute(self, context):
+        return super().execute_func(context, 'PC')
+
+
+class ImportDSCSPS4(ImportDSCSBase, bpy.types.Operator, ImportHelper):
+    bl_idname = 'import_file.import_dscs_ps4'
+
+    def execute(self, context):
+        return super().execute_func(context, 'PS4')

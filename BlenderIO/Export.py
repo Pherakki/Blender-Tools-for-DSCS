@@ -14,13 +14,12 @@ from ..CollatedData.IntermediateFormat import IntermediateFormat
 import struct
 
 
-class ExportDSCS(bpy.types.Operator, ExportHelper):
-    bl_idname = 'export_file.export_dscs'
+class ExportDSCSBase:
     bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
     bl_options = {'REGISTER'}
     filename_ext = ".name"
 
-    def export_file(self, context, filepath):
+    def export_file(self, context, filepath, platform):
         model_data = IntermediateFormat()
         export_folder = os.path.join(*os.path.split(filepath)[:-1])
         export_shaders_folder = os.path.join(export_folder, 'shaders')
@@ -253,21 +252,34 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         model_data.unknown_data['unknown_cam_data_1'] = parent_obj['unknown_cam_data_1']
         model_data.unknown_data['unknown_cam_data_2'] = parent_obj['unknown_cam_data_2']
         model_data.unknown_data['unknown_footer_data'] = parent_obj['unknown_footer_data']
-        generate_files_from_intermediate_format(filepath, model_data)
+        generate_files_from_intermediate_format(filepath, model_data, platform)
 
         parent_obj.rotation_euler = (np.pi / 2, 0, 0)
         parent_obj.select_set(True)
         bpy.ops.object.transform_apply(rotation=True)
         parent_obj.select_set(False)
 
-    def execute(self, context):
+    def execute_func(self, context, platform):
         filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in
                     ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
-        self.export_file(context, filepath)
+        self.export_file(context, filepath, platform)
 
         return {'FINISHED'}
 
+
+class ExportDSCSPC(ExportDSCSBase, bpy.types.Operator, ExportHelper):
+    bl_idname = 'export_file.export_dscs_pc'
+
+    def execute(self, context):
+        return super().execute_func(context, 'PC')
+
+
+class ExportDSCSPS4(ExportDSCSBase, bpy.types.Operator, ExportHelper):
+    bl_idname = 'export_file.export_dscs_ps4'
+
+    def execute(self, context):
+        return super().execute_func(context, 'PS4')
 
 # UV help from:
 # https://blender.stackexchange.com/questions/49341/how-to-get-the-uv-corresponding-to-a-vertex-via-the-python-api
