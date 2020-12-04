@@ -21,9 +21,9 @@ class AnimReader(BaseRW):
 
     Completion status
     ------
-    (x) AnimReader can successfully parse all anim files in DSDB archive within current constraints.
+    (o) AnimReader can successfully parse all anim files in DSDB archive within current constraints.
     (x) AnimReader cannot yet fully interpret all anim data in DSDB archive.
-    (x) AnimReader can write data to anim files.
+    (x) AnimReader cannot write data to anim files.
 
     Current hypotheses and observations
     ------
