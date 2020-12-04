@@ -108,6 +108,7 @@ class ImportDSCSBase:
         #     new_texture.image = bpy.data.images.load(dds_loc)
         # os.remove(dds_loc)
 
+        imported_textures = []
         for i, IF_material in enumerate(model_data.materials):
             # print(IF_material.textureID)
             # print(model_data.textures)
@@ -143,17 +144,8 @@ class ImportDSCSBase:
                 texture_node = new_material.node_tree.nodes.new('ShaderNodeTexImage')
                 texture_node.location = (-350, 220)
                 connect(texture_node.outputs['Alpha'], bsdf_node.inputs['Alpha'])
-                # texture_node.image = bpy.data.images[tex_name]
+                set_texture_node_image(texture_node, model_data.textures[IF_material.texture_id], imported_textures)
 
-                IF_texture = model_data.textures[IF_material.texture_id]
-                tex_filepath, tex_fileext = os.path.splitext(IF_texture.filepath)
-                tex_filename = os.path.split(tex_filepath)[-1]
-                tempdir = bpy.app.tempdir
-                # The img files are just dds obscured by a different file extension...
-                dds_loc = os.path.join(tempdir, tex_filename) + '.dds'
-                shutil.copy2(IF_texture.filepath, dds_loc)
-                texture_node.image = bpy.data.images.load(dds_loc)
-                # os.remove(dds_loc)
             # This is not the right way to do the colours...
             # if IF_material.emission_rgba is not None:
             #    rgba_node = new_material.node_tree.nodes.new('ShaderNodeRGB')
@@ -165,15 +157,7 @@ class ImportDSCSBase:
                 toon_node = new_material.node_tree.nodes.new('ShaderNodeBsdfToon')
 
                 connect(toon_texture_node.outputs['Color'], toon_node.inputs['Color'])
-
-                IF_toon_texture = model_data.textures[IF_material.toon_texture_id]
-                tex_filepath, tex_fileext = os.path.splitext(IF_toon_texture.filepath)
-                tex_filename = os.path.split(tex_filepath)[-1]
-                tempdir = bpy.app.tempdir
-                # The img files are just dds obscured by a different file extension...
-                dds_loc = os.path.join(tempdir, tex_filename) + '.dds'
-                shutil.copy2(IF_toon_texture.filepath, dds_loc)
-                toon_texture_node.image = bpy.data.images.load(dds_loc)
+                set_texture_node_image(toon_texture_node, model_data.textures[IF_material.toon_texture_id], imported_textures)
 
                 converter_node = new_material.node_tree.nodes.new('ShaderNodeShaderToRGB')
                 connect(toon_node.outputs['BSDF'], converter_node.inputs['Shader'])
@@ -275,8 +259,8 @@ class ImportDSCSBase:
         bpy.ops.object.transform_apply(rotation=True)
         parent_obj.select_set(False)
 
-    def execute_func(self, context, platform):
-        filepath, file_extension = os.path.splitext(self.filepath)
+    def execute_func(self, context, filepath, platform):
+        filepath, file_extension = os.path.splitext(filepath)
         assert any([file_extension == ext for ext in
                     ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
         self.import_file(context, filepath, platform)
@@ -284,15 +268,26 @@ class ImportDSCSBase:
         return {'FINISHED'}
 
 
+def set_texture_node_image(node, IF_texture, import_memory):
+    tex_filename = os.path.split(IF_texture.filepath)[-1]
+    tempdir = bpy.app.tempdir
+    dds_loc = os.path.join(tempdir, tex_filename)
+    if tex_filename not in import_memory:
+        import_memory.append(tex_filename)
+        shutil.copy2(IF_texture.filepath, dds_loc)
+        bpy.data.images.load(dds_loc)
+    node.image = bpy.data.images[tex_filename]
+
+
 class ImportDSCSPC(ImportDSCSBase, bpy.types.Operator, ImportHelper):
     bl_idname = 'import_file.import_dscs_pc'
 
     def execute(self, context):
-        return super().execute_func(context, 'PC')
+        return super().execute_func(context, self.filepath, 'PC')
 
 
 class ImportDSCSPS4(ImportDSCSBase, bpy.types.Operator, ImportHelper):
     bl_idname = 'import_file.import_dscs_ps4'
 
     def execute(self, context):
-        return super().execute_func(context, 'PS4')
+        return super().execute_func(context, self.filepath, 'PS4')
