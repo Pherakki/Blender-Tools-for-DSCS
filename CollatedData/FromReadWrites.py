@@ -25,7 +25,6 @@ def generate_intermediate_format_from_files(filepath, platform):
         imported_skeldata.read()
     with open(filepath + '.geom', 'rb') as F:
         imported_geomdata = GeomReader.for_platform(F, platform=platform)
-        print(type(imported_geomdata))
         imported_geomdata.read()
 
     directory = os.path.split(filepath)
