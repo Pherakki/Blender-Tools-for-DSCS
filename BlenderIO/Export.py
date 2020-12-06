@@ -259,8 +259,8 @@ class ExportDSCSBase:
         bpy.ops.object.transform_apply(rotation=True)
         parent_obj.select_set(False)
 
-    def execute_func(self, context, platform):
-        filepath, file_extension = os.path.splitext(self.filepath)
+    def execute_func(self, context, filepath, platform):
+        filepath, file_extension = os.path.splitext(filepath)
         assert any([file_extension == ext for ext in
                     ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
         self.export_file(context, filepath, platform)
@@ -272,14 +272,14 @@ class ExportDSCSPC(ExportDSCSBase, bpy.types.Operator, ExportHelper):
     bl_idname = 'export_file.export_dscs_pc'
 
     def execute(self, context):
-        return super().execute_func(context, 'PC')
+        return super().execute_func(context, self.filepath, 'PC')
 
 
 class ExportDSCSPS4(ExportDSCSBase, bpy.types.Operator, ExportHelper):
     bl_idname = 'export_file.export_dscs_ps4'
 
     def execute(self, context):
-        return super().execute_func(context, 'PS4')
+        return super().execute_func(context, self.filepath, 'PS4')
 
 # UV help from:
 # https://blender.stackexchange.com/questions/49341/how-to-get-the-uv-corresponding-to-a-vertex-via-the-python-api
