@@ -1,6 +1,7 @@
 from .BaseRW import BaseRW
 import numpy as np
 
+
 class SkelReader(BaseRW):
     """
     A class to read skel files. These files are split into eight main sections:
