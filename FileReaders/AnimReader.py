@@ -419,11 +419,13 @@ class UnknownAnimSubstructure(BaseRW):
         self.bytes_read += self.unknown_0x00
 
     def rw_part_2(self, rw_operator, cleanup_chunk_operator):
+        # Entries are ~0.01 - 0.00001
         rw_operator('unknown_data_2', 'fff'*self.part_2_count)
 
         self.bytes_read += self.unknown_0x02
 
     def rw_part_3(self, rw_operator, cleanup_chunk_operator):
+        # Each entry is ~1? (c.f. pc002_fc01)
         rw_operator('unknown_data_3', 'fff'*self.part_3_count)
         if self.unknown_0x04 != 0:
             cleanup_chunk_operator(self.bytes_read, 4)
@@ -463,5 +465,10 @@ class UnknownAnimSubstructure(BaseRW):
         self.bytes_read += self.unknown_0x0E
 
     def interpret_frame(self):
+        self.unknown_data_1 = self.chunk_list(self.unknown_data_1, 6)
         self.unknown_data_2 = self.chunk_list(self.unknown_data_2, 3)
         self.unknown_data_3 = self.chunk_list(self.unknown_data_3, 3)
+
+        self.unknown_data_6 = self.chunk_list(self.unknown_data_6, 6)
+        self.unknown_data_7 = self.chunk_list(self.unknown_data_7, 6)
+        self.unknown_data_8 = self.chunk_list(self.unknown_data_8, 3)
