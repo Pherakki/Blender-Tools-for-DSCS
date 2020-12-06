@@ -62,7 +62,7 @@ def make_skelreader(filepath, model_data):
         skelReader.unknown_rel_ptr_2 = skelReader.rel_ptr_to_end_of_parent_bones_chunk + skelReader.num_bones*4 - 4
         skelReader.unknown_rel_ptr_3 = skelReader.unknown_rel_ptr_2 + skelReader.unknown_0x0C*4 - 4
 
-        bytes_after_parent_bones_chunk = (skelReader.unknown_rel_ptr_3 + 40) - (skelReader.rel_ptr_to_end_of_parent_bones_chunk + 32) + len(skelReader.unknown_data_4)*4
+        bytes_after_parent_bones_chunk = (skelReader.unknown_rel_ptr_3 + 40) - (skelReader.rel_ptr_to_end_of_parent_bones_chunk + 32) + len(skelReader.unknown_data_4)
         bytes_after_parent_bones_chunk += (16 - (bytes_after_parent_bones_chunk % 16))
 
         skelReader.total_bytes = skelReader.rel_ptr_to_end_of_parent_bones_chunk + bytes_after_parent_bones_chunk + 32
