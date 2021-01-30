@@ -285,7 +285,7 @@ class AnimReader(BaseRW):
         Same for whatever goes in unknown_data_7b - that other set of indices that are unknown
         """
         self.assert_file_pointer_now_at(self.setup_and_static_data_size)
-        num_to_read = max([self.skelReader.setup_and_static_data_size, self.max_val_1, self.max_val_2])
+        num_to_read = max([self.skelReader.unknown_0x0C, self.max_val_1, self.max_val_2])
         #num_to_read = max([self.max_val_1, self.max_val_2])
         tell = self.bytestream.tell()
         if self.bone_mask_bytes != 0:
