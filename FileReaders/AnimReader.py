@@ -390,6 +390,10 @@ class UnknownAnimSubstructure(BaseRW):
         self.read_write(self.read_buffer, self.read_raw, self.cleanup_ragged_chunk_read)
         self.interpret_frame()
 
+    def write(self):
+        self.reinterpret_frame()
+        self.read_write(self.write_buffer, self.write_raw, self.cleanup_ragged_chunk_write)
+
     def read_write(self, rw_operator, rw_operator_raw, cleanup_chunk_operator):
         self.rw_header(rw_operator)
         self.rw_part_1(rw_operator, cleanup_chunk_operator)
