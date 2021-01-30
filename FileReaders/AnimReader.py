@@ -234,13 +234,9 @@ class AnimReader(BaseRW):
         maxval_op("max_val_2", "unknown_0x24")
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
-    def rw_part_1(self, rw_operator, chunk_cleanup_operator):
-        """
-        # 6 bytes assigned to each bone in unknown_bone_idxs_1
-        # type unclear; three half-float works for a lot of files but looks ridiculous for others
-        """
-        self.assert_file_pointer_now_at(self.abs_ptr_part_1)
-        rw_operator('unknown_data_1', 'hhh'*self.unknown_0x16)
+    def rw_initial_pose_bone_rotations(self, rw_operator_raw, chunk_cleanup_operator):
+        self.assert_file_pointer_now_at(self.abs_ptr_initial_pose_bone_rotations)
+        rw_operator_raw('initial_pose_bone_rotations', 6 * self.initial_pose_bone_rotations_count)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_part_2(self, rw_operator, chunk_cleanup_operator):
