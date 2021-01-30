@@ -112,21 +112,24 @@ class Skeleton:
 
 class Animation:
     def __init__(self):
-        self.bone_names = []
-        self.values = []
+        self.keyframes = {}
 
-        self.frames = []
-
-    def add_frame(self):
-        fr = Frame()
-        self.frames.append(fr)
+    def add_keyframe(self, frame_idx):
+        fr = KeyFrame()
+        self.keyframes[frame_idx] = fr
         return fr
 
 
-class Frame:
+class KeyFrame:
     def __init__(self):
-        self.keyframe = None
-        self.bone_names = []
-        self.values = []
-        self.bone_names2 = []
-        self.values2 = []
+        self.bone_poses = {}
+        
+    def add_bone_pose(self, bone_id, rotation=None, location=None, scale=None):
+        self.bone_poses[bone_id] = BoneTransform(rotation, location, scale)
+
+
+class BoneTransform:
+    def __init__(self, rotation, location, scale):
+        self.rotation = rotation
+        self.location = location
+        self.scale = scale
