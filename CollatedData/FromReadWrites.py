@@ -4,6 +4,7 @@ from ..FileReaders.GeomReader import GeomReader
 from ..FileReaders.AnimReader import AnimReader
 from .IntermediateFormat import IntermediateFormat
 
+import itertools
 import os
 import numpy as np
 
@@ -34,7 +35,6 @@ def generate_intermediate_format_from_files(filepath, platform):
     imported_animdata = {}
     for afile in os.listdir(directory):
         afilepath = os.path.join(directory, afile)
-        if afile[-4:] == 'anim' and afile[:len(filename)] == filename:
             afile_name, afile_ext = os.path.splitext(afile)
             with open(afilepath, 'rb') as F:
                 iar = AnimReader(F, imported_skeldata)
@@ -214,95 +214,68 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
 def add_anims(model_data, imported_animdata):
     for key, ar in imported_animdata.items():
         ad = model_data.new_anim(key)
-        # Quicker if you don't do this in terms of keyframes, but do it in terms of positions + values
-        # E.g. make a list of positions of 1s in the unknown_data_5
-        # Count how many there are
-        # Then grab that many from the unknown_data_6
-        # Put them in a k:v pair list
-        # Use that set_many function or whatever it is in Blender to set the entire f-curve in one go
-        gen_keyframe(ad,
-                     pair_animdata_to_bone_idxs(ar.initial_pose_rotations_bone_idxs, ar.initial_pose_bone_rotations),
-                     pair_animdata_to_bone_idxs(ar.initial_pose_locations_bone_idxs, ar.initial_pose_bone_locations),
-                     pair_animdata_to_bone_idxs(ar.initial_pose_scales_bone_idxs, ar.initial_pose_bone_scales))
+
+        rotation_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        rotation_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        location_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        location_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        scale_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        scale_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+
+        # First add in the rotations, locations, and scales that are constant throughout the animation
+        for bone_idx, value in zip(ar.initial_pose_rotations_bone_idxs, ar.initial_pose_bone_rotations):
+            rotation_fcurves_frames[bone_idx].append(0)
+            rotation_fcurves_values[bone_idx].append(value)
+        for bone_idx, value in zip(ar.initial_pose_locations_bone_idxs, ar.initial_pose_bone_locations):
+            location_fcurves_frames[bone_idx].append(0)
+            location_fcurves_values[bone_idx].append(value)
+        for bone_idx, value in zip(ar.initial_pose_scales_bone_idxs, ar.initial_pose_bone_scales):
+            scale_fcurves_frames[bone_idx].append(0)
+            scale_fcurves_values[bone_idx].append(value)
 
         for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.unknown_data_8[:-1]):
-            gen_keyframe(ad, pair_animdata_to_bone_idxs(ar.keyframe_rotations_bone_idxs,
-                                                        substructure.unknown_data_1),
-                             pair_animdata_to_bone_idxs(ar.keyframe_locations_bone_idxs,
-                                                        substructure.unknown_data_2),
-                             pair_animdata_to_bone_idxs(ar.keyframe_scales_bone_idxs, substructure.unknown_data_3))
 
-            total = 0
-            rotation_keyframes_masks, rotation_data_pointers = gen_masks(nframes, substructure.unknown_data_5, ar.keyframe_bone_rotations_count, total)
-            total += ar.keyframe_bone_rotations_count
-            location_keyframes_masks, location_data_pointers = gen_masks(nframes, substructure.unknown_data_5, ar.keyframe_bone_locations_count, total)
-            total += ar.keyframe_bone_locations_count
-            scale_keyframes_masks, scale_data_pointers = gen_masks(nframes, substructure.unknown_data_5, ar.keyframe_bone_scales_count, total)
-            total += ar.keyframe_bone_scales_count
-            unknown_keyframes_masks, unknown_data_pointers = gen_masks(nframes, substructure.unknown_data_5, ar.unknown_0x24, total)
-            total += ar.unknown_0x24
+            for bone_idx, value in zip(ar.keyframe_rotations_bone_idxs, substructure.unknown_data_1):
+                rotation_fcurves_frames[bone_idx].append(cumulative_frames)
+                rotation_fcurves_values[bone_idx].append(value)
+            for bone_idx, value in zip(ar.keyframe_locations_bone_idxs, substructure.unknown_data_2):
+                location_fcurves_frames[bone_idx].append(cumulative_frames)
+                location_fcurves_values[bone_idx].append(value)
+            for bone_idx, value in zip(ar.keyframe_scales_bone_idxs, substructure.unknown_data_3):
+                scale_fcurves_frames[bone_idx].append(cumulative_frames)
+                scale_fcurves_values[bone_idx].append(value)
 
-            rots_nused_per_bone = {}
-            locs_nused_per_bone = {}
-            scls_nused_per_bone = {}
-            for frame in range(nframes):
-                rotations = {}
-                for bone_idx, keyframe_mask, data_pointer in zip(ar.keyframe_rotations_bone_idxs, rotation_keyframes_masks, rotation_data_pointers):
-                    if bone_idx not in rots_nused_per_bone:
-                        rots_nused_per_bone[bone_idx] = 0
-                    is_updated = int(keyframe_mask[frame])
-                    if is_updated:
-                        rotations[bone_idx] = substructure.unknown_data_6[data_pointer+rots_nused_per_bone[bone_idx]]
-                        rots_nused_per_bone[bone_idx] += 1
-                locations = {}
-                for bone_idx, keyframe_mask, data_pointer in zip(ar.keyframe_locations_bone_idxs, location_keyframes_masks, location_data_pointers):
-                    if bone_idx not in locs_nused_per_bone:
-                        locs_nused_per_bone[bone_idx] = 0
-                    is_updated = int(keyframe_mask[frame])
-                    if is_updated:
-                        locations[bone_idx] = substructure.unknown_data_7[data_pointer+locs_nused_per_bone[bone_idx]]
-                        locs_nused_per_bone[bone_idx] += 1
-                scales = {}
-                for bone_idx, keyframe_mask, data_pointer in zip(ar.keyframe_scales_bone_idxs, scale_keyframes_masks, scale_data_pointers):
-                    if bone_idx not in scls_nused_per_bone:
-                        scls_nused_per_bone[bone_idx] = 0
-                    is_updated = int(keyframe_mask[frame])
-                    if is_updated:
-                        scales[bone_idx] = substructure.unknown_data_8[data_pointer+scls_nused_per_bone[bone_idx]]
-                        scls_nused_per_bone[bone_idx] += 1
+            if nframes != 0:
+                masks = chunks(substructure.unknown_data_5, nframes)
+            else:
+                masks = []
+            rotations = iter(substructure.unknown_data_6)
+            locations = iter(substructure.unknown_data_7)
+            scales = iter(substructure.unknown_data_8)
 
-                gen_keyframe(ad, rotations, locations, scales)
+            for bone_idx, mask in zip(ar.keyframe_rotations_bone_idxs, masks):
+                frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
+                values = itertools.islice(rotations, len(frames))  # Pop the next num_frames rotations
+                rotation_fcurves_frames[bone_idx].extend(frames)
+                rotation_fcurves_values[bone_idx].extend(values)
+            for bone_idx, mask in zip(ar.keyframe_locations_bone_idxs, masks):
+                frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
+                values = itertools.islice(locations, len(frames)) # Pop the next num_frames locations
+                location_fcurves_frames[bone_idx].extend(frames)
+                location_fcurves_values[bone_idx].extend(values)
+            for bone_idx, mask in zip(ar.keyframe_scales_bone_idxs, masks):
+                frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
+                values = itertools.islice(scales, len(frames))  # Pop the next num_frames scales
+                scale_fcurves_frames[bone_idx].extend(frames)
+                scale_fcurves_values[bone_idx].extend(values)
+
+        for bone_idx in range(ar.num_bones):
+            ad.add_rotation_fcurve(bone_idx, rotation_fcurves_frames[bone_idx], rotation_fcurves_values[bone_idx])
+            ad.add_location_fcurve(bone_idx, location_fcurves_frames[bone_idx], location_fcurves_values[bone_idx])
+            ad.add_scale_fcurve(bone_idx, scale_fcurves_frames[bone_idx], scale_fcurves_values[bone_idx])
 
 
-def gen_masks(nframes, data, nelements, total):
-    start = total*nframes
-    stop = (total+nelements)*nframes
-
-    keyframes_masks = data[start:stop]
-    keyframes_masks = [keyframes_masks[i * nframes:(i + 1) * nframes]  for i in range(nelements)]
-    data_pointers = [0]
-    for mask in keyframes_masks:
-        total = sum([int(elem) for elem in mask])
-        data_pointers.append(data_pointers[-1] + total)
-
-    return keyframes_masks, data_pointers
-
-
-def gen_keyframe(anim_data, rotations, locations, scales):
-    new_keyframe = anim_data.add_keyframe(len(anim_data.keyframes))
-
-    total_keys = set()
-    total_keys.update(set(rotations.keys()))
-    total_keys.update(set(locations.keys()))
-    total_keys.update(set(scales.keys()))
-
-    total_keys = sorted(list(total_keys))
-    for bone_idx in total_keys:
-        rotation = rotations.get(bone_idx)
-        location = locations.get(bone_idx)
-        scale = scales.get(bone_idx)
-        new_keyframe.add_bone_pose(bone_idx, rotation, location, scale)
-
-
-def pair_animdata_to_bone_idxs(idxs, data):
-    return {idx: datum for idx, datum in zip(idxs, data)}
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
