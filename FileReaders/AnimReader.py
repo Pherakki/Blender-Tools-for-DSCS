@@ -376,24 +376,24 @@ class KeyframeChunk(BaseRW):
 
     def read(self):
         self.read_write(self.read_buffer, self.read_raw, self.cleanup_ragged_chunk_read)
-        self.interpret_frame()
+        self.interpret_keyframe_chunk()
 
     def write(self):
-        self.reinterpret_frame()
+        self.reinterpret_keyframe_chunk()
         self.read_write(self.write_buffer, self.write_raw, self.cleanup_ragged_chunk_write)
 
     def read_write(self, rw_operator, rw_operator_raw, cleanup_chunk_operator):
         self.rw_header(rw_operator)
-        self.rw_part_1(rw_operator_raw)
-        self.rw_part_2(rw_operator)
-        self.rw_part_3(rw_operator, cleanup_chunk_operator)
+        self.rw_frame_0_rotations(rw_operator_raw)
+        self.rw_frame_0_locations(rw_operator)
+        self.rw_frame_0_scales(rw_operator, cleanup_chunk_operator)
         self.rw_part_4(rw_operator)
 
-        self.rw_part_5(rw_operator_raw)
+        self.rw_keyframes_in_use(rw_operator_raw)
 
-        self.rw_part_6(rw_operator_raw)
-        self.rw_part_7(rw_operator)
-        self.rw_part_8(rw_operator, cleanup_chunk_operator)
+        self.rw_keyframed_rotations(rw_operator_raw)
+        self.rw_keyframed_locations(rw_operator)
+        self.rw_keyframed_scales(rw_operator, cleanup_chunk_operator)
         self.rw_part_9(rw_operator)
 
         cleanup_chunk_operator(self.bytestream.tell(), 16)
@@ -412,17 +412,17 @@ class KeyframeChunk(BaseRW):
 
         self.bytes_read += 16
 
-    def rw_part_1(self, rw_operator):
+    def rw_frame_0_rotations(self, rw_operator):
         rw_operator('frame_0_rotations', self.frame_0_rotations_bytecount)
 
         self.bytes_read += self.frame_0_rotations_bytecount
 
-    def rw_part_2(self, rw_operator):
+    def rw_frame_0_locations(self, rw_operator):
         rw_operator('frame_0_locations', 'fff'*(self.frame_0_locations_bytecount // 12))
 
         self.bytes_read += self.frame_0_locations_bytecount
 
-    def rw_part_3(self, rw_operator, cleanup_chunk_operator):
+    def rw_frame_0_scales(self, rw_operator, cleanup_chunk_operator):
         rw_operator('frame_0_scales', 'fff'*(self.frame_0_scales_bytecount // 12))
         if self.frame_0_scales_bytecount != 0:
             cleanup_chunk_operator(self.bytes_read, 4)
@@ -434,7 +434,7 @@ class KeyframeChunk(BaseRW):
 
         self.bytes_read += self.unknown_0x06
 
-    def rw_part_5(self, rw_operator_raw):
+    def rw_keyframes_in_use(self, rw_operator_raw):
         """
         This is a bit-string denoting keyframes
         """
@@ -442,17 +442,17 @@ class KeyframeChunk(BaseRW):
 
         self.bytes_read += self.part5_size
 
-    def rw_part_6(self, rw_operator_raw):
+    def rw_keyframed_rotations(self, rw_operator_raw):
         rw_operator_raw('keyframed_rotations', self.keyframed_rotations_bytecount)
 
         self.bytes_read += self.keyframed_rotations_bytecount
 
-    def rw_part_7(self, rw_operator):
+    def rw_keyframed_locations(self, rw_operator):
         rw_operator('keyframed_locations', 'fff' * (self.keyframed_locations_bytecount // 12))
 
         self.bytes_read += self.keyframed_locations_bytecount
 
-    def rw_part_8(self, rw_operator, cleanup_chunk_operator):
+    def rw_keyframed_scales(self, rw_operator, cleanup_chunk_operator):
         rw_operator('keyframed_scales', 'fff' * (self.keyframed_scales_bytecount // 12))
         if self.keyframed_scales_bytecount != 0:
             cleanup_chunk_operator(self.bytes_read, 4)
@@ -464,7 +464,7 @@ class KeyframeChunk(BaseRW):
 
         self.bytes_read += self.unknown_0x0E
 
-    def interpret_frame(self):
+    def interpret_keyframe_chunk(self):
         self.keyframes_in_use: bytes
 
         self.frame_0_rotations = self.chunk_list(self.frame_0_rotations, 6)
@@ -484,7 +484,7 @@ class KeyframeChunk(BaseRW):
         self.keyframed_locations = self.chunk_list(self.keyframed_locations, 3)
         self.keyframed_scales = self.chunk_list(self.keyframed_scales, 3)
 
-    def reinterpret_frame(self):
+    def reinterpret_keyframe_chunk(self):
         self.keyframes_in_use: str
 
         self.frame_0_rotations = [serialise_quaternion(elem) for elem in self.frame_0_rotations]
