@@ -158,6 +158,7 @@ class SkelReader(BaseRW):
         bytes_to_read = self.num_bones * 4
         # B, H, I, e, f all seem to give nonsensical results...
         # Changing the endianness doesn't help
+        # Could be a float normalised in the range [-1, 1] using int16s (or equiv. for uint16)
         rw_operator_raw('unknown_data_2', bytes_to_read)  # self.decode_data_as('I', self.bytestream.read(bytes_to_read), endianness='>')
 
     def rw_unknown_data_3(self, rw_operator):
@@ -167,7 +168,7 @@ class SkelReader(BaseRW):
         rw_operator('unknown_data_3', 'I'*self.unknown_0x0C)
 
     def rw_unknown_data_4(self, rw_operator_raw):
-        # Contains some information (?) and pad bytes
+        # ???
         rw_operator_raw('unknown_data_4', 4*self.unknown_0x0C)
 
     def interpret_skel_data(self):
