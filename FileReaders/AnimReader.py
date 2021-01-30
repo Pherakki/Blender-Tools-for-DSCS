@@ -10,14 +10,14 @@ class AnimReader(BaseRW):
         1.  The header, which gives file pointers to split the file into its major sections, plus counts of what appears
             in each section.
         2.  A section that contains up to eight lists of bone indices, depending on non-zero counts in the header.
-        3.  A section that defines the initial rotations of bones.
-        4.  A section that defines the initial locations of bones.
-        5.  A section that defines the initial scales of bones.
+        3.  A section that defines static rotations of bones.
+        4.  A section that defines static locations of bones.
+        5.  A section that defines static scales of bones.
         6.  A section that 1 float (?)  per unknown_0x1C.
-        7.  A section that contains lengths and start pointers for a set of substructures.
-        8.  A section that contains cumulative counts and increments, one set of numbers per substructures.
-        9.  A section of 0s and -1s, with one number per bone - may be blank, presumably if all bones have the value '-1'.
-        10. A list of substructures, which contain data very similar to sections 3-6.
+        7.  A section that contains lengths and start pointers for a set of keyframe chunks.
+        8.  A section that contains cumulative frame counts and number of frames per Keyframe chunk.
+        9.  A section of 0s and -1s, marking which bones (if any) are not animated.
+        10. A list of keyframe chunks, which contain data very similar to sections 3-6.
 
     Completion status
     ------
@@ -27,30 +27,22 @@ class AnimReader(BaseRW):
 
     Current hypotheses and observations
     ------
-    1.  Sections 3-6 (functions in the code are labelled rw_part_2 though to 6) appear to be part of the same data
-        structure: the same structure appears twice in every subreader.
-        This presumably describes a keyframe; perhaps the first structure describes the initial pose whereas the ones
-        that come later describe poses to interpolate through for the animation.
-    2.  Sections 4, 5, 6 might therefore be position, rotation, and scale.
-    3.  Section 8 contains a cumulative count plus and increment: this might state which keyframe the animation data is
-        attached to and the gap until the next keyframe.
-    4.  If the above hypothesis is correct, this would make each substructure a pose delta defined for each keyframe.
+    1.  The fourth data type - other than rotations, locations, and bones - looks like it might be UV coord shifts
     """
+
     def __init__(self, bytestream, skelReader):
         super().__init__(bytestream)
         self.skelReader = skelReader
 
         # Header variables
         self.filetype = None
-        self.unknown_0x04 = None  # Float?
-        self.unknown_0x06 = None  # Float?
-        self.unknown_0x08 = None  # Float?
-        self.unknown_0x0A = None  # Float?
+        self.animation_duration = None  # Seconds
+        self.playback_rate = None  # Keyframes per second
 
-        self.unknown_0x0C = None  # Specifies the end of the initial data chunks
+        self.setup_and_static_data_size = None  # Specifies the end of the initial data chunks
         self.num_bones = None
-        self.unknown_0x10 = None  # 1 more than the final count in part 6: total frames in animation?
-        self.unknown_0x12 = None  # part 5 is 8x this count, part 6 is 4x this count: count of UnknownAnimSubstructures. Presumably total # of keyframes.
+        self.total_frames = None  # 1 more than the final count in part 6: total frames in animation?
+        self.num_keyframe_chunks = None  # part 5 is 8x this count, part 6 is 4x this count: count of KeyframeChunks.
         self.always_16384 = None  # Always 16384; maybe a section terminator, maybe the precision of the rotations
 
         self.initial_pose_bone_rotations_count = None  # part 1 is 6x this count, counts bone idxs
@@ -62,8 +54,8 @@ class AnimReader(BaseRW):
         self.keyframe_bone_scales_count = None  # part 3 of subreaders is 12x this count,counts bone idxs
         self.unknown_0x24 = None  # part 4 of subreaders is 4x this count, counts bone idxs
         self.padding_0x26 = None  # Always 0
-        self.unknown_0x28 = None  # Specifies the number of cleanup bytes after the initial data chunks
-        self.unknown_0x2C = None  # Specifies the end of the initial data chunks if cleanup bytes required
+        self.bone_mask_bytes = None  # Specifies size of the bone mask
+        self.abs_ptr_bone_mask = None
 
         self.unknown_0x30 = None  # Relative ptr
         self.unknown_0x34 = None  # Relative ptr
@@ -101,11 +93,11 @@ class AnimReader(BaseRW):
         self.initial_pose_bone_locations = None
         self.initial_pose_bone_scales = None
         self.unknown_data_4 = None
-        self.unknown_data_5 = None
+        self.keyframe_chunks_ptrs = None
         self.keyframe_counts = None
-        self.unknown_data_7 = None
-        self.unknown_data_7b = None
-        self.unknown_data_8 = None
+        self.bone_masks = None
+        self.unknown_data_masks = None
+        self.keyframe_chunks = None
         
         self.max_val_1 = None
         self.max_val_2 = None
@@ -135,15 +127,13 @@ class AnimReader(BaseRW):
         self.assert_file_pointer_now_at(0)
         rw_operator_ascii('filetype', 4)
 
-        rw_operator('unknown_0x04', 'f')
-        #rw_operator('unknown_0x06', 'BB')
-        rw_operator('unknown_0x08', 'f')
-        #rw_operator('unknown_0x0A', 'BB')
+        rw_operator('animation_duration', 'f')
+        rw_operator('playback_rate', 'f')
 
-        rw_operator('unknown_0x0C', 'H')
+        rw_operator('setup_and_static_data_size', 'H')
         rw_operator('num_bones', 'H')
-        rw_operator('unknown_0x10', 'H')
-        rw_operator('unknown_0x12', 'H')
+        rw_operator('total_frames', 'H')
+        rw_operator('num_keyframe_chunks', 'H')
         rw_operator('always_16384', 'H')  # Maybe this is the precision of the quaternions?
         self.assert_equal('always_16384', 16384)
         assert self.always_16384 == 16384, self.always_16384
@@ -159,10 +149,10 @@ class AnimReader(BaseRW):
         rw_operator('padding_0x26', 'H')
         self.assert_is_zero('padding_0x26')
 
-        rw_operator('unknown_0x28', 'I')
-        rw_operator('unknown_0x2C', 'I')
-        if self.unknown_0x28 != 0:
-            self.assert_equal('unknown_0x2C', self.unknown_0x0C)
+        rw_operator('bone_mask_bytes', 'I')
+        rw_operator('abs_ptr_bone_mask', 'I')
+        if self.bone_mask_bytes != 0:
+            self.assert_equal('abs_ptr_bone_mask', self.setup_and_static_data_size)
 
         pos = self.bytestream.tell()
         rw_operator('unknown_0x30', 'I')
@@ -278,7 +268,7 @@ class AnimReader(BaseRW):
         # final data reader to the end of the file (WHY?!!?!)
         """
         self.assert_file_pointer_now_at(self.abs_ptr_part_5)
-        rw_operator('unknown_data_5', 'HHI'*self.unknown_0x12)
+        rw_operator('unknown_data_5', 'HHI' * self.num_keyframe_chunks)
 
     def rw_keyframes_per_substructure(self, rw_operator, chunk_cleanup_operator):
         """
@@ -286,7 +276,7 @@ class AnimReader(BaseRW):
         # Presumably the total count of frames and the gap between each keyframe
         """
         self.assert_file_pointer_now_at(self.abs_ptr_part_6)
-        rw_operator('keyframe_counts', 'HH'*self.unknown_0x12)
+        rw_operator('keyframe_counts', 'HH' * self.num_keyframe_chunks)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_part_7(self, rw_operator, chunk_cleanup_operator):
@@ -294,29 +284,27 @@ class AnimReader(BaseRW):
         Contains 0 or -1 for each bone: If 0, that bone isn't given any location data in the file
         Same for whatever goes in unknown_data_7b - that other set of indices that are unknown
         """
-        self.assert_file_pointer_now_at(self.unknown_0x0C)
-        num_to_read = max([self.skelReader.unknown_0x0C, self.max_val_1, self.max_val_2])
+        self.assert_file_pointer_now_at(self.setup_and_static_data_size)
+        num_to_read = max([self.skelReader.setup_and_static_data_size, self.max_val_1, self.max_val_2])
         #num_to_read = max([self.max_val_1, self.max_val_2])
         tell = self.bytestream.tell()
-        if self.unknown_0x28 != 0:
+        if self.bone_mask_bytes != 0:
             self.header = list(self.header)
             self.header.insert(20, self.bytestream.tell())
 
-            rw_operator('unknown_data_7', 'b'*(self.num_bones))
+            rw_operator('bone_masks', 'b'*(self.num_bones))
             chunk_cleanup_operator(self.bytestream.tell(), 4)
 
-        if (self.unknown_0x28 - (self.bytestream.tell() - tell)) > 0:
-            rw_operator('unknown_data_7b', 'b'*(num_to_read))
+        # Suuuper hacky check. There should be a way to do this without referring back to the current position..?
+        if (self.bone_mask_bytes - (self.bytestream.tell() - tell)) > 0:
+            rw_operator('unknown_data_masks', 'b'*(num_to_read))
             chunk_cleanup_operator(self.bytestream.tell(), 4)
 
-            #rw_operator('unknown_data_7', 'b'*self.num_bones)
-            #chunk_cleanup_operator(self.num_bones, self.unknown_0x28)
-            # Should work, but doesn't?! How is unknown_0x28 calculated if it isn't a roundup of the number of bones?!
-        if self.unknown_0x28 != 0:
+        if self.bone_mask_bytes != 0:
             chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_part_8(self, rw_method_name):
-        for i, (unkdatareader, d5, d6) in enumerate(zip(self.unknown_data_8, self.chunk_list(self.unknown_data_5, 3),
+        for i, (unkdatareader, d5, d6) in enumerate(zip(self.keyframe_chunks, self.chunk_list(self.keyframe_chunks_ptrs, 3),
                                                         self.chunk_list(self.keyframe_counts, 2))):
             #print(i, self.unknown_data_7, self.unknown_0x28, self.num_bones)
             # Currently misses off the final reader; will be fine once length is calculable
@@ -327,7 +315,7 @@ class AnimReader(BaseRW):
             getattr(unkdatareader, rw_method_name)()
 
     def prepare_read_op(self):
-        self.unknown_data_8 = [UnknownAnimSubstructure(self.bytestream) for _ in range(self.unknown_0x12)]
+        self.keyframe_chunks = [KeyframeChunk(self.bytestream) for _ in range(self.num_keyframe_chunks)]
 
     def interpret_animdata(self):
         self.initial_pose_bone_rotations = self.chunk_list(self.initial_pose_bone_rotations, 6)
@@ -335,7 +323,7 @@ class AnimReader(BaseRW):
         self.initial_pose_bone_locations = self.chunk_list(self.initial_pose_bone_locations, 3)
         self.initial_pose_bone_scales = self.chunk_list(self.initial_pose_bone_scales, 3)
 
-        self.unknown_data_5 = self.chunk_list(self.unknown_data_5, 3)
+        self.keyframe_chunks_ptrs = self.chunk_list(self.keyframe_chunks_ptrs, 3)
         self.keyframe_counts = self.chunk_list(self.keyframe_counts, 2)
 
     def reinterpret_animdata(self):
@@ -344,33 +332,33 @@ class AnimReader(BaseRW):
         self.initial_pose_bone_locations = self.flatten_list(self.initial_pose_bone_locations)
         self.initial_pose_bone_scales = self.flatten_list(self.initial_pose_bone_scales)
 
-        self.unknown_data_5 = self.flatten_list(self.unknown_data_5)
+        self.keyframe_chunks_ptrs = self.flatten_list(self.keyframe_chunks_ptrs)
         self.keyframe_counts = self.flatten_list(self.keyframe_counts)
 
 
-class UnknownAnimSubstructure(BaseRW):
+class KeyframeChunk(BaseRW):
     def __init__(self, bytestream):
         super().__init__(bytestream)
 
         # Header variables
-        self.unknown_0x00 = None  # Size of part 1; divisible by 6
-        self.unknown_0x02 = None  # Size of part 2; divisible by 12
-        self.unknown_0x04 = None  # Size of part 3; divisible by 12 + enough bytes to make total so far divisible by 4
+        self.frame_0_rotations_bytecount = None  # Size of part 1; divisible by 6
+        self.frame_0_locations_bytecount = None  # Size of part 2; divisible by 12
+        self.frame_0_scales_bytecount = None  # Size of part 3; divisible by 12 + enough bytes to make total so far divisible by 4
         self.unknown_0x06 = None  # Size of part 4; divisible by 4
-        self.unknown_0x08 = None  # Size of part 6; divisible by 6
-        self.unknown_0x0A = None  # Size of part 7; divisible by 12
-        self.unknown_0x0C = None  # Size of part 8; divisible by 12 + enough bytes to make total so far divisible by 4
+        self.keyframed_rotations_bytecount = None  # Size of part 6; divisible by 6
+        self.keyframed_locations_bytecount = None  # Size of part 7; divisible by 12
+        self.keyframed_scales_bytecount = None  # Size of part 8; divisible by 12 + enough bytes to make total so far divisible by 4
         self.unknown_0x0E = None  # Size of part 9; divisible by 4
 
         # Data holders
-        self.unknown_data_1 = None  # Contains 6 bytes per entry, dtype smallest-3 quaternion with uint15s. Count in parent header.
-        self.unknown_data_2 = None  # Contains 12 bytes per entry, dtype fff. Count in parent header.
-        self.unknown_data_3 = None  # Contains 12 bytes per entry, dtype fff. Count in parent header.
+        self.frame_0_rotations = None  # Contains 6 bytes per entry, dtype smallest-3 quaternion with uint15s. Count in parent header.
+        self.frame_0_locations = None  # Contains 12 bytes per entry, dtype fff. Count in parent header.
+        self.frame_0_scales = None  # Contains 12 bytes per entry, dtype fff. Count in parent header.
         self.unknown_data_4 = None  # Contains 4 bytes per entry, dtype f(?). Count in parent header.
-        self.unknown_data_5 = None  # Bit-packed booleans stating which keyframes are in use
-        self.unknown_data_6 = None  # Contains 6 bytes per entry, dtype smallest-3 quaternion with uint15s. Count in parent header.
-        self.unknown_data_7 = None  # Contains 12 bytes per entry, dtype fff. Count unknown.
-        self.unknown_data_8 = None  # Contains 12 bytes per entry, dtype fff. Count unknown.
+        self.keyframes_in_use = None  # Bit-packed booleans stating which keyframes are in use
+        self.keyframed_rotations = None  # Contains 6 bytes per entry, dtype smallest-3 quaternion with uint15s. Count in parent header.
+        self.keyframed_locations = None  # Contains 12 bytes per entry, dtype fff. Count unknown.
+        self.keyframed_scales = None  # Contains 12 bytes per entry, dtype fff. Count unknown.
         self.unknown_data_9 = None  # Contains 4 bytes per entry, dtype f(?). Count unknown.
 
         # Utility variables
@@ -412,41 +400,37 @@ class UnknownAnimSubstructure(BaseRW):
 
     def rw_header(self, rw_operator):
         self.assert_file_pointer_now_at(self.start_pointer)
-        rw_operator('unknown_0x00', 'H')
-        rw_operator('unknown_0x02', 'H')
-        rw_operator('unknown_0x04', 'H')
+        rw_operator('frame_0_rotations_bytecount', 'H')
+        rw_operator('frame_0_locations_bytecount', 'H')
+        rw_operator('frame_0_scales_bytecount', 'H')
         rw_operator('unknown_0x06', 'H')
 
-        rw_operator('unknown_0x08', 'H')
-        rw_operator('unknown_0x0A', 'H')
-        rw_operator('unknown_0x0C', 'H')
+        rw_operator('keyframed_rotations_bytecount', 'H')
+        rw_operator('keyframed_locations_bytecount', 'H')
+        rw_operator('keyframed_scales_bytecount', 'H')
         rw_operator('unknown_0x0E', 'H')
 
         self.bytes_read += 16
 
     def rw_part_1(self, rw_operator):
-        """
-        These are "initial pose" rotations: see part 6
-        """
-        rw_operator('unknown_data_1', self.unknown_0x00)
+        rw_operator('frame_0_rotations', self.frame_0_rotations_bytecount)
 
-        self.bytes_read += self.unknown_0x00
+        self.bytes_read += self.frame_0_rotations_bytecount
 
     def rw_part_2(self, rw_operator):
-        # Entries are ~0.01 - 0.00001
-        rw_operator('unknown_data_2', 'fff'*self.part_2_count)
+        rw_operator('frame_0_locations', 'fff'*(self.frame_0_locations_bytecount // 12))
 
-        self.bytes_read += self.unknown_0x02
+        self.bytes_read += self.frame_0_locations_bytecount
 
     def rw_part_3(self, rw_operator, cleanup_chunk_operator):
-        rw_operator('unknown_data_3', 'fff'*self.part_3_count)
-        if self.unknown_0x04 != 0:
+        rw_operator('frame_0_scales', 'fff'*(self.frame_0_scales_bytecount // 12))
+        if self.frame_0_scales_bytecount != 0:
             cleanup_chunk_operator(self.bytes_read, 4)
 
-        self.bytes_read += self.unknown_0x04
+        self.bytes_read += self.frame_0_scales_bytecount
 
     def rw_part_4(self, rw_operator):
-        rw_operator('unknown_data_4', 'f'*self.part_4_count, force_1d=True)
+        rw_operator('unknown_data_4', 'f'*(self.unknown_0x06 // 4), force_1d=True)
 
         self.bytes_read += self.unknown_0x06
 
@@ -454,26 +438,26 @@ class UnknownAnimSubstructure(BaseRW):
         """
         This is a bit-string denoting keyframes
         """
-        rw_operator_raw('unknown_data_5', self.part5_size)
+        rw_operator_raw('keyframes_in_use', self.part5_size)
 
         self.bytes_read += self.part5_size
 
     def rw_part_6(self, rw_operator_raw):
-        rw_operator_raw('unknown_data_6', self.unknown_0x08)
+        rw_operator_raw('keyframed_rotations', self.keyframed_rotations_bytecount)
 
-        self.bytes_read += self.unknown_0x08
+        self.bytes_read += self.keyframed_rotations_bytecount
 
     def rw_part_7(self, rw_operator):
-        rw_operator('unknown_data_7', 'fff' * (self.unknown_0x0A//12))
+        rw_operator('keyframed_locations', 'fff' * (self.keyframed_locations_bytecount // 12))
 
-        self.bytes_read += self.unknown_0x0A
+        self.bytes_read += self.keyframed_locations_bytecount
 
     def rw_part_8(self, rw_operator, cleanup_chunk_operator):
-        rw_operator('unknown_data_8', 'fff' * (self.unknown_0x0C//12))
-        if self.unknown_0x0C != 0:
+        rw_operator('keyframed_scales', 'fff' * (self.keyframed_scales_bytecount // 12))
+        if self.keyframed_scales_bytecount != 0:
             cleanup_chunk_operator(self.bytes_read, 4)
 
-        self.bytes_read += self.unknown_0x0C
+        self.bytes_read += self.keyframed_scales_bytecount
 
     def rw_part_9(self, rw_operator):
         rw_operator('unknown_data_9', 'f' * (self.unknown_0x0E//4), force_1d=True)
@@ -481,44 +465,44 @@ class UnknownAnimSubstructure(BaseRW):
         self.bytes_read += self.unknown_0x0E
 
     def interpret_frame(self):
-        self.unknown_data_5: bytes
+        self.keyframes_in_use: bytes
 
-        self.unknown_data_1 = self.chunk_list(self.unknown_data_1, 6)
-        self.unknown_data_1 = [deserialise_quaternion(elem) for elem in self.unknown_data_1]
-        self.unknown_data_2 = self.chunk_list(self.unknown_data_2, 3)
-        self.unknown_data_3 = self.chunk_list(self.unknown_data_3, 3)
+        self.frame_0_rotations = self.chunk_list(self.frame_0_rotations, 6)
+        self.frame_0_rotations = [deserialise_quaternion(elem) for elem in self.frame_0_rotations]
+        self.frame_0_locations = self.chunk_list(self.frame_0_locations, 3)
+        self.frame_0_scales = self.chunk_list(self.frame_0_scales, 3)
 
-        if len(self.unknown_data_5):
-            self.unknown_data_5 = bytes_to_bits(self.unknown_data_5)
+        if len(self.keyframes_in_use):
+            self.keyframes_in_use = bytes_to_bits(self.keyframes_in_use)
             # Chop off padding bits
-            self.unknown_data_5 = self.unknown_data_5[:self.nframes*(len(self.unknown_data_5)//self.nframes)]
+            self.keyframes_in_use = self.keyframes_in_use[:self.nframes * (len(self.keyframes_in_use) // self.nframes)]
         else:
-            self.unknown_data_5 = ''
+            self.keyframes_in_use = ''
 
-        self.unknown_data_6 = self.chunk_list(self.unknown_data_6, 6)
-        self.unknown_data_6 = [deserialise_quaternion(elem) for elem in self.unknown_data_6]
-        self.unknown_data_7 = self.chunk_list(self.unknown_data_7, 3)
-        self.unknown_data_8 = self.chunk_list(self.unknown_data_8, 3)
+        self.keyframed_rotations = self.chunk_list(self.keyframed_rotations, 6)
+        self.keyframed_rotations = [deserialise_quaternion(elem) for elem in self.keyframed_rotations]
+        self.keyframed_locations = self.chunk_list(self.keyframed_locations, 3)
+        self.keyframed_scales = self.chunk_list(self.keyframed_scales, 3)
 
     def reinterpret_frame(self):
-        self.unknown_data_5: str
+        self.keyframes_in_use: str
 
-        self.unknown_data_1 = [serialise_quaternion(elem) for elem in self.unknown_data_1]
-        self.unknown_data_1 = b''.join(self.unknown_data_1)
-        self.unknown_data_2 = self.flatten_list(self.unknown_data_2)
-        self.unknown_data_3 = self.flatten_list(self.unknown_data_3)
+        self.frame_0_rotations = [serialise_quaternion(elem) for elem in self.frame_0_rotations]
+        self.frame_0_rotations = b''.join(self.frame_0_rotations)
+        self.frame_0_locations = self.flatten_list(self.frame_0_locations)
+        self.frame_0_scales = self.flatten_list(self.frame_0_scales)
 
-        if len(self.unknown_data_5):
+        if len(self.keyframes_in_use):
             # Add back padding bits
-            self.unknown_data_5 += '0'*((8 - len(self.unknown_data_5) % 8) % 8)
-            self.unknown_data_5 = bits_to_bytes(self.unknown_data_5)
+            self.keyframes_in_use += '0' * ((8 - len(self.keyframes_in_use) % 8) % 8)
+            self.keyframes_in_use = bits_to_bytes(self.keyframes_in_use)
         else:
-            self.unknown_data_5 = b''
+            self.keyframes_in_use = b''
 
-        self.unknown_data_6 = [serialise_quaternion(elem) for elem in self.unknown_data_6]
-        self.unknown_data_6 = b''.join(self.unknown_data_6)
-        self.unknown_data_7 = self.flatten_list(self.unknown_data_7)
-        self.unknown_data_8 = self.flatten_list(self.unknown_data_8)
+        self.keyframed_rotations = [serialise_quaternion(elem) for elem in self.keyframed_rotations]
+        self.keyframed_rotations = b''.join(self.keyframed_rotations)
+        self.keyframed_locations = self.flatten_list(self.keyframed_locations)
+        self.keyframed_scales = self.flatten_list(self.keyframed_scales)
 
 
 def chunks(lst, n):

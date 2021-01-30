@@ -236,14 +236,14 @@ def add_anims(model_data, imported_animdata):
             scale_fcurves_values[bone_idx].append(value)
 
         # Now add in the rotations, locations, and scales that change throughout the animation
-        for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.unknown_data_8[:-1]):
-            for bone_idx, value in zip(ar.keyframe_rotations_bone_idxs, substructure.unknown_data_1):
+        for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.keyframe_chunks[:-1]):
+            for bone_idx, value in zip(ar.keyframe_rotations_bone_idxs, substructure.frame_0_rotations):
                 rotation_fcurves_frames[bone_idx].append(cumulative_frames)
                 rotation_fcurves_values[bone_idx].append(value)
-            for bone_idx, value in zip(ar.keyframe_locations_bone_idxs, substructure.unknown_data_2):
+            for bone_idx, value in zip(ar.keyframe_locations_bone_idxs, substructure.frame_0_locations):
                 location_fcurves_frames[bone_idx].append(cumulative_frames)
                 location_fcurves_values[bone_idx].append(value)
-            for bone_idx, value in zip(ar.keyframe_scales_bone_idxs, substructure.unknown_data_3):
+            for bone_idx, value in zip(ar.keyframe_scales_bone_idxs, substructure.frame_0_scales):
                 scale_fcurves_frames[bone_idx].append(cumulative_frames)
                 scale_fcurves_values[bone_idx].append(value)
 
@@ -256,12 +256,12 @@ def add_anims(model_data, imported_animdata):
             # into generators using the built-in 'iter' function or the 'chunks' function defined at the bottom of the
             # file.
             if nframes != 0:
-                masks = chunks(substructure.unknown_data_5, nframes)
+                masks = chunks(substructure.keyframe_chunks_ptrs, nframes)
             else:
                 masks = []
-            rotations = iter(substructure.unknown_data_6)
-            locations = iter(substructure.unknown_data_7)
-            scales = iter(substructure.unknown_data_8)
+            rotations = iter(substructure.keyframed_rotations)
+            locations = iter(substructure.bone_masks)
+            scales = iter(substructure.keyframe_chunks)
 
             # The benefit of doing this is that generators behave like a Queue. We can pop the next element off these
             # generators and never have to worry about keeping track of the state of each generator.
