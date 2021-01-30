@@ -115,6 +115,7 @@ class Animation:
         self.rotations = {}
         self.locations = {}
         self.scales = {}
+        self.playback_rate = 24
 
     def add_rotation_fcurve(self, bone_idx, frames, values):
         self.rotations[bone_idx] = FCurve(frames, values)

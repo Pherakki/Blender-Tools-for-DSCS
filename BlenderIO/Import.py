@@ -234,6 +234,7 @@ class ImportDSCSBase:
         parent_obj['material names'] = model_data.unknown_data['material names']
 
         bpy.ops.object.mode_set(mode="POSE")
+        model_armature.animation_data_create()
         for animation_name, animation_data in model_data.animations.items():
             action = bpy.data.actions.new(animation_name)
 
@@ -262,6 +263,13 @@ class ImportDSCSBase:
                         fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in scale_data.frames],
                                                                               [elem[i] for elem in scale_data.values]) for x in co])
                         fc.update()
+
+            model_armature.animation_data.action = action
+            track = model_armature.animation_data.nla_tracks.new()
+            nla_strip = track.strips.new(action.name, action.frame_range[0], action)
+            nla_strip.scale = 24 / animation_data.playback_rate
+            nla_strip.mute = True
+            model_armature.animation_data.action = None
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj

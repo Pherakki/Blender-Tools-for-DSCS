@@ -217,6 +217,8 @@ def add_anims(model_data, imported_animdata):
     for key, ar in imported_animdata.items():
         ad = model_data.new_anim(key)
 
+        ad.playback_rate = ar.playback_rate
+
         # Set up some data holders
         rotation_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
         rotation_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
