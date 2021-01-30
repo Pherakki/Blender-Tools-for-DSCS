@@ -242,7 +242,7 @@ class ImportDSCSBase:
         if self.import_anims:
             bpy.ops.object.mode_set(mode="POSE")
             model_armature.animation_data_create()
-            for animation_name, animation_data in model_data.animations.items():
+            for animation_name, animation_data in list(model_data.animations.items())[::-1]:
                 action = bpy.data.actions.new(animation_name)
 
                 for rotation_data, location_data, scale_data, bone_name in zip(animation_data.rotations.values(),
