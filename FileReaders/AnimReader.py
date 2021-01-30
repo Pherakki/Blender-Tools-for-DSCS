@@ -376,7 +376,7 @@ class UnknownAnimSubstructure(BaseRW):
         # Utility variables
         self.bytes_read = 0
 
-    def initialise_variables(self, part_1_count, part_2_count, part_3_count, part_4_count, start_pointer, part5_size):
+    def initialise_variables(self, part_1_count, part_2_count, part_3_count, part_4_count, start_pointer, part5_size, nframes):
         self.part_1_count = part_1_count
         self.part_2_count = part_2_count
         self.part_3_count = part_3_count
@@ -384,6 +384,7 @@ class UnknownAnimSubstructure(BaseRW):
         self.start_pointer = start_pointer
         # Temp variable
         self.part5_size = part5_size
+        self.nframes = nframes
 
     def read(self):
         self.read_write(self.read_buffer, self.read_raw, self.cleanup_ragged_chunk_read)
