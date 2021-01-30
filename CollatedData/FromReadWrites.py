@@ -9,7 +9,7 @@ import os
 import numpy as np
 
 
-def generate_intermediate_format_from_files(filepath, platform):
+def generate_intermediate_format_from_files(filepath, platform, import_anims=True):
     """
     Opens name, skel, and geom files associated with the given filename and generates an IntermediateFormat object.
     Images are assumed to be in a sub-directory of the given file's directory named 'images'.
@@ -33,15 +33,16 @@ def generate_intermediate_format_from_files(filepath, platform):
     directory = os.path.join(*directory[:-1])
 
     imported_animdata = {}
-    for afile in os.listdir(directory):
-        afilepath = os.path.join(directory, afile)
-        if afile[-4:] == 'anim' and afile[:len(filename)] == filename:
-            afile_name, afile_ext = os.path.splitext(afile)
-            print(afile)
-            with open(afilepath, 'rb') as F:
-                iar = AnimReader(F, imported_skeldata)
-                iar.read()
-            imported_animdata[afile_name] = iar
+    if import_anims:
+        for afile in os.listdir(directory):
+            afilepath = os.path.join(directory, afile)
+            if afile[-4:] == 'anim' and afile[:len(filename)] == filename:
+                afile_name, afile_ext = os.path.splitext(afile)
+                print(afile)
+                with open(afilepath, 'rb') as F:
+                    iar = AnimReader(F, imported_skeldata)
+                    iar.read()
+                imported_animdata[afile_name] = iar
 
     images_directory = os.path.join(*os.path.split(filepath)[:-1], 'images')
 

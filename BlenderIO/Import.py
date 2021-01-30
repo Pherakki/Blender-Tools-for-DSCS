@@ -2,6 +2,7 @@ import bpy
 import numpy as np
 import os
 import shutil
+from bpy.props import BoolProperty
 from bpy_extras.io_utils import ImportHelper
 from bpy_extras.image_utils import load_image
 from bpy_extras.object_utils import object_data_add
@@ -20,9 +21,14 @@ class ImportDSCSBase:
                                              options={'HIDDEN'},
                                          )
 
+    import_anims: BoolProperty(
+        name="Import Animations",
+        description="Enable/disable to import/not import animations.",
+        default=True)
+
     def import_file(self, context, filepath, platform):
         bpy.ops.object.select_all(action='DESELECT')
-        model_data = generate_intermediate_format_from_files(filepath, platform)
+        model_data = generate_intermediate_format_from_files(filepath, platform, self.import_anims)
         filename = os.path.split(filepath)[-1]
         parent_obj = bpy.data.objects.new(filename, None)
 
@@ -233,43 +239,44 @@ class ImportDSCSBase:
         parent_obj['unknown_footer_data'] = model_data.unknown_data['unknown_footer_data']
         parent_obj['material names'] = model_data.unknown_data['material names']
 
-        bpy.ops.object.mode_set(mode="POSE")
-        model_armature.animation_data_create()
-        for animation_name, animation_data in model_data.animations.items():
-            action = bpy.data.actions.new(animation_name)
+        if self.import_anims:
+            bpy.ops.object.mode_set(mode="POSE")
+            model_armature.animation_data_create()
+            for animation_name, animation_data in model_data.animations.items():
+                action = bpy.data.actions.new(animation_name)
 
-            for rotation_data, location_data, scale_data, bone_name in zip(animation_data.rotations.values(),
-                                                                           animation_data.locations.values(),
-                                                                           animation_data.scales.values(),
-                                                                           model_data.skeleton.bone_names):
-                if len(rotation_data.frames) != 0:
-                    for i in range(4):
-                        fc = action.fcurves.new(f'pose.bones["{bone_name}"].rotation_quaternion', index=i)
-                        fc.keyframe_points.add(count=len(rotation_data.frames))
-                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in rotation_data.frames],
-                                                                              [elem[i] for elem in rotation_data.values]) for x in co])
-                        fc.update()
-                if len(location_data.frames) != 0:
-                    for i in range(3):
-                        fc = action.fcurves.new(f'pose.bones["{bone_name}"].location', index=i)
-                        fc.keyframe_points.add(count=len(location_data.frames))
-                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in location_data.frames],
-                                                                              [elem[i] for elem in location_data.values]) for x in co])
-                        fc.update()
-                if len(scale_data.frames) != 0:
-                    for i in range(3):
-                        fc = action.fcurves.new(f'pose.bones["{bone_name}"].scale', index=i)
-                        fc.keyframe_points.add(count=len(scale_data.frames))
-                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in scale_data.frames],
-                                                                              [elem[i] for elem in scale_data.values]) for x in co])
-                        fc.update()
+                for rotation_data, location_data, scale_data, bone_name in zip(animation_data.rotations.values(),
+                                                                               animation_data.locations.values(),
+                                                                               animation_data.scales.values(),
+                                                                               model_data.skeleton.bone_names):
+                    if len(rotation_data.frames) != 0:
+                        for i in range(4):
+                            fc = action.fcurves.new(f'pose.bones["{bone_name}"].rotation_quaternion', index=i)
+                            fc.keyframe_points.add(count=len(rotation_data.frames))
+                            fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in rotation_data.frames],
+                                                                                  [elem[i] for elem in rotation_data.values]) for x in co])
+                            fc.update()
+                    if len(location_data.frames) != 0:
+                        for i in range(3):
+                            fc = action.fcurves.new(f'pose.bones["{bone_name}"].location', index=i)
+                            fc.keyframe_points.add(count=len(location_data.frames))
+                            fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in location_data.frames],
+                                                                                  [elem[i] for elem in location_data.values]) for x in co])
+                            fc.update()
+                    if len(scale_data.frames) != 0:
+                        for i in range(3):
+                            fc = action.fcurves.new(f'pose.bones["{bone_name}"].scale', index=i)
+                            fc.keyframe_points.add(count=len(scale_data.frames))
+                            fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in scale_data.frames],
+                                                                                  [elem[i] for elem in scale_data.values]) for x in co])
+                            fc.update()
 
-            model_armature.animation_data.action = action
-            track = model_armature.animation_data.nla_tracks.new()
-            nla_strip = track.strips.new(action.name, action.frame_range[0], action)
-            nla_strip.scale = 24 / animation_data.playback_rate
-            nla_strip.mute = True
-            model_armature.animation_data.action = None
+				model_armature.animation_data.action = action
+				track = model_armature.animation_data.nla_tracks.new()
+				nla_strip = track.strips.new(action.name, action.frame_range[0], action)
+				nla_strip.scale = 24 / animation_data.playback_rate
+				nla_strip.mute = True
+				model_armature.animation_data.action = None
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj
