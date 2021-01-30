@@ -546,7 +546,7 @@ def serialise_quaternion(quat):
     # Start from WXYZ ordering, put it into XYZW
     components = np.roll(quat, -1)
     largest_component = np.amax(components)
-    largest_index = np.where(components == largest_component)
+    largest_index = np.where(components == largest_component)[0][0]
     largest_component_sign = np.sign(largest_component)
 
     # Get rid of the largest component
@@ -567,7 +567,7 @@ def serialise_quaternion(quat):
             components[i] = 32767
 
     # Now convert to big-endian uint15s
-    component_bits = bytes_to_bits(struct.pack('>HHH', components))
+    component_bits = bytes_to_bits(struct.pack('>HHH', *components))
     component_bits = ''.join([component_bits[16*i + 1:16*(i+1)] for i in range(3)])
 
     # Store the largest index as a uint2
