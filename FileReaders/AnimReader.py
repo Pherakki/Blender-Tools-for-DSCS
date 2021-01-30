@@ -259,7 +259,7 @@ class AnimReader(BaseRW):
     def rw_part_4(self, rw_operator, chunk_cleanup_operator):
         """
         # 4 bytes assigned to each idx in unknown_bone_idxs_4
-        # this looks like a single float (could be wrong?)
+        # Probably texture UVs
         """
         self.assert_file_pointer_now_at(self.abs_ptr_part_4)
         rw_operator('unknown_data_4', 'f'*self.unknown_0x1C, force_1d=True)
