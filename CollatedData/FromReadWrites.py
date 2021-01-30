@@ -35,6 +35,7 @@ def generate_intermediate_format_from_files(filepath, platform):
     imported_animdata = {}
     for afile in os.listdir(directory):
         afilepath = os.path.join(directory, afile)
+        if afile[-4:] == 'anim' and afile[:len(filename)] == filename:
             afile_name, afile_ext = os.path.splitext(afile)
             print(afile)
             with open(afilepath, 'rb') as F:
