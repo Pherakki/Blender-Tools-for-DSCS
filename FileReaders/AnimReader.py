@@ -10,20 +10,20 @@ class AnimReader(BaseRW):
         1.  The header, which gives file pointers to split the file into its major sections, plus counts of what appears
             in each section.
         2.  A section that contains up to eight lists of bone indices, depending on non-zero counts in the header.
-        3.  A section that 6 bytes of unknown type per unknown_0x16.
-        4.  A section that 3 floats per unknown_0x18.
-        5.  A section that 3 floats per unknown_0x1A.
+        3.  A section that defines the initial rotations of bones.
+        4.  A section that defines the initial locations of bones.
+        5.  A section that defines the initial scales of bones.
         6.  A section that 1 float (?)  per unknown_0x1C.
         7.  A section that contains lengths and start pointers for a set of substructures.
         8.  A section that contains cumulative counts and increments, one set of numbers per substructures.
-        9.  A section of 0s and -1s, with one number per bone - may be blank, presumably if all bones have the value '0'.
+        9.  A section of 0s and -1s, with one number per bone - may be blank, presumably if all bones have the value '-1'.
         10. A list of substructures, which contain data very similar to sections 3-6.
 
     Completion status
     ------
     (o) AnimReader can successfully parse all anim files in DSDB archive within current constraints.
     (x) AnimReader cannot yet fully interpret all anim data in DSDB archive.
-    (x) AnimReader cannot write data to anim files.
+    (o) AnimReader can write data to anim files.
 
     Current hypotheses and observations
     ------
