@@ -396,7 +396,7 @@ class UnknownAnimSubstructure(BaseRW):
 
     def read_write(self, rw_operator, rw_operator_raw, cleanup_chunk_operator):
         self.rw_header(rw_operator)
-        self.rw_part_1(rw_operator, cleanup_chunk_operator)
+        self.rw_part_1(rw_operator_raw)
         self.rw_part_2(rw_operator)
         self.rw_part_3(rw_operator, cleanup_chunk_operator)
         self.rw_part_4(rw_operator)
