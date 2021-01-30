@@ -53,7 +53,8 @@ class ImportDSCSBase:
 
             bone = model_armature.data.edit_bones.new(child_name)
 
-            # Add the unknown vectors... might define the local coordinate system?!
+            # These are three columns of a transformation matrix that maps the bone positions from an unknown 3-vector
+            # to their actual positions
             bone['xvecs'] = model_data.skeleton.bone_xaxes[i]
             bone['yvecs'] = model_data.skeleton.bone_yaxes[i]
             bone['zvecs'] = model_data.skeleton.bone_zaxes[i]
