@@ -406,7 +406,7 @@ class UnknownAnimSubstructure(BaseRW):
         self.rw_part_6(rw_operator_raw)
         self.rw_part_7(rw_operator)
         self.rw_part_8(rw_operator, cleanup_chunk_operator)
-        self.rw_part_9(rw_operator, cleanup_chunk_operator)
+        self.rw_part_9(rw_operator)
 
         cleanup_chunk_operator(self.bytestream.tell(), 16)
 
@@ -476,7 +476,7 @@ class UnknownAnimSubstructure(BaseRW):
 
         self.bytes_read += self.unknown_0x0C
 
-    def rw_part_9(self, rw_operator, cleanup_chunk_operator):
+    def rw_part_9(self, rw_operator):
         rw_operator('unknown_data_9', 'f' * (self.unknown_0x0E//4), force_1d=True)
 
         self.bytes_read += self.unknown_0x0E
