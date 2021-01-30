@@ -424,8 +424,11 @@ class UnknownAnimSubstructure(BaseRW):
 
         self.bytes_read += 16
 
-    def rw_part_1(self, rw_operator, cleanup_chunk_operator):
-        rw_operator('unknown_data_1', 'bbbbbb'*self.part_1_count)
+    def rw_part_1(self, rw_operator):
+        """
+        These are "initial pose" rotations: see part 6
+        """
+        rw_operator('unknown_data_1', self.unknown_0x00)
 
         self.bytes_read += self.unknown_0x00
 
