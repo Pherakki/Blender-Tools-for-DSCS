@@ -466,3 +466,75 @@ class UnknownAnimSubstructure(BaseRW):
         self.unknown_data_6 = self.chunk_list(self.unknown_data_6, 6)
         self.unknown_data_7 = self.chunk_list(self.unknown_data_7, 6)
         self.unknown_data_8 = self.chunk_list(self.unknown_data_8, 3)
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
+def bytes_to_bits(bytelist):
+    return ("{:0" + str(len(bytelist) * 8) + "b}").format(int(bytelist.hex(), 16))
+
+
+def bits_to_bytes(bitstring):
+    return b''.join([struct.pack('B', (int(elem, 2))) for elem in chunks(bitstring, 8)])
+
+
+def deserialise_quaternion(dscs_rotation):
+    bit_representation = bytes_to_bits(dscs_rotation)
+    largest_index = struct.unpack('>B', bits_to_bytes('000000' + bit_representation[46:48]))
+    component_bits = bit_representation[1:46]
+    component_bits = ''.join(['0'+component_bits[15*i:15*(i+1)] for i in range(3)])
+    components = np.array(struct.unpack('>HHH', bits_to_bytes(component_bits)))
+
+    components -= 16383
+    components = components/16384
+    components *= 1/np.sqrt(2)
+
+    square_vector_length = np.sum(components**2)
+    largest_component = np.sqrt(1 - square_vector_length)
+
+    # This is in the XYZW ordering
+    components = np.insert(components, largest_index, largest_component)
+
+    # Now it's in the WXYZ ordering
+    quaternion = np.roll(components, 1)
+
+    return quaternion
+
+
+def serialise_quaternion(quat):
+    # Start from WXYZ ordering, put it into XYZW
+    components = np.roll(quat, -1)
+    largest_component = np.amax(components)
+    largest_index = np.where(components == largest_component)
+    largest_component_sign = np.sign(largest_component)
+
+    # Get rid of the largest component
+    # No need to store the sign of the largest component, because
+    # (W, X, Y, Z) = (-W, -X, -Y, -Z)
+    # So just multiply through by the sign of the removed component to create an equivalent quaternion
+    # In this way, the largest component is always +ve
+    components = largest_component_sign*np.delete(components, largest_index)
+    # Map the remaining components from the interval [-1/sqrt(2), 1/sqrt(2)] to [0, 32767]
+    components *= np.sqrt(2)
+    components *= 16384
+    components = np.around(components).astype(np.int)
+    components += 16383
+    for i, elem in enumerate(components):
+        if elem < 0:
+            components[i] = 0
+        elif elem > 32767:
+            components[i] = 32767
+
+    # Now convert to big-endian uint15s
+    component_bits = bytes_to_bits(struct.pack('>HHH', components))
+    component_bits = ''.join([component_bits[16*i + 1:16*(i+1)] for i in range(3)])
+
+    # Store the largest index as a uint2
+    largest_index_bits = bytes_to_bits(struct.pack('>B', largest_index))[6:]
+
+    # Put everything together
+    component_bits = '0' + component_bits + largest_index_bits
+
+    return bits_to_bytes(component_bits)
