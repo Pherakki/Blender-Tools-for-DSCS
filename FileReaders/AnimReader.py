@@ -539,6 +539,10 @@ def deserialise_quaternion(dscs_rotation):
     # Now it's in the WXYZ ordering
     quaternion = np.roll(components, 1)
 
+    # Quaternions are degenerate in that Q = -Q... let's use a convention whereby W is always positive
+    W_sign = np.sign(quaternion[0])
+    quaternion *= W_sign
+
     return quaternion
 
 
