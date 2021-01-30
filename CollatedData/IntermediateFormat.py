@@ -112,24 +112,21 @@ class Skeleton:
 
 class Animation:
     def __init__(self):
-        self.keyframes = {}
+        self.rotations = {}
+        self.locations = {}
+        self.scales = {}
 
-    def add_keyframe(self, frame_idx):
-        fr = KeyFrame()
-        self.keyframes[frame_idx] = fr
-        return fr
+    def add_rotation_fcurve(self, bone_idx, frames, values):
+        self.rotations[bone_idx] = FCurve(frames, values)
 
+    def add_location_fcurve(self, bone_idx, frames, values):
+        self.locations[bone_idx] = FCurve(frames, values)
 
-class KeyFrame:
-    def __init__(self):
-        self.bone_poses = {}
-        
-    def add_bone_pose(self, bone_id, rotation=None, location=None, scale=None):
-        self.bone_poses[bone_id] = BoneTransform(rotation, location, scale)
+    def add_scale_fcurve(self, bone_idx, frames, values):
+        self.scales[bone_idx] = FCurve(frames, values)
 
 
-class BoneTransform:
-    def __init__(self, rotation, location, scale):
-        self.rotation = rotation
-        self.location = location
-        self.scale = scale
+class FCurve:
+    def __init__(self, frames, values):
+        self.frames = frames
+        self.values = values
