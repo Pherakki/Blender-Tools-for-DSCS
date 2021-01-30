@@ -313,13 +313,13 @@ class AnimReader(BaseRW):
 
     def rw_part_8(self, rw_method_name):
         for i, (unkdatareader, d5, d6) in enumerate(zip(self.unknown_data_8, self.chunk_list(self.unknown_data_5, 3),
-                                                        self.chunk_list(self.unknown_data_6, 2))):
+                                                        self.chunk_list(self.keyframe_counts, 2))):
             #print(i, self.unknown_data_7, self.unknown_0x28, self.num_bones)
             # Currently misses off the final reader; will be fine once length is calculable
             assert d5[0] == 0
-            scale_factor = (self.unknown_0x1E + self.unknown_0x20 + self.unknown_0x22 + self.unknown_0x24) / 8
+            scale_factor = (self.keyframe_bone_rotations_count + self.keyframe_bone_locations_count + self.keyframe_bone_scales_count + self.unknown_0x24) / 8
             part5_size = int(np.ceil(scale_factor * d6[1]))
-            unkdatareader.initialise_variables(self.unknown_0x1E, self.unknown_0x20, self.unknown_0x22, self.unknown_0x24, d5[-1], part5_size)
+            unkdatareader.initialise_variables(self.keyframe_bone_rotations_count, self.keyframe_bone_locations_count, self.keyframe_bone_scales_count, self.unknown_0x24, d5[-1], part5_size, d6[1])
             getattr(unkdatareader, rw_method_name)()
 
     def prepare_read_op(self):
