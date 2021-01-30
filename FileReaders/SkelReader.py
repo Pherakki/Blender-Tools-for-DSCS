@@ -144,7 +144,6 @@ class SkelReader(BaseRW):
         floats_to_read = self.num_bones * 12  # * 4
         rw_operator('bone_data', 'f'*floats_to_read)
 
-
     def rw_parent_bones(self, rw_operator):
         self.assert_file_pointer_now_at(self.abs_ptr_parent_bones)
         rw_operator('parent_bones', 'h'*self.num_bones, force_1d=True)
