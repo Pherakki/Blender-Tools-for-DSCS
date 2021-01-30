@@ -334,6 +334,15 @@ class AnimReader(BaseRW):
         self.unknown_data_5 = self.chunk_list(self.unknown_data_5, 3)
         self.keyframe_counts = self.chunk_list(self.keyframe_counts, 2)
 
+    def reinterpret_animdata(self):
+        self.initial_pose_bone_rotations = [serialise_quaternion(elem) for elem in self.initial_pose_bone_rotations]
+        self.initial_pose_bone_rotations = b''.join(self.initial_pose_bone_rotations)
+        self.initial_pose_bone_locations = self.flatten_list(self.initial_pose_bone_locations)
+        self.initial_pose_bone_scales = self.flatten_list(self.initial_pose_bone_scales)
+
+        self.unknown_data_5 = self.flatten_list(self.unknown_data_5)
+        self.keyframe_counts = self.flatten_list(self.keyframe_counts)
+
 
 class UnknownAnimSubstructure(BaseRW):
     def __init__(self, bytestream):
