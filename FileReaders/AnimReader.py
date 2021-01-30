@@ -248,13 +248,13 @@ class AnimReader(BaseRW):
         rw_operator('initial_pose_bone_locations', 'fff' * self.initial_pose_bone_locations_count)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
-    def rw_part_3(self, rw_operator):
+    def rw_initial_pose_bone_scales(self, rw_operator):
         """
         # 12 bytes assigned to each bone in unknown_bone_idxs_3
         # this is a triplet of floats
         """
-        self.assert_file_pointer_now_at(self.abs_ptr_part_3)
-        rw_operator('unknown_data_3', 'fff'*self.unknown_0x1A)
+        self.assert_file_pointer_now_at(self.abs_ptr_initial_pose_bone_scales)
+        rw_operator('initial_pose_bone_scales', 'fff' * self.initial_pose_bone_scales_count)
 
     def rw_part_4(self, rw_operator, chunk_cleanup_operator):
         """
