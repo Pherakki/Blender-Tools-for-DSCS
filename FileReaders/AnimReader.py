@@ -88,13 +88,13 @@ class AnimReader(BaseRW):
         self.abs_ptr_part_4 = None
 
         # Data holders
-        self.unknown_bone_idxs_1 = None
-        self.unknown_bone_idxs_2 = None
-        self.unknown_bone_idxs_3 = None
+        self.initial_pose_rotations_bone_idxs = None
+        self.initial_pose_locations_bone_idxs = None
+        self.initial_pose_scales_bone_idxs = None
         self.unknown_bone_idxs_4 = None
-        self.unknown_bone_idxs_5 = None
-        self.unknown_bone_idxs_6 = None
-        self.unknown_bone_idxs_7 = None
+        self.keyframe_rotations_bone_idxs = None
+        self.keyframe_locations_bone_idxs = None
+        self.keyframe_scales_bone_idxs = None
         self.unknown_bone_idxs_8 = None
 
         self.unknown_data_1 = None
