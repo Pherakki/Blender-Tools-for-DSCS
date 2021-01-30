@@ -236,51 +236,32 @@ class ImportDSCSBase:
         bpy.ops.object.mode_set(mode="POSE")
         for animation_name, animation_data in model_data.animations.items():
             action = bpy.data.actions.new(animation_name)
-            rotation_fcs = {}
-            location_fcs = {}
-            scale_fcs = {}
-            for bone_name in model_data.skeleton.bone_names:
-                bone_rot_fcs = [None, None, None, None]
-                bone_loc_fcs = [None, None, None]
-                bone_scl_fcs = [None, None, None]
-                for i in range(4):
-                    fc = action.fcurves.new(f'pose.bones["{bone_name}"].rotation_quaternion', index=i)
-                    bone_rot_fcs[i] = fc
-                for i in range(3):
-                    fc = action.fcurves.new(f'pose.bones["{bone_name}"].location', index=i)
-                    bone_loc_fcs[i] = fc
-                    fc = action.fcurves.new(f'pose.bones["{bone_name}"].scale', index=i)
-                    bone_scl_fcs[i] = fc
-                rotation_fcs[bone_name] = bone_rot_fcs
-                location_fcs[bone_name] = bone_loc_fcs
-                scale_fcs[bone_name] = bone_scl_fcs
 
-            #action.name =
-            # <---------- Action --------->  < List of FCurves >  <-- List of Keyframes -->
-            # bpy.data.actions['Action.004'].fcurves.values()[2].keyframe_points.values()[1].co
-            for keyframe_idx, keyframe_data in animation_data.keyframes.items():
-                for bone_idx, bone_pose_data in keyframe_data.bone_poses.items():
-                    bone_name = model_data.skeleton.bone_names[bone_idx]
-                    if bone_pose_data.rotation is not None:
-                        rot_fcs = rotation_fcs[bone_name]
-                        for fc, angle in zip(rot_fcs, bone_pose_data.rotation):
-                            fc.keyframe_points.insert(float(keyframe_idx), angle)
-                    if bone_pose_data.location is not None:
-                        loc_fcs = location_fcs[bone_name]
-                        for fc, pos in zip(loc_fcs, bone_pose_data.location):
-                            fc.keyframe_points.insert(float(keyframe_idx), pos)
-                    if bone_pose_data.scale is not None:
-                        scl_fcs = scale_fcs[bone_name]
-                        for fc, scl in zip(scl_fcs, bone_pose_data.scale):
-                            fc.keyframe_points.insert(float(keyframe_idx), scl)
-
-            for fc_collection in (rotation_fcs, location_fcs, scale_fcs):
-                for _, fc_list in fc_collection.items():
-                    for fc in fc_list:
+            for rotation_data, location_data, scale_data, bone_name in zip(animation_data.rotations.values(),
+                                                                           animation_data.locations.values(),
+                                                                           animation_data.scales.values(),
+                                                                           model_data.skeleton.bone_names):
+                if len(rotation_data.frames) != 0:
+                    for i in range(4):
+                        fc = action.fcurves.new(f'pose.bones["{bone_name}"].rotation_quaternion', index=i)
+                        fc.keyframe_points.add(count=len(rotation_data.frames))
+                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in rotation_data.frames],
+                                                                              [elem[i] for elem in rotation_data.values]) for x in co])
                         fc.update()
-
-            ad = model_armature.animation_data_create()
-            ad.action = action
+                if len(location_data.frames) != 0:
+                    for i in range(3):
+                        fc = action.fcurves.new(f'pose.bones["{bone_name}"].location', index=i)
+                        fc.keyframe_points.add(count=len(location_data.frames))
+                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in location_data.frames],
+                                                                              [elem[i] for elem in location_data.values]) for x in co])
+                        fc.update()
+                if len(scale_data.frames) != 0:
+                    for i in range(3):
+                        fc = action.fcurves.new(f'pose.bones["{bone_name}"].scale', index=i)
+                        fc.keyframe_points.add(count=len(scale_data.frames))
+                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in scale_data.frames],
+                                                                              [elem[i] for elem in scale_data.values]) for x in co])
+                        fc.update()
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj
