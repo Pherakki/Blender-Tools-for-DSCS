@@ -187,6 +187,24 @@ class AnimReader(BaseRW):
         rw_operator('padding_0x5C', 'I')
 
     def rw_unknown_bone_idxs(self, rw_operator, chunk_cleanup_operator):
+    def maxval_read(self, val, key):
+        n2r = (8 - getattr(self, key)* 2 % 8) % 8
+        self.read_raw(val, n2r)
+
+        res_1 = struct.unpack('H' * (len(getattr(self, val)) // 2), getattr(self, val))
+        if len(res_1):
+            setattr(self, val, res_1[0])
+        else:
+            setattr(self, val, 0)
+
+    def maxval_write(self, val, key):
+        n2w = (8 - getattr(self, key) * 2 % 8) % 8
+        n2w //= 2
+        backup = getattr(self, val)
+        setattr(self, val, struct.pack('H'*n2w, *([backup]*n2w)))
+        self.write_raw(val, n2w*2)
+        setattr(self, val, backup)
+
         """
         # Eight lists of indices
         # First three are bone indices that correspond to entries in unknown_data_1-3
