@@ -329,7 +329,7 @@ def mk_extended_boneweights(vtx, num_grps):
         use_groups = [grp for grp in vtx.vertex_group_weights]
     except TypeError as te:
         print("bad vertex is at", vtx.position, "with vertex groups", vtx.vertex_groups)
-        raise MissingWeightsError
+        raise MissingWeightsError from te
     if len(vtx.vertex_group_weights) < num_grps:
         use_groups.extend([0.]*(num_grps-len(vtx.vertex_group_weights)))
     return use_groups
