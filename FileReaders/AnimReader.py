@@ -186,7 +186,6 @@ class AnimReader(BaseRW):
         rw_operator('padding_0x58', 'I')
         rw_operator('padding_0x5C', 'I')
 
-    def rw_unknown_bone_idxs(self, rw_operator, chunk_cleanup_operator):
     def maxval_read(self, val, key):
         n2r = (8 - getattr(self, key)* 2 % 8) % 8
         self.read_raw(val, n2r)
@@ -205,6 +204,7 @@ class AnimReader(BaseRW):
         self.write_raw(val, n2w*2)
         setattr(self, val, backup)
 
+    def rw_bone_idx_lists(self, rw_operator, maxval_op, chunk_cleanup_operator):
         """
         # Eight lists of indices
         # First three are bone indices that correspond to entries in unknown_data_1-3
@@ -213,48 +213,25 @@ class AnimReader(BaseRW):
         # UnknownAnimSubstructure
         # Eighth is similar to #4 but in every UnknownAnimSubstructure
         """
-        rw_operator('unknown_bone_idxs_1', self.unknown_0x16*'H', force_1d=True)
-        chunk_cleanup_operator(self.unknown_0x16*2, 16, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('unknown_bone_idxs_2', self.unknown_0x18*'H', force_1d=True)
-        chunk_cleanup_operator(self.unknown_0x18*2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('unknown_bone_idxs_3', self.unknown_0x1A*'H', force_1d=True)
-        chunk_cleanup_operator(self.unknown_0x1A*2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('initial_pose_rotations_bone_idxs', self.initial_pose_bone_rotations_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.initial_pose_bone_rotations_count * 2, 16, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('initial_pose_locations_bone_idxs', self.initial_pose_bone_locations_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.initial_pose_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('initial_pose_scales_bone_idxs', self.initial_pose_bone_scales_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.initial_pose_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('unknown_bone_idxs_4', self.unknown_0x1C*'H', force_1d=True)
         # Cleanup value is max element
-        # Might be the sum of unknown_0x1C and unknown_0x24 as a hexadecimal?!
-        n2r = (8 - self.unknown_0x1C*2 % 8) % 8
-        res_1 = self.bytestream.read(n2r)
-        
-        res_1 = struct.unpack('H'*(len(res_1)//2), res_1)
-        if len(res_1):
-            res_1 = res_1[0]
-        else:
-            res_1 = 0
-        
-        # hexval = hex(self.skelReader.unknown_0x0C)[2:]
-        # hexval = ('0'*(len(hexval)%2)) + hexval
-        # print(hexval)
-        # byteval = bytes.fromhex(hexval)
-        # byteval += b'\x00' * (2 - len(byteval))
-        # chunk_cleanup_operator(self.unknown_0x1C*2, 8, stepsize=2, bytevalue=byteval)
-        rw_operator('unknown_bone_idxs_5', self.unknown_0x1E*'H', force_1d=True)
-        chunk_cleanup_operator(self.unknown_0x1E*2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('unknown_bone_idxs_6', self.unknown_0x20*'H', force_1d=True)
-        chunk_cleanup_operator(self.unknown_0x20*2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('unknown_bone_idxs_7', self.unknown_0x22*'H', force_1d=True)
-        chunk_cleanup_operator(self.unknown_0x22*2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        maxval_op("max_val_1", "unknown_0x1C")
+
+        rw_operator('keyframe_rotations_bone_idxs', self.keyframe_bone_rotations_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.keyframe_bone_rotations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('keyframe_locations_bone_idxs', self.keyframe_bone_locations_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.keyframe_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('keyframe_scales_bone_idxs', self.keyframe_bone_scales_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.keyframe_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('unknown_bone_idxs_8', self.unknown_0x24*'H', force_1d=True)
         #chunk_cleanup_operator(self.unknown_0x24*2, 8, stepsize=2, bytevalue=struct.pack('H', self.skelReader.unknown_0x0C))
-        n2r = (8 - self.unknown_0x24*2 % 8) % 8
-        res_2 = self.bytestream.read(n2r)
-        
-        res_2 = struct.unpack('H'*(len(res_2)//2), res_2)
-        if len(res_2):
-            res_2 = res_2[0]
-        else:
-            res_2 = 0
-        self.max_val_1 = res_1
-        self.max_val_2 = res_2
+        maxval_op("max_val_2", "unknown_0x24")
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_part_1(self, rw_operator, chunk_cleanup_operator):
