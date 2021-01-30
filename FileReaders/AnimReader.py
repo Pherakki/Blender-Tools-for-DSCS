@@ -67,9 +67,9 @@ class AnimReader(BaseRW):
 
         self.unknown_0x30 = None  # Relative ptr
         self.unknown_0x34 = None  # Relative ptr
-        self.unknown_0x38 = None  # Relative ptr
-        self.unknown_0x3C = None  # Relative ptr
-        self.unknown_0x40 = None  # Relative ptr
+        self.rel_ptr_initial_pose_bone_rotations = None  # Relative ptr
+        self.rel_ptr_initial_pose_bone_locations = None  # Relative ptr
+        self.rel_ptr_initial_pose_bone_scales = None  # Relative ptr
         self.unknown_0x44 = None  # Relative ptr
 
         self.padding_0x48 = None
