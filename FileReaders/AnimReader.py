@@ -82,9 +82,9 @@ class AnimReader(BaseRW):
         # Utility variables
         self.abs_ptr_part_5 = None
         self.abs_ptr_part_6 = None
-        self.abs_ptr_part_1 = None
-        self.abs_ptr_part_2 = None
-        self.abs_ptr_part_3 = None
+        self.abs_ptr_initial_pose_bone_rotations = None
+        self.abs_ptr_initial_pose_bone_locations = None
+        self.abs_ptr_initial_pose_bone_scales = None
         self.abs_ptr_part_4 = None
 
         # Data holders
