@@ -36,6 +36,7 @@ def generate_intermediate_format_from_files(filepath, platform):
     for afile in os.listdir(directory):
         afilepath = os.path.join(directory, afile)
             afile_name, afile_ext = os.path.splitext(afile)
+            print(afile)
             with open(afilepath, 'rb') as F:
                 iar = AnimReader(F, imported_skeldata)
                 iar.read()
