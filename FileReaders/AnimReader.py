@@ -403,8 +403,8 @@ class UnknownAnimSubstructure(BaseRW):
 
         self.rw_part_5(rw_operator_raw)
 
-        self.rw_part_6(rw_operator, cleanup_chunk_operator)
         self.rw_part_7(rw_operator, cleanup_chunk_operator)
+        self.rw_part_6(rw_operator_raw)
         self.rw_part_8(rw_operator, cleanup_chunk_operator)
         self.rw_part_9(rw_operator, cleanup_chunk_operator)
 
@@ -459,8 +459,8 @@ class UnknownAnimSubstructure(BaseRW):
 
         self.bytes_read += self.part5_size
 
-    def rw_part_6(self, rw_operator, cleanup_chunk_operator):
-        rw_operator('unknown_data_6', 'bbbbbb' * (self.unknown_0x08//6))
+    def rw_part_6(self, rw_operator_raw):
+        rw_operator_raw('unknown_data_6', self.unknown_0x08)
 
         self.bytes_read += self.unknown_0x08
 
