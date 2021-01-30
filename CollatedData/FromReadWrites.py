@@ -257,12 +257,12 @@ def add_anims(model_data, imported_animdata):
             # into generators using the built-in 'iter' function or the 'chunks' function defined at the bottom of the
             # file.
             if nframes != 0:
-                masks = chunks(substructure.keyframe_chunks_ptrs, nframes)
+                masks = chunks(substructure.keyframes_in_use, nframes)
             else:
                 masks = []
             rotations = iter(substructure.keyframed_rotations)
-            locations = iter(substructure.bone_masks)
-            scales = iter(substructure.keyframe_chunks)
+            locations = iter(substructure.keyframed_locations)
+            scales = iter(substructure.keyframed_scales)
 
             # The benefit of doing this is that generators behave like a Queue. We can pop the next element off these
             # generators and never have to worry about keeping track of the state of each generator.
