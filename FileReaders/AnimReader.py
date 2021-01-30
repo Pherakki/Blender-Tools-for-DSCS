@@ -287,7 +287,8 @@ class AnimReader(BaseRW):
 
     def rw_part_7(self, rw_operator, chunk_cleanup_operator):
         """
-        Contains 0 or -1 for each bone: could be a mask?
+        Contains 0 or -1 for each bone: If 0, that bone isn't given any location data in the file
+        Same for whatever goes in unknown_data_7b - that other set of indices that are unknown
         """
         self.assert_file_pointer_now_at(self.unknown_0x0C)
         num_to_read = max([self.skelReader.unknown_0x0C, self.max_val_1, self.max_val_2])
