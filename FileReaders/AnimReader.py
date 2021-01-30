@@ -276,13 +276,13 @@ class AnimReader(BaseRW):
         self.assert_file_pointer_now_at(self.abs_ptr_part_5)
         rw_operator('unknown_data_5', 'HHI'*self.unknown_0x12)
 
-    def rw_part_6(self, rw_operator, chunk_cleanup_operator):
+    def rw_keyframes_per_substructure(self, rw_operator, chunk_cleanup_operator):
         """
         # In the format (cumulative_count, increment)
         # Presumably the total count of frames and the gap between each keyframe
         """
         self.assert_file_pointer_now_at(self.abs_ptr_part_6)
-        rw_operator('unknown_data_6', 'HH'*self.unknown_0x12)
+        rw_operator('keyframe_counts', 'HH'*self.unknown_0x12)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_part_7(self, rw_operator, chunk_cleanup_operator):
