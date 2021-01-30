@@ -117,13 +117,13 @@ class AnimReader(BaseRW):
     def read_write(self, rw_operator, rw_operator_ascii, rw_method_name, preparation_op, chunk_cleanup_operator):
         self.rw_header(rw_operator, rw_operator_ascii)
         preparation_op()
-        self.rw_unknown_bone_idxs(rw_operator, chunk_cleanup_operator)
-        self.rw_part_1(rw_operator, chunk_cleanup_operator)
-        self.rw_part_2(rw_operator, chunk_cleanup_operator)
-        self.rw_part_3(rw_operator)
+        self.rw_bone_idx_lists(rw_operator, maxval_op, chunk_cleanup_operator)
+        self.rw_initial_pose_bone_rotations(rw_operator_raw, chunk_cleanup_operator)
+        self.rw_initial_pose_bone_locations(rw_operator, chunk_cleanup_operator)
+        self.rw_initial_pose_bone_scales(rw_operator)
         self.rw_part_4(rw_operator, chunk_cleanup_operator)
         self.rw_part_5(rw_operator)
-        self.rw_part_6(rw_operator, chunk_cleanup_operator)
+        self.rw_keyframes_per_substructure(rw_operator, chunk_cleanup_operator)
         self.rw_part_7(rw_operator, chunk_cleanup_operator)
         self.rw_part_8(rw_method_name)
 
@@ -131,26 +131,26 @@ class AnimReader(BaseRW):
         self.assert_file_pointer_now_at(0)
         rw_operator_ascii('filetype', 4)
 
-        rw_operator('unknown_0x04', 'BB')
-        rw_operator('unknown_0x06', 'BB')
-        rw_operator('unknown_0x08', 'BB')
-        rw_operator('unknown_0x0A', 'BB')
+        rw_operator('unknown_0x04', 'f')
+        #rw_operator('unknown_0x06', 'BB')
+        rw_operator('unknown_0x08', 'f')
+        #rw_operator('unknown_0x0A', 'BB')
 
         rw_operator('unknown_0x0C', 'H')
         rw_operator('num_bones', 'H')
         rw_operator('unknown_0x10', 'H')
         rw_operator('unknown_0x12', 'H')
-        rw_operator('always_16384', 'H')
+        rw_operator('always_16384', 'H')  # Maybe this is the precision of the quaternions?
         self.assert_equal('always_16384', 16384)
         assert self.always_16384 == 16384, self.always_16384
 
-        rw_operator('unknown_0x16', 'H')
-        rw_operator('unknown_0x18', 'H')
-        rw_operator('unknown_0x1A', 'H')
+        rw_operator('initial_pose_bone_rotations_count', 'H')
+        rw_operator('initial_pose_bone_locations_count', 'H')
+        rw_operator('initial_pose_bone_scales_count', 'H')
         rw_operator('unknown_0x1C', 'H')
-        rw_operator('unknown_0x1E', 'H')
-        rw_operator('unknown_0x20', 'H')
-        rw_operator('unknown_0x22', 'H')
+        rw_operator('keyframe_bone_rotations_count', 'H')
+        rw_operator('keyframe_bone_locations_count', 'H')
+        rw_operator('keyframe_bone_scales_count', 'H')
         rw_operator('unknown_0x24', 'H')
         rw_operator('padding_0x26', 'H')
         self.assert_is_zero('padding_0x26')
@@ -167,14 +167,14 @@ class AnimReader(BaseRW):
         rw_operator('unknown_0x34', 'I')
         self.abs_ptr_part_6 = pos + self.unknown_0x34
         pos = self.bytestream.tell()
-        rw_operator('unknown_0x38', 'I')
-        self.abs_ptr_part_1 = pos + self.unknown_0x38
+        rw_operator('rel_ptr_initial_pose_bone_rotations', 'I')
+        self.abs_ptr_initial_pose_bone_rotations = pos + self.rel_ptr_initial_pose_bone_rotations
         pos = self.bytestream.tell()
-        rw_operator('unknown_0x3C', 'I')
-        self.abs_ptr_part_2 = pos + self.unknown_0x3C
+        rw_operator('rel_ptr_initial_pose_bone_locations', 'I')
+        self.abs_ptr_initial_pose_bone_locations = pos + self.rel_ptr_initial_pose_bone_locations
         pos = self.bytestream.tell()
-        rw_operator('unknown_0x40', 'I')
-        self.abs_ptr_part_3 = pos + self.unknown_0x40
+        rw_operator('rel_ptr_initial_pose_bone_scales', 'I')
+        self.abs_ptr_initial_pose_bone_scales = pos + self.rel_ptr_initial_pose_bone_scales
         pos = self.bytestream.tell()
         rw_operator('unknown_0x44', 'I')
         self.abs_ptr_part_4 = pos + self.unknown_0x44
