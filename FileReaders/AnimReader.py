@@ -397,7 +397,7 @@ class UnknownAnimSubstructure(BaseRW):
     def read_write(self, rw_operator, rw_operator_raw, cleanup_chunk_operator):
         self.rw_header(rw_operator)
         self.rw_part_1(rw_operator, cleanup_chunk_operator)
-        self.rw_part_2(rw_operator, cleanup_chunk_operator)
+        self.rw_part_2(rw_operator)
         self.rw_part_3(rw_operator, cleanup_chunk_operator)
         self.rw_part_4(rw_operator, cleanup_chunk_operator)
 
@@ -432,7 +432,7 @@ class UnknownAnimSubstructure(BaseRW):
 
         self.bytes_read += self.unknown_0x00
 
-    def rw_part_2(self, rw_operator, cleanup_chunk_operator):
+    def rw_part_2(self, rw_operator):
         # Entries are ~0.01 - 0.00001
         rw_operator('unknown_data_2', 'fff'*self.part_2_count)
 
