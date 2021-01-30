@@ -481,12 +481,23 @@ class UnknownAnimSubstructure(BaseRW):
         self.bytes_read += self.unknown_0x0E
 
     def interpret_frame(self):
+        self.unknown_data_5: bytes
+
         self.unknown_data_1 = self.chunk_list(self.unknown_data_1, 6)
+        self.unknown_data_1 = [deserialise_quaternion(elem) for elem in self.unknown_data_1]
         self.unknown_data_2 = self.chunk_list(self.unknown_data_2, 3)
         self.unknown_data_3 = self.chunk_list(self.unknown_data_3, 3)
 
+        if len(self.unknown_data_5):
+            self.unknown_data_5 = bytes_to_bits(self.unknown_data_5)
+            # Chop off padding bits
+            self.unknown_data_5 = self.unknown_data_5[:self.nframes*(len(self.unknown_data_5)//self.nframes)]
+        else:
+            self.unknown_data_5 = ''
+
         self.unknown_data_6 = self.chunk_list(self.unknown_data_6, 6)
-        self.unknown_data_7 = self.chunk_list(self.unknown_data_7, 6)
+        self.unknown_data_6 = [deserialise_quaternion(elem) for elem in self.unknown_data_6]
+        self.unknown_data_7 = self.chunk_list(self.unknown_data_7, 3)
         self.unknown_data_8 = self.chunk_list(self.unknown_data_8, 3)
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
