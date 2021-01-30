@@ -332,6 +332,7 @@ class AnimReader(BaseRW):
         self.initial_pose_bone_scales = self.chunk_list(self.initial_pose_bone_scales, 3)
 
         self.unknown_data_5 = self.chunk_list(self.unknown_data_5, 3)
+        self.keyframe_counts = self.chunk_list(self.keyframe_counts, 2)
 
 
 class UnknownAnimSubstructure(BaseRW):
