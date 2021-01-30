@@ -212,16 +212,97 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
 
 
 def add_anims(model_data, imported_animdata):
-    for key, imp_ad in imported_animdata.items():
+    for key, ar in imported_animdata.items():
         ad = model_data.new_anim(key)
-        ad.bone_names = imp_ad.unknown_bone_idxs_2
-        ad.values = imp_ad.unknown_data_2
+        # Quicker if you don't do this in terms of keyframes, but do it in terms of positions + values
+        # E.g. make a list of positions of 1s in the unknown_data_5
+        # Count how many there are
+        # Then grab that many from the unknown_data_6
+        # Put them in a k:v pair list
+        # Use that set_many function or whatever it is in Blender to set the entire f-curve in one go
+        gen_keyframe(ad,
+                     pair_animdata_to_bone_idxs(ar.initial_pose_rotations_bone_idxs, ar.initial_pose_bone_rotations),
+                     pair_animdata_to_bone_idxs(ar.initial_pose_locations_bone_idxs, ar.initial_pose_bone_locations),
+                     pair_animdata_to_bone_idxs(ar.initial_pose_scales_bone_idxs, ar.initial_pose_bone_scales))
 
-        for framekey, frame in zip(imp_ad.unknown_data_6, imp_ad.unknown_data_8):
-            fr = ad.add_frame()
-            fr.keyframe = framekey[0]
-            fr.bone_names = imp_ad.unknown_bone_idxs_6
-            fr.values = frame.unknown_data_2
-            fr.bone_names2 = imp_ad.unknown_bone_idxs_7
-            fr.values2 = frame.unknown_data_3
-            fr.data_5 = frame.unknown_data_5
+        for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.unknown_data_8[:-1]):
+            gen_keyframe(ad, pair_animdata_to_bone_idxs(ar.keyframe_rotations_bone_idxs,
+                                                        substructure.unknown_data_1),
+                             pair_animdata_to_bone_idxs(ar.keyframe_locations_bone_idxs,
+                                                        substructure.unknown_data_2),
+                             pair_animdata_to_bone_idxs(ar.keyframe_scales_bone_idxs, substructure.unknown_data_3))
+
+            total = 0
+            rotation_keyframes_masks, rotation_data_pointers = gen_masks(nframes, substructure.unknown_data_5, ar.keyframe_bone_rotations_count, total)
+            total += ar.keyframe_bone_rotations_count
+            location_keyframes_masks, location_data_pointers = gen_masks(nframes, substructure.unknown_data_5, ar.keyframe_bone_locations_count, total)
+            total += ar.keyframe_bone_locations_count
+            scale_keyframes_masks, scale_data_pointers = gen_masks(nframes, substructure.unknown_data_5, ar.keyframe_bone_scales_count, total)
+            total += ar.keyframe_bone_scales_count
+            unknown_keyframes_masks, unknown_data_pointers = gen_masks(nframes, substructure.unknown_data_5, ar.unknown_0x24, total)
+            total += ar.unknown_0x24
+
+            rots_nused_per_bone = {}
+            locs_nused_per_bone = {}
+            scls_nused_per_bone = {}
+            for frame in range(nframes):
+                rotations = {}
+                for bone_idx, keyframe_mask, data_pointer in zip(ar.keyframe_rotations_bone_idxs, rotation_keyframes_masks, rotation_data_pointers):
+                    if bone_idx not in rots_nused_per_bone:
+                        rots_nused_per_bone[bone_idx] = 0
+                    is_updated = int(keyframe_mask[frame])
+                    if is_updated:
+                        rotations[bone_idx] = substructure.unknown_data_6[data_pointer+rots_nused_per_bone[bone_idx]]
+                        rots_nused_per_bone[bone_idx] += 1
+                locations = {}
+                for bone_idx, keyframe_mask, data_pointer in zip(ar.keyframe_locations_bone_idxs, location_keyframes_masks, location_data_pointers):
+                    if bone_idx not in locs_nused_per_bone:
+                        locs_nused_per_bone[bone_idx] = 0
+                    is_updated = int(keyframe_mask[frame])
+                    if is_updated:
+                        locations[bone_idx] = substructure.unknown_data_7[data_pointer+locs_nused_per_bone[bone_idx]]
+                        locs_nused_per_bone[bone_idx] += 1
+                scales = {}
+                for bone_idx, keyframe_mask, data_pointer in zip(ar.keyframe_scales_bone_idxs, scale_keyframes_masks, scale_data_pointers):
+                    if bone_idx not in scls_nused_per_bone:
+                        scls_nused_per_bone[bone_idx] = 0
+                    is_updated = int(keyframe_mask[frame])
+                    if is_updated:
+                        scales[bone_idx] = substructure.unknown_data_8[data_pointer+scls_nused_per_bone[bone_idx]]
+                        scls_nused_per_bone[bone_idx] += 1
+
+                gen_keyframe(ad, rotations, locations, scales)
+
+
+def gen_masks(nframes, data, nelements, total):
+    start = total*nframes
+    stop = (total+nelements)*nframes
+
+    keyframes_masks = data[start:stop]
+    keyframes_masks = [keyframes_masks[i * nframes:(i + 1) * nframes]  for i in range(nelements)]
+    data_pointers = [0]
+    for mask in keyframes_masks:
+        total = sum([int(elem) for elem in mask])
+        data_pointers.append(data_pointers[-1] + total)
+
+    return keyframes_masks, data_pointers
+
+
+def gen_keyframe(anim_data, rotations, locations, scales):
+    new_keyframe = anim_data.add_keyframe(len(anim_data.keyframes))
+
+    total_keys = set()
+    total_keys.update(set(rotations.keys()))
+    total_keys.update(set(locations.keys()))
+    total_keys.update(set(scales.keys()))
+
+    total_keys = sorted(list(total_keys))
+    for bone_idx in total_keys:
+        rotation = rotations.get(bone_idx)
+        location = locations.get(bone_idx)
+        scale = scales.get(bone_idx)
+        new_keyframe.add_bone_pose(bone_idx, rotation, location, scale)
+
+
+def pair_animdata_to_bone_idxs(idxs, data):
+    return {idx: datum for idx, datum in zip(idxs, data)}
