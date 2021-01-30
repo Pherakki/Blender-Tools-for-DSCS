@@ -326,11 +326,12 @@ class AnimReader(BaseRW):
         self.unknown_data_8 = [UnknownAnimSubstructure(self.bytestream) for _ in range(self.unknown_0x12)]
 
     def interpret_animdata(self):
-        self.unknown_data_2 = self.chunk_list(self.unknown_data_2, 3)
-        self.unknown_data_3 = self.chunk_list(self.unknown_data_3, 3)
+        self.initial_pose_bone_rotations = self.chunk_list(self.initial_pose_bone_rotations, 6)
+        self.initial_pose_bone_rotations = [deserialise_quaternion(elem) for elem in self.initial_pose_bone_rotations]
+        self.initial_pose_bone_locations = self.chunk_list(self.initial_pose_bone_locations, 3)
+        self.initial_pose_bone_scales = self.chunk_list(self.initial_pose_bone_scales, 3)
 
         self.unknown_data_5 = self.chunk_list(self.unknown_data_5, 3)
-        self.unknown_data_6 = self.chunk_list(self.unknown_data_6, 2)
 
 
 class UnknownAnimSubstructure(BaseRW):
