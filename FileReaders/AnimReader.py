@@ -51,7 +51,7 @@ class AnimReader(BaseRW):
         self.num_bones = None
         self.unknown_0x10 = None  # 1 more than the final count in part 6: total frames in animation?
         self.unknown_0x12 = None  # part 5 is 8x this count, part 6 is 4x this count: count of UnknownAnimSubstructures. Presumably total # of keyframes.
-        self.always_16384 = None  # Always 16384; maybe a section terminator
+        self.always_16384 = None  # Always 16384; maybe a section terminator, maybe the precision of the rotations
 
         self.unknown_0x16 = None  # part 1 is 6x this count, counts bone idxs
         self.unknown_0x18 = None  # part 2 is 12x this count, counts bone idxs
@@ -356,13 +356,12 @@ class UnknownAnimSubstructure(BaseRW):
         self.unknown_0x0E = None  # Size of part 9; divisible by 4
 
         # Data holders
-        self.unknown_data_1 = None  # Contains 6 bytes per entry, dtype unknown (eee?). Count in parent header.
+        self.unknown_data_1 = None  # Contains 6 bytes per entry, dtype smallest-3 quaternion with uint15s. Count in parent header.
         self.unknown_data_2 = None  # Contains 12 bytes per entry, dtype fff. Count in parent header.
         self.unknown_data_3 = None  # Contains 12 bytes per entry, dtype fff. Count in parent header.
         self.unknown_data_4 = None  # Contains 4 bytes per entry, dtype f(?). Count in parent header.
-        self.unknown_data_5 = None  # Contains an indeterminable number of bytes, 0 - 3000. No obvious pattern; some
-                                    # non-trivial correspondence with the increment in part 6 of the parent reader
-        self.unknown_data_6 = None  # Contains 6 bytes per entry, dtype unknown  (eee?). Count unknown.
+        self.unknown_data_5 = None  # Bit-packed booleans stating which keyframes are in use
+        self.unknown_data_6 = None  # Contains 6 bytes per entry, dtype smallest-3 quaternion with uint15s. Count in parent header.
         self.unknown_data_7 = None  # Contains 12 bytes per entry, dtype fff. Count unknown.
         self.unknown_data_8 = None  # Contains 12 bytes per entry, dtype fff. Count unknown.
         self.unknown_data_9 = None  # Contains 4 bytes per entry, dtype f(?). Count unknown.
@@ -438,6 +437,9 @@ class UnknownAnimSubstructure(BaseRW):
         self.bytes_read += self.unknown_0x06
 
     def rw_part_5(self, rw_operator_raw):
+        """
+        This is a bit-string denoting keyframes
+        """
         rw_operator_raw('unknown_data_5', self.part5_size)
 
         self.bytes_read += self.part5_size
