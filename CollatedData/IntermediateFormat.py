@@ -8,7 +8,7 @@ class IntermediateFormat:
     The imported data is split across several files, and collating this into a single location makes it more 
     convenient to program against.
     """
-         
+
     def __init__(self):
         self.skeleton = Skeleton()
         self.meshes = []
