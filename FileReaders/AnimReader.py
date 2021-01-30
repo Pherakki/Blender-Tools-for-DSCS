@@ -439,7 +439,6 @@ class UnknownAnimSubstructure(BaseRW):
         self.bytes_read += self.unknown_0x02
 
     def rw_part_3(self, rw_operator, cleanup_chunk_operator):
-        # Each entry is ~1? (c.f. pc002_fc01)
         rw_operator('unknown_data_3', 'fff'*self.part_3_count)
         if self.unknown_0x04 != 0:
             cleanup_chunk_operator(self.bytes_read, 4)
