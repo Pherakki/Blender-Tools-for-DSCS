@@ -268,7 +268,7 @@ class AnimReader(BaseRW):
         # final data reader to the end of the file (WHY?!!?!)
         """
         self.assert_file_pointer_now_at(self.abs_ptr_part_5)
-        rw_operator('unknown_data_5', 'HHI' * self.num_keyframe_chunks)
+        rw_operator('keyframe_chunks_ptrs', 'HHI' * self.num_keyframe_chunks)
 
     def rw_keyframes_per_substructure(self, rw_operator, chunk_cleanup_operator):
         """
