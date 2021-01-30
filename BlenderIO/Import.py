@@ -271,12 +271,13 @@ class ImportDSCSBase:
                                                                                   [elem[i] for elem in scale_data.values]) for x in co])
                             fc.update()
 
-				model_armature.animation_data.action = action
-				track = model_armature.animation_data.nla_tracks.new()
-				nla_strip = track.strips.new(action.name, action.frame_range[0], action)
-				nla_strip.scale = 24 / animation_data.playback_rate
-				nla_strip.mute = True
-				model_armature.animation_data.action = None
+                model_armature.animation_data.action = action
+                track = model_armature.animation_data.nla_tracks.new()
+                track.name = action.name
+                track.mute = True
+                nla_strip = track.strips.new(action.name, action.frame_range[0], action)
+                nla_strip.scale = 24 / animation_data.playback_rate
+                model_armature.animation_data.action = None
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj
