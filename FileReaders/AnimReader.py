@@ -111,10 +111,14 @@ class AnimReader(BaseRW):
         self.max_val_2 = None
 
     def read(self):
-        self.read_write(self.read_buffer, self.read_ascii, "read", self.prepare_read_op, self.cleanup_ragged_chunk_read)
+        self.read_write(self.read_buffer, self.read_raw, self.read_ascii, self.maxval_read, "read", self.prepare_read_op, self.cleanup_ragged_chunk_read)
         self.interpret_animdata()
 
-    def read_write(self, rw_operator, rw_operator_ascii, rw_method_name, preparation_op, chunk_cleanup_operator):
+    def write(self):
+        self.reinterpret_animdata()
+        self.read_write(self.write_buffer, self.write_raw, self.write_ascii, self.maxval_write, "write", lambda: None, self.cleanup_ragged_chunk_write)
+
+    def read_write(self, rw_operator, rw_operator_raw, rw_operator_ascii, maxval_op, rw_method_name, preparation_op, chunk_cleanup_operator):
         self.rw_header(rw_operator, rw_operator_ascii)
         preparation_op()
         self.rw_bone_idx_lists(rw_operator, maxval_op, chunk_cleanup_operator)
