@@ -521,7 +521,7 @@ def bits_to_bytes(bitstring):
 
 def deserialise_quaternion(dscs_rotation):
     bit_representation = bytes_to_bits(dscs_rotation)
-    largest_index = struct.unpack('>B', bits_to_bytes('000000' + bit_representation[46:48]))
+    largest_index = struct.unpack('B', bits_to_bytes('000000' + bit_representation[46:48]))
     component_bits = bit_representation[1:46]
     component_bits = ''.join(['0'+component_bits[15*i:15*(i+1)] for i in range(3)])
     components = np.array(struct.unpack('>HHH', bits_to_bytes(component_bits)))
@@ -571,7 +571,7 @@ def serialise_quaternion(quat):
     component_bits = ''.join([component_bits[16*i + 1:16*(i+1)] for i in range(3)])
 
     # Store the largest index as a uint2
-    largest_index_bits = bytes_to_bits(struct.pack('>B', largest_index))[6:]
+    largest_index_bits = bytes_to_bits(struct.pack('B', largest_index))[6:]
 
     # Put everything together
     component_bits = '0' + component_bits + largest_index_bits
