@@ -53,13 +53,13 @@ class AnimReader(BaseRW):
         self.unknown_0x12 = None  # part 5 is 8x this count, part 6 is 4x this count: count of UnknownAnimSubstructures. Presumably total # of keyframes.
         self.always_16384 = None  # Always 16384; maybe a section terminator, maybe the precision of the rotations
 
-        self.unknown_0x16 = None  # part 1 is 6x this count, counts bone idxs
-        self.unknown_0x18 = None  # part 2 is 12x this count, counts bone idxs
-        self.unknown_0x1A = None  # part 3 is 12x this count, counts bone idxs
+        self.initial_pose_bone_rotations_count = None  # part 1 is 6x this count, counts bone idxs
+        self.initial_pose_bone_locations_count = None  # part 2 is 12x this count, counts bone idxs
+        self.initial_pose_bone_scales_count = None  # part 3 is 12x this count, counts bone idxs
         self.unknown_0x1C = None  # part 4 is 4x this count, counts bone idxs
-        self.unknown_0x1E = None  # part 1 of subreaders is 6x this count, counts bone idxs
-        self.unknown_0x20 = None  # part 2 of subreaders is 12x this count,counts bone idxs
-        self.unknown_0x22 = None  # part 3 of subreaders is 12x this count,counts bone idxs
+        self.keyframe_bone_rotations_count = None  # part 1 of subreaders is 6x this count, counts bone idxs
+        self.keyframe_bone_locations_count = None  # part 2 of subreaders is 12x this count,counts bone idxs
+        self.keyframe_bone_scales_count = None  # part 3 of subreaders is 12x this count,counts bone idxs
         self.unknown_0x24 = None  # part 4 of subreaders is 4x this count, counts bone idxs
         self.padding_0x26 = None  # Always 0
         self.unknown_0x28 = None  # Specifies the number of cleanup bytes after the initial data chunks
