@@ -285,8 +285,7 @@ class BoneDataReader(BaseRW):
         self.rw_header(self.write_buffer)
 
     def rw_header(self, rw_operator):
-        # (3D unit vector, value) * 3
-        # 1st is principally in x, 2nd principally in y, 3rd principally in z...?
+        # This is a bone matrix with... weird positional data
         rw_operator('x_axis', 'fff')
         rw_operator('xpos', 'f')
 

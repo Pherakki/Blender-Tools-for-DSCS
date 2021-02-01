@@ -101,10 +101,11 @@ class TextureData:
 class Skeleton:
     def __init__(self):
         self.bone_names = []
-        self.bone_positions = []
-        self.bone_xaxes = []
-        self.bone_yaxes = []
-        self.bone_zaxes = []
+        self.bone_positions = []  # Redundant
+        self.bone_xaxes = []  # Redundant
+        self.bone_yaxes = []  # Redundant
+        self.bone_zaxes = []  # Redundant
+        self.bone_matrices = []
         self.bone_relations = []
 
         self.unknown_data = {}

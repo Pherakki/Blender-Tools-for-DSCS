@@ -6,7 +6,7 @@ from bpy.props import BoolProperty
 from bpy_extras.io_utils import ImportHelper
 from bpy_extras.image_utils import load_image
 from bpy_extras.object_utils import object_data_add
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from ..CollatedData.FromReadWrites import generate_intermediate_format_from_files
 
 
@@ -40,8 +40,8 @@ class ImportDSCSBase:
         model_armature.parent = parent_obj
 
         # Rig
-        bone_pos = {}
         list_of_bones = {}
+        bone_pos = {}
         for i, bone_position in enumerate(model_data.skeleton.bone_positions):
             bone_pos[i] = bone_position
 
@@ -54,8 +54,6 @@ class ImportDSCSBase:
                 continue
 
             child_pos = np.array(bone_pos[child])
-            tail_pos = [item for item in child_pos]
-            tail_pos[1] += 0.2
 
             bone = model_armature.data.edit_bones.new(child_name)
 
@@ -66,8 +64,13 @@ class ImportDSCSBase:
             bone['zvecs'] = model_data.skeleton.bone_zaxes[i]
 
             list_of_bones[child_name] = bone
-            bone.head = child_pos
-            bone.tail = tail_pos
+            bone.head = np.array([0., 0., 0.])
+            bone.tail = np.array([0., 0.2, 0.])  # Make this scale with the model size in the future, for convenience
+            bone.transform(Matrix(model_data.skeleton.bone_matrices[i].tolist()))
+
+            bone.head = np.array([0., 0., 0.]) + child_pos
+            bone.tail = np.array(bone.tail) + child_pos
+
             if parent != -1:
                 bone.parent = list_of_bones[model_data.skeleton.bone_names[parent]]
 
