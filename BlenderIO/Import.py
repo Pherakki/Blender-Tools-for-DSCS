@@ -41,9 +41,6 @@ class ImportDSCSBase:
 
         # Rig
         list_of_bones = {}
-        bone_pos = {}
-        for i, bone_position in enumerate(model_data.skeleton.bone_positions):
-            bone_pos[i] = bone_position
 
         bpy.context.view_layer.objects.active = model_armature
         bpy.ops.object.mode_set(mode='EDIT')
@@ -53,20 +50,14 @@ class ImportDSCSBase:
             if child_name in list_of_bones:
                 continue
 
-            child_pos = np.array(bone_pos[child])
+            child_pos = np.array(model_data.skeleton.bone_matrices[child][3, :3])
 
             bone = model_armature.data.edit_bones.new(child_name)
-
-            # These are three columns of a transformation matrix that maps the bone positions from an unknown 3-vector
-            # to their actual positions
-            bone['xvecs'] = model_data.skeleton.bone_xaxes[i]
-            bone['yvecs'] = model_data.skeleton.bone_yaxes[i]
-            bone['zvecs'] = model_data.skeleton.bone_zaxes[i]
 
             list_of_bones[child_name] = bone
             bone.head = np.array([0., 0., 0.])
             bone.tail = np.array([0., 0.2, 0.])  # Make this scale with the model size in the future, for convenience
-            bone.transform(Matrix(model_data.skeleton.bone_matrices[i].tolist()))
+            bone.transform(Matrix(model_data.skeleton.bone_matrices[child].tolist()))
 
             bone.head = np.array([0., 0., 0.]) + child_pos
             bone.tail = np.array(bone.tail) + child_pos
@@ -77,7 +68,6 @@ class ImportDSCSBase:
         # Add the unknown data
         model_armature['unknown_0x0C'] = model_data.skeleton.unknown_data['unknown_0x0C']
         model_armature['unknown_parent_child_data'] = model_data.skeleton.unknown_data['unknown_parent_child_data']
-        model_armature['bone_data'] = model_data.skeleton.unknown_data['bone_data']
         model_armature['unknown_data_1'] = model_data.skeleton.unknown_data['unknown_data_1']
         model_armature['unknown_data_2'] = model_data.skeleton.unknown_data['unknown_data_2']
         model_armature['unknown_data_3'] = model_data.skeleton.unknown_data['unknown_data_3']

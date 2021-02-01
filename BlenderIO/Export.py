@@ -46,21 +46,16 @@ class ExportDSCSBase:
         bone_name_list = [bone.name for bone in model_armature.data.bones]
         for i, bone in enumerate(model_armature.data.bones):
             name = bone.name
-            pos = bone.head_local
             parent_bone = bone.parent
             parent_id = bone_name_list.index(parent_bone.name) if parent_bone is not None else -1
 
             model_data.skeleton.bone_names.append(name)
-            model_data.skeleton.bone_positions.append(pos)
             model_data.skeleton.bone_relations.append([i, parent_id])
-            model_data.skeleton.bone_xaxes.append(list(bone['xvecs']))
-            model_data.skeleton.bone_yaxes.append(list(bone['yvecs']))
-            model_data.skeleton.bone_zaxes.append(list(bone['zvecs']))
+            model_data.skeleton.bone_matrices.append(np.array(bone.matrix_local))
 
         # Get the unknown data
         model_data.skeleton.unknown_data['unknown_0x0C'] = model_armature['unknown_0x0C']
         model_data.skeleton.unknown_data['unknown_parent_child_data'] = model_armature['unknown_parent_child_data']
-        model_data.skeleton.unknown_data['bone_data'] = model_armature['bone_data']
         model_data.skeleton.unknown_data['unknown_data_1'] = model_armature['unknown_data_1']
         model_data.skeleton.unknown_data['unknown_data_2'] = model_armature['unknown_data_2']
         model_data.skeleton.unknown_data['unknown_data_3'] = model_armature['unknown_data_3']

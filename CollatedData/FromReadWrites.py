@@ -190,27 +190,11 @@ def add_textures(model_data, imported_geomdata, image_folder_path):
 def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata):
     model_data.skeleton.bone_names = imported_namedata.bone_names
     model_data.skeleton.bone_relations = imported_skeldata.parent_bones
-    for bone_data in imported_geomdata.bone_data:
-        position = (-bone_data.xpos, -bone_data.ypos, -bone_data.zpos)
-
-        transform = np.array([bone_data.x_axis, bone_data.y_axis, bone_data.z_axis])
-        position = np.dot(transform.T, np.array(position))
-
-        bone_matrix = np.zeros((4, 4))
-        bone_matrix[3, :3] = position
-        bone_matrix[:3, :3] = transform.T
-        bone_matrix[3, 3] = 1
-
-        model_data.skeleton.bone_positions.append(position)  # Redundant
-        model_data.skeleton.bone_xaxes.append(bone_data.x_axis)  # Redundant
-        model_data.skeleton.bone_yaxes.append(bone_data.y_axis)  # Redundant
-        model_data.skeleton.bone_zaxes.append(bone_data.z_axis)  # Redundant
-        model_data.skeleton.bone_matrices.append(bone_matrix)
+    model_data.skeleton.bone_matrices = imported_geomdata.bone_matrices
 
     # Put the unknown data into the skeleton
     model_data.skeleton.unknown_data['unknown_0x0C'] = imported_skeldata.unknown_0x0C
     model_data.skeleton.unknown_data['unknown_parent_child_data'] = imported_skeldata.unknown_parent_child_data
-    model_data.skeleton.unknown_data['bone_data'] = imported_skeldata.bone_data
     model_data.skeleton.unknown_data['unknown_data_1'] = imported_skeldata.unknown_data_1
     model_data.skeleton.unknown_data['unknown_data_2'] = imported_skeldata.unknown_data_2
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3

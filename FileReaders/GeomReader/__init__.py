@@ -1,6 +1,8 @@
 from ..BaseRW import BaseRW
 from .MeshReader import MeshReaderPC, MeshReaderPS4
 from .MaterialReader import MaterialReader
+
+import numpy as np
 import typing
 
 
@@ -50,7 +52,7 @@ class GeomReader(BaseRW):
         self.unknown_cam_data_1_start_ptr = None
         self.unknown_cam_data_2_start_ptr = None
 
-        self.bone_data_start_ptr = None
+        self.bone_matrices_start_ptr = None
         self.padding_0x58 = None
         self.texture_names_start_ptr = None
         self.footer_data_start_offset = None
@@ -61,10 +63,10 @@ class GeomReader(BaseRW):
         self.texture_data = []
         self.unknown_cam_data_1 = []
         self.unknown_cam_data_2 = []
-        self.bone_data = []
+        self.bone_matrices = []
         self.unknown_footer_data = []
 
-        self.subreaders = [self.meshes, self.material_data, self.bone_data]
+        self.subreaders = [self.meshes, self.material_data]
 
     @staticmethod
     def for_platform(bytestream, platform):
@@ -89,7 +91,7 @@ class GeomReader(BaseRW):
         self.rw_unknown_cam_data_1(rw_method_name, rw_operator)
         self.rw_unknown_cam_data_2(rw_method_name, rw_operator)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
-        self.rw_bone_data(rw_method_name)
+        self.rw_bone_data(rw_operator)
         self.rw_footer_data(rw_operator_raw)
 
     def rw_header(self, rw_operator):
@@ -123,7 +125,7 @@ class GeomReader(BaseRW):
         rw_operator('unknown_cam_data_1_start_ptr', 'Q')
         rw_operator('unknown_cam_data_2_start_ptr', 'Q')
 
-        rw_operator('bone_data_start_ptr', 'Q')
+        rw_operator('bone_matrices_start_ptr', 'Q')
         rw_operator('padding_0x58', 'Q')
         self.assert_is_zero("padding_0x58")
         rw_operator('texture_names_start_ptr', 'Q')
@@ -202,13 +204,12 @@ class GeomReader(BaseRW):
         #for unk_cam_data_2_reader in self.unknown_cam_data_2:
         #    getattr(unk_cam_data_2_reader, rw_method_name)()
 
-    def rw_bone_data(self, rw_method_name):
-        if self.is_ndef(self.bone_data_start_ptr, 'num_bones'):
+    def rw_bone_data(self, rw_operator):
+        if self.is_ndef(self.bone_matrices_start_ptr, 'num_bones'):
             return
-        self.assert_file_pointer_now_at(self.bone_data_start_ptr)
+        self.assert_file_pointer_now_at(self.bone_matrices_start_ptr)
 
-        for boneReader in self.bone_data:
-            getattr(boneReader, rw_method_name)()
+        rw_operator('bone_matrices', 'f'*12*self.num_bones)
 
     def rw_footer_data(self, rw_operator_raw):
         if self.footer_data_start_offset == 0:
@@ -224,7 +225,6 @@ class GeomReader(BaseRW):
     def prepare_read_op(self):
         self.meshes = [self.new_meshreader()(self.bytestream) for _ in range(self.num_meshes)]
         self.material_data = [MaterialReader(self.bytestream) for _ in range(self.num_materials)]
-        self.bone_data = [BoneDataReader(self.bytestream) for _ in range(self.num_bones)]
 
         # Support this when you know more about the format
         #self.unknown_cam_data_1 = [UnknownCamData1Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_1)]
@@ -236,6 +236,23 @@ class GeomReader(BaseRW):
         self.unknown_cam_data_1 = self.chunk_list(self.unknown_cam_data_1, 21)
         self.unknown_cam_data_2 = self.chunk_list(self.unknown_cam_data_2, 17)
 
+        self.bone_matrices = self.chunk_list(self.bone_matrices, 12)
+        # Can probably vectorise this loop away, but is it worth it?
+        for i, data in enumerate(self.bone_matrices):
+            data = np.array(data).reshape((3, 4))
+            pos = data[:3, 3]
+            pos *= -1  # For some reason, need to multiply the positions by -1?
+
+            rotation = data[:3, :3]
+            pos = np.dot(rotation.T, pos)  # And then rotate them?!
+
+            bone_matrix = np.zeros((4, 4))
+            bone_matrix[3, :3] = pos
+            bone_matrix[:3, :3] = rotation.T
+            bone_matrix[3, 3] = 1
+
+            self.bone_matrices[i] = bone_matrix
+
     def reinterpret_geom_data(self):
         self.texture_data: typing.List[str]
 
@@ -246,6 +263,20 @@ class GeomReader(BaseRW):
         self.texture_data = b''.join(texture_data)
         self.unknown_cam_data_1 = self.flatten_list(self.unknown_cam_data_1)
         self.unknown_cam_data_2 = self.flatten_list(self.unknown_cam_data_2)
+
+        for i, data in enumerate(self.bone_matrices):
+            data = data[:3, :4]  # Cut out the [0, 0, 0, 1] row
+
+            pos = data[:3, 3]
+            rotation = data[:3, :3]
+            pos = np.dot(rotation.T, pos)
+            pos *= 1
+
+            data[3, :3] = pos
+            data[:3, :3] = rotation.T
+
+            self.bone_matrices[i] = data.reshape(12)
+        self.bone_matrices = self.flatten_list(self.bone_matrices)
 
     def new_meshreader(self):
         raise NotImplementedError
@@ -265,35 +296,6 @@ class GeomReaderPS4(GeomReader):
 
     def new_meshreader(self):
         return MeshReaderPS4
-
-
-class BoneDataReader(BaseRW):
-    def __init__(self, io_stream):
-        super().__init__(io_stream)
-
-        self.x_axis = None
-        self.xpos = None
-        self.y_axis = None
-        self.ypos = None
-        self.z_axis = None
-        self.zpos = None
-
-    def read(self):
-        self.rw_header(self.read_buffer)
-
-    def write(self):
-        self.rw_header(self.write_buffer)
-
-    def rw_header(self, rw_operator):
-        # This is a bone matrix with... weird positional data
-        rw_operator('x_axis', 'fff')
-        rw_operator('xpos', 'f')
-
-        rw_operator('y_axis', 'fff')
-        rw_operator('ypos', 'f')
-
-        rw_operator('z_axis', 'fff')
-        rw_operator('zpos', 'f')
 
 
 class UnknownCamData1Reader(BaseRW):

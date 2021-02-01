@@ -221,20 +221,8 @@ def make_geomreader(filepath, model_data, platform):
         # Ragged chunk fixing
         virtual_pos += (16 - (virtual_pos % 16)) % 16
 
-        geomReader.bone_data_start_ptr = virtual_pos if len(model_data.skeleton.bone_positions) > 0 else 0
-        for bone, xvec, yvec, zvec, boneReader in zip(model_data.skeleton.bone_positions,
-                                                      model_data.skeleton.bone_xaxes,
-                                                      model_data.skeleton.bone_yaxes,
-                                                      model_data.skeleton.bone_zaxes,
-                                                      geomReader.bone_data):
-            boneReader.x_axis = xvec
-            boneReader.y_axis = yvec
-            boneReader.z_axis = zvec
-
-            transform = np.array([xvec, yvec, zvec])
-            position = -np.dot(np.linalg.inv(transform.T), np.array(bone))
-
-            boneReader.xpos, boneReader.ypos, boneReader.zpos = position
+        geomReader.bone_matrices_start_ptr = virtual_pos if len(model_data.skeleton.bone_positions) > 0 else 0
+        geomReader.bone_matrices = model_data.skeleton.bone_matrices
         virtual_pos += geomReader.num_bones*12*4
 
         geomReader.padding_0x58 = 0
