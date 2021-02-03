@@ -265,18 +265,23 @@ class GeomReader(BaseRW):
         self.unknown_cam_data_2 = self.flatten_list(self.unknown_cam_data_2)
 
         for i, data in enumerate(self.bone_matrices):
-            data = data[:3, :4]  # Cut out the [0, 0, 0, 1] row
-
+            data = data.T
             pos = data[:3, 3]
             rotation = data[:3, :3]
-            pos = np.dot(rotation.T, pos)
-            pos *= 1
+            pos = np.dot(rotation, pos)
+            pos *= -1
 
-            data[3, :3] = pos
-            data[:3, :3] = rotation.T
+            data[:3, 3] = pos
+            data[:3, :3] = rotation
+            data = data[:3, :4]  # Cut out the [0, 0, 0, 1] row
 
-            self.bone_matrices[i] = data.reshape(12)
+            self.bone_matrices[i] = data.reshape(12).tolist()
+
         self.bone_matrices = self.flatten_list(self.bone_matrices)
+        self.bone_matrices = np.array(self.bone_matrices)
+        self.bone_matrices[np.where(self.bone_matrices == -0.)] = 0.
+
+        self.bone_matrices = self.bone_matrices.tolist()
 
     def new_meshreader(self):
         raise NotImplementedError
