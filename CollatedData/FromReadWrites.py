@@ -227,7 +227,7 @@ def add_anims(model_data, imported_animdata):
             scale_fcurves_values[bone_idx].append(value)
 
         # Now add in the rotations, locations, and scales that change throughout the animation
-        for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.keyframe_chunks[:-1]):
+        for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.keyframe_chunks):
             for bone_idx, value in zip(ar.keyframe_rotations_bone_idxs, substructure.frame_0_rotations):
                 rotation_fcurves_frames[bone_idx].append(cumulative_frames)
                 rotation_fcurves_values[bone_idx].append(value)
