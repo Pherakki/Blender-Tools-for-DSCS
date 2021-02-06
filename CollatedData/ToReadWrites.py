@@ -43,8 +43,11 @@ def make_skelreader(filepath, model_data):
         skelReader.unknown_0x0C = model_data.skeleton.unknown_data['unknown_0x0C']
         skelReader.num_unknown_parent_child_data = len(model_data.skeleton.unknown_data['unknown_parent_child_data'])
 
-        skelReader.unknown_parent_child_data = model_data.skeleton.unknown_data['unknown_parent_child_data']
         skelReader.bone_data = model_data.skeleton.unknown_data['bone_data']
+        bone_hierarchy = gen_bone_hierarchy({c: p for c, p in model_data.skeleton.bone_relations})
+
+        skelReader.num_unknown_parent_child_data = len(bone_hierarchy)
+        skelReader.unknown_parent_child_data = bone_hierarchy
         skelReader.parent_bones = model_data.skeleton.bone_relations
         skelReader.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']
         skelReader.unknown_data_2 = model_data.skeleton.unknown_data['unknown_data_2']
@@ -325,3 +328,37 @@ def mk_extended_boneweights(vtx, num_grps):
 
 class MissingWeightsError(TypeError):
     pass
+
+def gen_bone_hierarchy(parent_bones):
+    to_return = []
+    parsed_bones = []
+    bones_left_to_parse = [bidx for bidx in parent_bones]
+    while len(bones_left_to_parse) > 0:
+        hierarchy_line, new_parsed_bone_idxs = gen_bone_hierarchy_line(parent_bones, parsed_bones, bones_left_to_parse)
+        to_return.append(hierarchy_line)
+
+        for bidx in new_parsed_bone_idxs[::-1]:
+            parsed_bones.append(bones_left_to_parse[bidx])
+            del bones_left_to_parse[bidx]
+    return to_return
+
+
+def gen_bone_hierarchy_line(parent_bones, parsed_bones, bones_left_to_parse):
+    """It ain't pretty, but it works"""
+    to_return = []
+    new_parsed_bone_idxs = []
+    bone_iter = iter(bones_left_to_parse)
+    prev_j = 0
+    for i in range(4):
+        for j, bone in enumerate(bone_iter):
+            mod_j = j + prev_j
+            parent_bone = parent_bones[bone]
+            if parent_bone == -1 or parent_bone in parsed_bones:
+                to_return.append(bone)
+                to_return.append(parent_bone)
+                new_parsed_bone_idxs.append(mod_j)
+                prev_j = mod_j + 1
+                break
+        if mod_j == len(bones_left_to_parse)-1 and len(to_return) < 8:
+            to_return.extend(to_return[-2:])
+    return to_return, new_parsed_bone_idxs
