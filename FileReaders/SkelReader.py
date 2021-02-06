@@ -139,7 +139,7 @@ class SkelReader(BaseRW):
         rw_operator('unknown_parent_child_data', 'h'*int16s_to_read)
 
     def rw_bone_data(self, rw_operator):
-        # Rot quaternion, pos, scale?
+        # Rotation, position, scale as quaternions and affine vectors
         self.assert_file_pointer_now_at(self.abs_ptr_bone_defs)
         floats_to_read = self.num_bones * 12  # * 4
         rw_operator('bone_data', 'f'*floats_to_read)
