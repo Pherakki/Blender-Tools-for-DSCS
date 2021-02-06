@@ -41,7 +41,6 @@ def make_skelreader(filepath, model_data):
         skelReader.filetype = '20SE'
         skelReader.num_bones = len(model_data.skeleton.unknown_data['bone_data'])
         skelReader.unknown_0x0C = model_data.skeleton.unknown_data['unknown_0x0C']
-        skelReader.num_unknown_parent_child_data = len(model_data.skeleton.unknown_data['unknown_parent_child_data'])
 
         skelReader.bone_data = model_data.skeleton.unknown_data['bone_data']
         bone_hierarchy = gen_bone_hierarchy({c: p for c, p in model_data.skeleton.bone_relations})
