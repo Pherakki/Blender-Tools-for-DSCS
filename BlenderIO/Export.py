@@ -55,7 +55,6 @@ class ExportDSCSBase:
 
         # Get the unknown data
         model_data.skeleton.unknown_data['unknown_0x0C'] = model_armature['unknown_0x0C']
-        model_data.skeleton.unknown_data['unknown_parent_child_data'] = model_armature['unknown_parent_child_data']
         model_data.skeleton.unknown_data['unknown_data_1'] = model_armature['unknown_data_1']
         model_data.skeleton.unknown_data['unknown_data_2'] = model_armature['unknown_data_2']
         model_data.skeleton.unknown_data['unknown_data_3'] = model_armature['unknown_data_3']
