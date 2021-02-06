@@ -54,11 +54,11 @@ class ExportDSCSBase:
             model_data.skeleton.bone_matrices.append(np.array(bone.matrix_local))
 
         # Get the unknown data
-        model_data.skeleton.unknown_data['unknown_0x0C'] = model_armature['unknown_0x0C']
-        model_data.skeleton.unknown_data['unknown_data_1'] = model_armature['unknown_data_1']
-        model_data.skeleton.unknown_data['unknown_data_2'] = model_armature['unknown_data_2']
-        model_data.skeleton.unknown_data['unknown_data_3'] = model_armature['unknown_data_3']
-        model_data.skeleton.unknown_data['unknown_data_4'] = model_armature['unknown_data_4']
+        model_data.skeleton.unknown_data['unknown_0x0C'] = model_armature.get('unknown_0x0C', 0)
+        model_data.skeleton.unknown_data['unknown_data_1'] = model_armature.get('unknown_data_1', [])
+        model_data.skeleton.unknown_data['unknown_data_2'] = model_armature.get('unknown_data_2', [])
+        model_data.skeleton.unknown_data['unknown_data_3'] = model_armature.get('unknown_data_3', [])
+        model_data.skeleton.unknown_data['unknown_data_4'] = model_armature.get('unknown_data_4', [])
         used_materials = set()
 
         # Vertices, Materials, and Textures (oh my!)
@@ -243,9 +243,9 @@ class ExportDSCSBase:
 
         model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data
-        model_data.unknown_data['unknown_cam_data_1'] = parent_obj['unknown_cam_data_1']
-        model_data.unknown_data['unknown_cam_data_2'] = parent_obj['unknown_cam_data_2']
-        model_data.unknown_data['unknown_footer_data'] = parent_obj['unknown_footer_data']
+        model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
+        model_data.unknown_data['unknown_cam_data_2'] = parent_obj.get('unknown_cam_data_2', [])
+        model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
         generate_files_from_intermediate_format(filepath, model_data, platform)
 
         parent_obj.rotation_euler = (np.pi / 2, 0, 0)
