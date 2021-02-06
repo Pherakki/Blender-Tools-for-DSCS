@@ -279,7 +279,7 @@ def add_anims(model_data, imported_animdata):
                 rotation_fcurves_values[bone_idx].extend(values)
             for bone_idx, mask in zip(ar.keyframe_locations_bone_idxs, masks):
                 frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
-                values = itertools.islice(locations, len(frames)) # Pop the next num_frames locations
+                values = itertools.islice(locations, len(frames))  # Pop the next num_frames locations
                 location_fcurves_frames[bone_idx].extend(frames)
                 location_fcurves_values[bone_idx].extend(values)
             for bone_idx, mask in zip(ar.keyframe_scales_bone_idxs, masks):
