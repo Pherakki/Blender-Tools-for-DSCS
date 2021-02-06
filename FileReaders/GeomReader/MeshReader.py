@@ -98,8 +98,8 @@ class MeshReaderBase(BaseRW):
         rw_operator('unknown_0x31', 'B')  # values 1, 4, 5: 4 means pos and normal only, diff between 1 nad 5 is what?? 1 doesn't have unk vt 2... 5 can have 0 weights, 1 cannot
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
         # Definitely not a float... could be B, H, or e.
-        rw_operator('unknown_0x34', 'H')  # All over the place - I have no idea.
-        rw_operator('unknown_0x36', 'H')  # All over the place - I have no idea.
+        rw_operator('unknown_0x34', 'BB')  # All over the place - I have no idea.
+        rw_operator('unknown_0x36', 'BB')  # All over the place - I have no idea.
 
         rw_operator('material_id', 'I')
         rw_operator('num_vertices', 'I')
