@@ -95,54 +95,51 @@ class MaterialReader(BaseRW):
         self.shader_hex = b''.join((shader_hex_pt_1, shader_hex_pt_2, shader_hex_pt_3, shader_hex_pt_4))
 
 
-
-
-
 class MaterialComponent(BaseRW):
     component_types = {
                         #      Name       numfloats
                         50: ('DiffuseTextureID', 0),  # idx 0 is texture id, rest are...?
-                        51: ('Colour', 4),  # RBGA? RBG at least seems to be correct, not sure about the last float
+                        51: ('DiffuseColour', 4),  # FP uniform, half-floats?
                         53: ('NormalMapTextureID', 0),
-                        54: ('unknown_component_type', 1),
-                        56: ('Specular', 1),  # float is 0-1; specular coefficient
-                        57: ('unknown_component_type', 1),
+                        54: ('Bumpiness', 1),  # FP Uniform, half-float?
+                        56: ('SpecularStrength', 1),  # FP Uniform, half-float?
+                        57: ('SpecularPower', 1),  # FP Uniform, half-float?
                         58: ('CubeMapTextureID', 0),
-                        59: ('CubeMapCoefficient?', 1),  #
-                        60: ('unknown_component_type', 1),
-                        61: ('unknown_component_type', 1),
-                        62: ('unknown_component_type', 3),  # Only appears in chr435, chr912
-                        63: ('unknown_component_type', 3),  # Only appears in chr435, chr912
-                        64: ('unknown_component_type', 3),  # Only appears in chr435, chr912
-                        65: ('unknown_component_type', 1),  # Only appears in chr435, chr912
-                        66: ('unknown_component_type', 1),  # Only appears in chr435, chr912
-                        67: ('unknown_component_type', 0),
-                        68: ('unknown_component_type', 0),  # UV2 texture? Always appears with 71.
-                        69: ('unknown_component_type', 0),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
-                        70: ('unknown_component_type', 1),  # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
-                        71: ('UV2_Alpha?', 1),  # Float sets the alpha
-                        72: ('ToonTextureID?', 0),  # idx 0 is texture id, rest are...?
-                        75: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-                        76: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-                        77: ('unknown_component_type', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-                        79: ('unknown_component_type', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
-                        80: ('unknown_component_type', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
-                        84: ('unknown_component_type', 1),  # Jitter effect: Granularity?
-                        85: ('unknown_component_type', 2),  # Jitter effect: Unknown, Unknown
-                        88: ('unknown_component_type', 2),  # Jitter effect: Horiz. scroll speed, vert. jitter speed
-                        91: ('unknown_component_type', 2),
-                        94: ('EnableUVManipulation?', 2),  # Allows the material to change UV coordinates? Appears so with pc002, lucemon sm, control of UV change not obvious
-                        97: ('MeramonAnimatedUVs', 2),  # Uv, causes a mirage-like waving of the texture in slot 2
-                        100: ('unknown_component_type', 1),  # Jitter effect: jitter amplitude
-                        113: ('unknown_component_type', 1),
-                        114: ('unknown_component_type', 1),
-                        116: ('unknown_component_type', 2),
-                        119: ('unknown_component_type', 1),
-                        120: ('unknown_component_type', 1),  # eff_bts_chr429_swarhead.geom, eff_bts_chr590_hdr.geom
-                        123: ('unknown_component_type', 1),  # chr803.geom, chr805.geom, eff_bts_chr803_s02.geom
-                        129: ('unknown_component_type', 2),  # eff_bts_chr802_s01.geom
-                        141: ('unknown_component_type', 1),
-                        142: ('unknown_component_type', 0)  # eff_bts_chr032_c_revolution.geom
+                        59: ('ReflectionStrength', 1),  # FP Uniform, half-float? Works with cube map
+                        60: ('FresnelExp', 1),  # FP Uniform, half-float?  ### COULD BE MIXED UP WTH BELOW ####
+                        61: ('FresnelMin', 1),  # FP Uniform, half-float?
+                        62: ('FuzzySpecColor', 3),  # Only appears in chr435, chr912  ### COULD BE MIXED UP WTH TWO BELOW ####
+                        63: ('SubColor', 3),  # Only appears in chr435, chr912
+                        64: ('SurfaceColor', 3),  # Only appears in chr435, chr912
+                        65: ('Rolloff', 1),  # Only appears in chr435, chr912   ### COULD BE MIXED UP WTH BELOW ####
+                        66: ('VelvetStrength', 1),  # Only appears in chr435, chr912
+                        67: ('unknown_component_type', 0),  # Some kind of texture - seems to be sometimes assigned to UV2, sometimes to UV3?
+                        68: ('OverlayTextureID', 0),  # UV2 texture? Always appears with 71.
+                        69: ('unknown_component_type', 0), # Overlay normal texture ID? # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
+                        70: ('OverlayBumpiness', 1),  # FP Uniform, half-float?
+                        71: ('OverlayStrength', 1),  # FP Uniform, half-float? Blend ratio of 1st and 2nd texture
+                        72: ('ToonTextureID', 0),  # idx 0 is texture id, rest are...?
+                        75: ('Curvature', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom  ### COULD BE MIXED UP WTH TWO BELOW ####
+                        76: ('GlassStrength', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
+                        77: ('UpsideDown', 1),  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
+                        79: ('ParallaxBiasX', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom  ### COULD BE MIXED UP WTH BELOW ####
+                        80: ('ParallaxBiasY', 1),  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
+                        84: ('Time', 1),  # VP uniform
+                        85: ('ScrollSpeedSet1', 2),  # VP uniform
+                        88: ('ScrollSpeedSet2', 2),  # VP uniform
+                        91: ('ScrollSpeedSet3', 2),  # VP uniform
+                        94: ('OffsetSet1', 2),  # VP uniform
+                        97: ('OffsetSet2', 2),  # VP uniform # c.f. Meramon
+                        100: ('DistortionStrength', 1),  # FP uniform, half-float?
+                        113: ('LightMapStrength', 1),  # FP Uniform, half-float?  ### COULD BE MIXED UP WTH BELOW ####
+                        114: ('LightMapPower', 1),  # FP Uniform, half-float?
+                        116: ('OffsetSet3', 2),  # VP uniform
+                        119: ('Fat', 1),  # VP uniform
+                        120: ('RotationSet1', 1),  # VP uniform # eff_bts_chr429_swarhead.geom, eff_bts_chr590_hdr.geom
+                        123: ('RotationSet2', 1),  # VP uniform # chr803.geom, chr805.geom, eff_bts_chr803_s02.geom
+                        129: ('ScaleSet1', 2),  # VP uniform # eff_bts_chr802_s01.geom
+                        141: ('ZBias', 1),  # VP uniform, half-float?
+                        142: ('unknown_component_type', 0)  # Another texture ID # eff_bts_chr032_c_revolution.geom
                       }
 
     def __init__(self, io_stream):
@@ -204,7 +201,7 @@ class UnknownMaterialData(BaseRW):
     possibly_types = {160: 'If',  # 516, then one of eight float values between 0 and 0.5..?
                       161: 'II',  # Always (1, 0)
                       162: 'II',  # (0, 768) or (770, 1)
-                      163: 'BBI',  # (32779, 0) or (32774, 0)
+                      163: 'HHI',  # (32779, 0) or (32774, 0)
                       164: 'II',  # Always (1, 0)
                       166: 'II',  # Always (0, 0)
                       167: 'II',  # Always (516, 0)
