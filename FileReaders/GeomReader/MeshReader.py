@@ -98,8 +98,8 @@ class MeshReaderBase(BaseRW):
         rw_operator('unknown_0x31', 'B')  # values 1, 4, 5: 4 means pos and normal only, diff between 1 nad 5 is what?? 1 doesn't have unk vt 2... 5 can have 0 weights, 1 cannot
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
         # Definitely not a float... could be B, H, or e.
-        rw_operator('unknown_0x34', 'BB')  # All over the place - I have no idea.
-        rw_operator('unknown_0x36', 'BB')  # All over the place - I have no idea.
+        rw_operator('unknown_0x34', 'H')  # All over the place - I have no idea.
+        rw_operator('unknown_0x36', 'H')  # All over the place - I have no idea.
 
         rw_operator('material_id', 'I')
         rw_operator('num_vertices', 'I')
@@ -256,14 +256,14 @@ def validate_weighted_bone_id(component_data):
 class VertexComponentBase:
     vertex_types = {1: 'Position',  # 3 floats
                     2: 'Normal',  # 3 half-floats
-                    3: 'UnknownVertexUsage1',  # 4 half-floats, appears in chr, d, eff, npc, t, ui files # colour? # tangent?
-                    4: 'UnknownVertexUsage2',  # 3 half-floats, appears in eff and ui files # binormal? has something to do with lighting.
-                    5: 'UV',  # 2 half-floats
-                    6: 'UV2',  # 2 half-floats
-                    7: 'UnknownVertexUsage4',  # 2 half-floats, appears in chr, d, f, h, t # uv3?
-                    9: 'UnknownVertexUsage5',  # 4 half-floats, appears in block, blok, chr, d, e, eff, ev, eve, f, h, line, medal, mob, npc, scenario, t, ui, # colour?
-                    10: 'WeightedBoneID',  # Variable number of bytes. This is 3X THE INDEX of a bone id in MeshReader.weighted_bone_idxs
-                    11: 'BoneWeight'}  # Variable number of half-floats
+                    3: 'Tangent',  # 4 half-floats
+                    4: 'Binormal',  # 3 half-floats
+                    5: 'UV',  # 2 half-floats # Texcoord0
+                    6: 'UV2',  # 2 half-floats # Texcoord1
+                    7: 'UV3',  # 2 half-floats # Texcoord2
+                    9: 'Colour',  # 4 half-floats # Color
+                    10: 'WeightedBoneID',  # Variable number of bytes. This is 3X THE INDEX of a bone id in MeshReader.weighted_bone_idxs  # Weights
+                    11: 'BoneWeight'}  # Variable number of half-floats # Indices
 
     reverse_vertex_types = dict([reversed(i) for i in vertex_types.items()])
 
