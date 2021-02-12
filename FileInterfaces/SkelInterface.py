@@ -1,5 +1,7 @@
 from FileReaders.SkelReader import SkelReader
+from Utilities.Rotation import rotation_matrix_to_quat
 import numpy as np
+
 
 class SkelInterface:
     def __init__(self):
@@ -43,33 +45,6 @@ class SkelInterface:
             readwriter.num_bone_hierarchy_data_lines = len(bone_hierarchy)
             readwriter.bone_hierarchy_data = bone_hierarchy
 
-            # Turn this bit into a function: "build bone data from armature matrices" (+ scales)
-            # Also have a convenience function that turns these into armature matrices
-            # for i, bone_matrix in enumerate(self.bone_matrices):
-            #     parent_idx = parent_bones[i]
-            #     if parent_idx != -1:
-            #         parent_bone_matrix = self.bone_matrices[parent_idx]
-            #
-            #     else:
-            #         parent_bone_matrix = np.eye(4)
-            #
-            #     pr = parent_bone_matrix[:3, :3]
-            #     cr = bone_matrix[:3, :3]
-            #     rdiff = np.dot(pr.T, cr)
-            #     rdiff = rotation_matrix_to_quat(rdiff)
-            #
-            #     c_pos = bone_matrix[3, :3]
-            #     p_pos = parent_bone_matrix[3, :3]
-            #     diff = np.dot(pr.T, c_pos - p_pos)
-            #     diff = (*diff, 1.)
-            #
-            #     # Not really sure if setting the scale to always be 1 is legit, but...
-            #     # eh, doesn't look like it's stored in the geom
-            #     scal = (1., 1., 1., 1.)
-            #
-            #     bd = [tuple(rdiff), diff, scal]
-            #     bone_data.append(bd)
-
             readwriter.bone_data = self.bone_data
             readwriter.parent_bones = self.parent_bones
             readwriter.unknown_data_1 = self.unknown_data_1
@@ -101,6 +76,35 @@ class SkelInterface:
             readwriter.padding_0x32 = 0
 
             readwriter.write()
+
+    def bone_data_from_armature_space(self, bone_matrices):
+        bone_data = []
+        parent_bones = {c: p for c, p in self.parent_bones}
+        for i, bone_matrix in enumerate(bone_matrices):
+            parent_idx = parent_bones[i]
+            if parent_idx != -1:
+                parent_bone_matrix = bone_matrices[parent_idx]
+
+            else:
+                parent_bone_matrix = np.eye(4)
+
+            pr = parent_bone_matrix[:3, :3]
+            cr = bone_matrix[:3, :3]
+            rdiff = np.dot(pr.T, cr)
+            rdiff = rotation_matrix_to_quat(rdiff)
+
+            c_pos = bone_matrix[3, :3]
+            p_pos = parent_bone_matrix[3, :3]
+            diff = np.dot(pr.T, c_pos - p_pos)
+            diff = (*diff, 1.)
+
+            # Not really sure if setting the scale to always be 1 is legit, but...
+            # eh, doesn't look like it's stored in the geom
+            scal = (1., 1., 1., 1.)
+
+            bd = [tuple(rdiff), diff, scal]
+            bone_data.append(bd)
+        return bone_data
 
 
 def gen_bone_hierarchy(parent_bones):
