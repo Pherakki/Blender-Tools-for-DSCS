@@ -20,22 +20,22 @@ class NameInterface:
 
     def to_file(self, path):
         with open(path, 'wb') as F:
-            namereader = NameReader(F)
+            readwriter = NameReader(F)
 
             bone_names = self.bone_names
             material_names = self.material_names
 
-            namereader.num_bone_names = len(bone_names)
-            namereader.num_material_names = len(material_names)
+            readwriter.num_bone_names = len(bone_names)
+            readwriter.num_material_names = len(material_names)
 
             num_ptrs = len(bone_names) + len(material_names)
-            namereader.bone_name_pointers = [8 + 4 * num_ptrs + sum([len(name) for name in bone_names[:i]])
+            readwriter.bone_name_pointers = [8 + 4 * num_ptrs + sum([len(name) for name in bone_names[:i]])
                                              for i in range(len(bone_names))]
 
-            namereader.material_name_pointers = [namereader.bone_name_pointers[-1] + len(bone_names[-1]) +
+            readwriter.material_name_pointers = [readwriter.bone_name_pointers[-1] + len(bone_names[-1]) +
                                                  sum([len(name) for name in material_names[:i]])
                                                  for i in range(len(material_names))]
-            namereader.bone_names = bone_names
-            namereader.material_names = material_names
+            readwriter.bone_names = bone_names
+            readwriter.material_names = material_names
 
-            namereader.write()
+            readwriter.write()
