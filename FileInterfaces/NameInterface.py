@@ -1,4 +1,4 @@
-from FileReaders.NameReader import NameReader
+from ..FileReaders.NameReader import NameReader
 
 
 class NameInterface:
