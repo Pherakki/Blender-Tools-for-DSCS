@@ -1,4 +1,5 @@
 from ..BaseRW import BaseRW
+from .VertexComponents import vertex_components_from_defn
 import numpy as np
 import struct
 
@@ -46,7 +47,9 @@ class MeshReaderBase(BaseRW):
         self.unknown_0x31 = None
         self.polygon_numeric_data_type = None
         self.unknown_0x34 = None
+        self.unknown_0x35 = None
         self.unknown_0x36 = None
+        self.unknown_0x37 = None
         self.material_id = None
         self.num_vertices = None
 
@@ -99,7 +102,9 @@ class MeshReaderBase(BaseRW):
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
         # Definitely not a float... could be B, H, or e.
         rw_operator('unknown_0x34', 'H')  # All over the place - I have no idea.
+        #rw_operator('unknown_0x35', 'B')  # All over the place - I have no idea.
         rw_operator('unknown_0x36', 'H')  # All over the place - I have no idea.
+        #rw_operator('unknown_0x37', 'B')  # All over the place - I have no idea.
 
         rw_operator('material_id', 'I')
         rw_operator('num_vertices', 'I')
@@ -161,8 +166,8 @@ class MeshReaderBase(BaseRW):
                 dtype = f'{vertex_component.num_elements}{vertex_component.vertex_dtype}'
 
                 interpreted_data = np.array(struct.unpack(dtype, raw_vertex_subdata[:used_data]))
-                if vertex_component.validate is not None:
-                    interpreted_data = vertex_component.validate(interpreted_data)
+                #if vertex_component.validate is not None:
+                #    interpreted_data = vertex_component.validate(interpreted_data)
                 interpreted_vertex[vertex_component.vertex_type] = interpreted_data
 
                 unused_data = raw_vertex_subdata[used_data:]
@@ -179,8 +184,8 @@ class MeshReaderBase(BaseRW):
             bounds.append(self.bytes_per_vertex)
 
             for j, vertex_component in enumerate(self.vertex_components):
-                if vertex_component.validate is not None:
-                    vertex_component.validate(vertex_data[vertex_component.vertex_type])
+                #if vertex_component.validate is not None:
+                #    vertex_component.validate(vertex_data[vertex_component.vertex_type])
                 reinterpreted_vertex += struct.pack(f'{vertex_component.num_elements}{vertex_component.vertex_dtype}',
                                                    *vertex_data[vertex_component.vertex_type])
                 reinterpreted_vertex += self.pad_byte * (bounds[j+1] - len(reinterpreted_vertex))
@@ -188,72 +193,30 @@ class MeshReaderBase(BaseRW):
             reinterpreted_vertices.append(reinterpreted_vertex)
         self.vertex_data = b''.join(reinterpreted_vertices)
 
+    @classmethod
+    def vertex_component_factory(cls, vtype, num_elements, dtype, always_20, data_start_ptr):
+        assert always_20 == 20, f"Vertex always_20 was {always_20}, not 20."
+        vtype_name = cls.vertex_types[vtype]
+        vertex_dtype = cls.get_vertex_dtypes()[dtype]
+        vcomp = vertex_components_from_defn[(vtype_name, num_elements, vertex_dtype)](data_start_ptr)
+
+        return vcomp
+
+    @classmethod
+    def vertex_component_data_factory(cls, vertex_component):
+        return (cls.reverse_vertex_types[vertex_component.vertex_type], vertex_component.num_elements,
+                cls.get_reverse_vertex_dtypes()[vertex_component.vertex_dtype], 20, vertex_component.data_start_ptr)
+
     def interpret_mesh_data(self):
-        self.vertex_components = [self.get_vertex_component()(data) for data in self.chunk_list(self.vertex_components, 5)]
+        self.vertex_components = [self.vertex_component_factory(*data) for data in self.chunk_list(self.vertex_components, 5)]
         self.vertex_data = self.chunk_list(self.vertex_data, self.bytes_per_vertex)
         self.interpret_vertices()
 
     def reinterpret_mesh_data(self):
         self.reinterpret_vertices()
-        vertex_components = [(self.get_vertex_component().reverse_vertex_types[vc.vertex_type],
-                              vc.num_elements,
-                              self.get_vertex_component().get_reverse_dtypes()[vc.vertex_dtype],
-                              vc.always_20, vc.data_start_ptr)
-                             for vc in self.vertex_components]
+        vertex_components = [self.vertex_component_data_factory(vc) for vc in self.vertex_components]
         self.vertex_components = self.flatten_list(vertex_components)
 
-    @staticmethod
-    def get_polygon_type_defs():
-        raise NotImplementedError
-
-    @staticmethod
-    def get_vertex_component():
-        raise NotImplementedError
-
-    @property
-    def header_breaker(self):
-        raise NotImplementedError
-
-
-class MeshReaderPC(MeshReaderBase):
-    @staticmethod
-    def get_polygon_type_defs():
-        return {4: 'Triangles', 5: 'TriangleStrips'}
-
-    @staticmethod
-    def get_vertex_component():
-        return VertexComponentPC
-
-    @property
-    def header_breaker(self):
-        return 5123
-
-
-class MeshReaderPS4(MeshReaderBase):
-    @staticmethod
-    def get_polygon_type_defs():
-        return {4: 'Triangles', 0: 'TriangleStrips'}
-
-    @staticmethod
-    def get_vertex_component():
-        return VertexComponentPS4
-
-    @property
-    def header_breaker(self):
-        return 0
-
-
-def validate_position(component_data):
-    #assert len(component_data) == 3, f"Position is not a 3-vector: {component_data}"
-    return component_data[:3]
-
-
-def validate_weighted_bone_id(component_data):
-    assert np.all(np.mod(component_data, 3)) == 0, f"WeightedBoneIDs were not all multiples of 3: {component_data}"
-    return component_data
-
-
-class VertexComponentBase:
     vertex_types = {1: 'Position',  # 3 floats
                     2: 'Normal',  # 3 half-floats
                     3: 'Tangent',  # 4 half-floats
@@ -267,39 +230,118 @@ class VertexComponentBase:
 
     reverse_vertex_types = dict([reversed(i) for i in vertex_types.items()])
 
-    validation_policies = {#'Position': validate_position,
-                           'WeightedBoneID': validate_weighted_bone_id}
-
-    def __init__(self, data):
-        self.vertex_type = VertexComponentBase.vertex_types[data[0]]
-        self.num_elements = data[1]
-        self.vertex_dtype = self.get_dtypes()[data[2]]
-        self.always_20 = data[3]  # Always 20, no idea what for. Possibly a weird value for a junk byte.
-        self.data_start_ptr = data[4]
-
-        # Utility func
-        self.validate = VertexComponentBase.validation_policies.get(self.vertex_type)
+    @staticmethod
+    def get_polygon_type_defs():
+        raise NotImplementedError
 
     @staticmethod
-    def get_dtypes():
+    def get_vertex_component_type():
+        raise NotImplementedError
+
+    @property
+    def header_breaker(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def get_vertex_dtypes():
         raise NotImplementedError
 
     @classmethod
-    def get_reverse_dtypes(cls):
-        return dict([reversed(i) for i in cls.get_dtypes().items()])
+    def get_reverse_vertex_dtypes(cls):
+        return dict([reversed(i) for i in cls.get_vertex_dtypes().items()])
 
 
-class VertexComponentPC(VertexComponentBase):
+class MeshReaderPC(MeshReaderBase):
     @staticmethod
-    def get_dtypes():
+    def get_polygon_type_defs():
+        return {4: 'Triangles', 5: 'TriangleStrips'}
+
+    # @staticmethod
+    # def get_vertex_component():
+    #     return VertexComponentPC
+
+    @property
+    def header_breaker(self):
+        return 5123
+
+    @staticmethod
+    def get_vertex_dtypes():
         return {6: 'f',
-               11: 'e',
-               1: 'B'}
+                11: 'e',
+                1: 'B'}
 
 
-class VertexComponentPS4(VertexComponentBase):
+class MeshReaderPS4(MeshReaderBase):
     @staticmethod
-    def get_dtypes():
+    def get_polygon_type_defs():
+        return {4: 'Triangles', 0: 'TriangleStrips'}
+
+    # @staticmethod
+    # def get_vertex_component():
+    #     return VertexComponentPS4
+
+    @property
+    def header_breaker(self):
+        return 0
+
+    @staticmethod
+    def get_vertex_dtypes():
         return {9: 'f',
                 8: 'e',
                 0: 'B'}
+
+
+# def validate_weighted_bone_id(component_data):
+#     assert np.all(np.mod(component_data, 3)) == 0, f"WeightedBoneIDs were not all multiples of 3: {component_data}"
+#     return component_data
+
+#
+# class VertexComponentBase:
+#     vertex_types = {1: 'Position',  # 3 floats
+#                     2: 'Normal',  # 3 half-floats
+#                     3: 'Tangent',  # 4 half-floats
+#                     4: 'Binormal',  # 3 half-floats
+#                     5: 'UV',  # 2 half-floats # Texcoord0
+#                     6: 'UV2',  # 2 half-floats # Texcoord1
+#                     7: 'UV3',  # 2 half-floats # Texcoord2
+#                     9: 'Colour',  # 4 half-floats # Color
+#                     10: 'WeightedBoneID',  # Variable number of bytes. This is 3X THE INDEX of a bone id in MeshReader.weighted_bone_idxs  # Weights
+#                     11: 'BoneWeight'}  # Variable number of half-floats # Indices
+#
+#     reverse_vertex_types = dict([reversed(i) for i in vertex_types.items()])
+#
+#     validation_policies = {'WeightedBoneID': validate_weighted_bone_id}
+#
+#     def __init__(self, data):
+#         self.vertex_type = VertexComponentBase.vertex_types[data[0]]
+#         self.num_elements = data[1]
+#         self.vertex_dtype = self.get_dtypes()[data[2]]
+#         self.always_20 = data[3]  # Always 20, no idea what for. Possibly a weird value for a junk byte.
+#         self.data_start_ptr = data[4]
+#
+#         # Utility func
+#         self.validate = VertexComponentBase.validation_policies.get(self.vertex_type)
+#
+#     @staticmethod
+#     def get_dtypes():
+#         raise NotImplementedError
+#
+#     @classmethod
+#     def get_reverse_dtypes(cls):
+#         return dict([reversed(i) for i in cls.get_dtypes().items()])
+#
+#
+# class VertexComponentPC(VertexComponentBase):
+#     @staticmethod
+#     def get_dtypes():
+#         return {6: 'f',
+#                11: 'e',
+#                1: 'B'}
+#
+#
+# class VertexComponentPS4(VertexComponentBase):
+#     @staticmethod
+#     def get_dtypes():
+#         return {9: 'f',
+#                 8: 'e',
+#                 0: 'B'}
