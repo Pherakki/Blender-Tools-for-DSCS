@@ -1,17 +1,19 @@
-from FileReaders.SkelReader import SkelReader
-from Utilities.Rotation import rotation_matrix_to_quat
+from ..FileReaders.SkelReader import SkelReader
+from ..Utilities.Rotation import rotation_matrix_to_quat
 import numpy as np
 
 
 class SkelInterface:
     def __init__(self):
-        self.unknown_0x0C = None
         self.bone_data = []
         self.parent_bones = []
         self.unknown_data_1 = []
         self.unknown_data_2 = []
         self.unknown_data_3 = []
         self.unknown_data_4 = []
+
+        # Variables that will be removed eventually
+        self.unknown_0x0C = None
 
     @classmethod
     def from_file(cls, path):
@@ -127,8 +129,8 @@ def gen_bone_hierarchy_line(parent_bones, parsed_bones, bones_left_to_parse):
     new_parsed_bone_idxs = []
     bone_iter = iter(bones_left_to_parse)
     prev_j = 0
+    mod_j = -1
     for i in range(4):
-        mod_j = -1
         for j, bone in enumerate(bone_iter):
             mod_j = j + prev_j
             parent_bone = parent_bones[bone]
