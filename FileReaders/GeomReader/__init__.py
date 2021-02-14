@@ -63,7 +63,7 @@ class GeomReader(BaseRW):
         self.texture_data = []
         self.unknown_cam_data_1 = []
         self.unknown_cam_data_2 = []
-        self.bone_matrices = []
+        self.inverse_bind_pose_matrices = []
         self.unknown_footer_data = []
 
         self.subreaders = [self.meshes, self.material_data]
@@ -236,22 +236,15 @@ class GeomReader(BaseRW):
         self.unknown_cam_data_1 = self.chunk_list(self.unknown_cam_data_1, 21)
         self.unknown_cam_data_2 = self.chunk_list(self.unknown_cam_data_2, 17)
 
-        self.bone_matrices = self.chunk_list(self.bone_matrices, 12)
+        self.inverse_bind_pose_matrices = self.chunk_list(self.inverse_bind_pose_matrices, 12)
         # Can probably vectorise this loop away, but is it worth it?
-        for i, data in enumerate(self.bone_matrices):
+        for i, data in enumerate(self.inverse_bind_pose_matrices):
             data = np.array(data).reshape((3, 4))
-            pos = data[:3, 3]
-            pos *= -1  # For some reason, need to multiply the positions by -1?
-
-            rotation = data[:3, :3]
-            pos = np.dot(rotation.T, pos)  # And then rotate them?!
 
             bone_matrix = np.zeros((4, 4))
-            bone_matrix[3, :3] = pos
-            bone_matrix[:3, :3] = rotation.T
+            bone_matrix[:3, :4] = data
             bone_matrix[3, 3] = 1
-
-            self.bone_matrices[i] = bone_matrix
+            self.inverse_bind_pose_matrices[i] = bone_matrix
 
     def reinterpret_geom_data(self):
         self.texture_data: typing.List[str]
@@ -264,24 +257,17 @@ class GeomReader(BaseRW):
         self.unknown_cam_data_1 = self.flatten_list(self.unknown_cam_data_1)
         self.unknown_cam_data_2 = self.flatten_list(self.unknown_cam_data_2)
 
-        for i, data in enumerate(self.bone_matrices):
-            data = data.T
-            pos = data[:3, 3]
-            rotation = data[:3, :3]
-            pos = np.dot(rotation, pos)
-            pos *= -1
+        for i, data in enumerate(self.inverse_bind_pose_matrices):
 
-            data[:3, 3] = pos
-            data[:3, :3] = rotation
             data = data[:3, :4]  # Cut out the [0, 0, 0, 1] row
 
-            self.bone_matrices[i] = data.reshape(12).tolist()
+            self.inverse_bind_pose_matrices[i] = data.reshape(12).tolist()
 
-        self.bone_matrices = self.flatten_list(self.bone_matrices)
-        self.bone_matrices = np.array(self.bone_matrices)
-        self.bone_matrices[np.where(self.bone_matrices == -0.)] = 0.
+        self.inverse_bind_pose_matrices = self.flatten_list(self.inverse_bind_pose_matrices)
+        self.inverse_bind_pose_matrices = np.array(self.inverse_bind_pose_matrices)
+        self.inverse_bind_pose_matrices[np.where(self.inverse_bind_pose_matrices == -0.)] = 0.
 
-        self.bone_matrices = self.bone_matrices.tolist()
+        self.inverse_bind_pose_matrices = self.inverse_bind_pose_matrices.tolist()
 
     def new_meshreader(self):
         raise NotImplementedError
