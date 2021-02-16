@@ -101,7 +101,7 @@ def add_materials(model_data, imported_namedata, imported_geomdata, filename):
         model_data.materials[-1].shader_hex = material.shader_hex
         model_data.materials[-1].unknown_data['unknown_0x16'] = material.unknown_0x16
 
-        model_data.materials[-1].shader_uniforms = imported_geomdata.shader_uniforms
+        model_data.materials[-1].shader_uniforms = material.shader_uniforms
 
 
 def add_textures(model_data, imported_geomdata, image_folder_path):
