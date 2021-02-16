@@ -1,5 +1,5 @@
 class IntermediateFormat:
-    _version = 0.1
+    _version = 0.2
     f"""
     Intermediate Format: v{_version}.
     
@@ -89,6 +89,7 @@ class MaterialData:
         self.specular_coeff = None
         self.shader_hex = None
 
+        self.shader_uniforms = {}
         self.unknown_data = {}
 
 
@@ -101,7 +102,7 @@ class TextureData:
 class Skeleton:
     def __init__(self):
         self.bone_names = []
-        self.bone_matrices = []
+        self.inverse_bind_pose_matrices = []
         self.bone_relations = []
 
         self.unknown_data = {}
@@ -122,6 +123,20 @@ class Animation:
 
     def add_scale_fcurve(self, bone_idx, frames, values):
         self.scales[bone_idx] = FCurve(frames, values)
+
+    @property
+    def num_frames(self):
+        rot_frames = [e.frames for e in self.rotations.values()]
+        rot_frames = [subitem for item in rot_frames for subitem in item]
+        loc_frames = [e.frames for e in self.locations.values()]
+        loc_frames = [subitem for item in loc_frames for subitem in item]
+        scl_frames = [e.frames for e in self.scales.values()]
+        scl_frames = [subitem for item in scl_frames for subitem in item]
+        res = (*rot_frames, *loc_frames, *scl_frames)
+        if len(res):
+            return max(res)
+        else:
+            return 0
 
 
 class FCurve:
