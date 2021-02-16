@@ -209,7 +209,7 @@ class GeomReader(BaseRW):
             return
         self.assert_file_pointer_now_at(self.bone_matrices_start_ptr)
 
-        rw_operator('bone_matrices', 'f'*12*self.num_bones)
+        rw_operator('inverse_bind_pose_matrices', 'f'*12*self.num_bones)
 
     def rw_footer_data(self, rw_operator_raw):
         if self.footer_data_start_offset == 0:
