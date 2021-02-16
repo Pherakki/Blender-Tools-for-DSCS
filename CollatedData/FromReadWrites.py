@@ -61,6 +61,11 @@ def add_meshes(model_data, imported_geomdata):
                 for vertex_group_idx, weight in zip(vertex['WeightedBoneID'], vertex['BoneWeight']):
                     current_IF_mesh.vertex_groups[vertex_group_idx].vertex_indices.append(i)
                     current_IF_mesh.vertex_groups[vertex_group_idx].weights.append(weight)
+        for uv_type in ['UV', 'UV2', 'UV3']:
+            if uv_type in mesh.vertices[0]:
+                for vertex in mesh.vertices:
+                    u, v = vertex[uv_type]
+                    vertex[uv_type] = (u, 1. - v)
 
         current_IF_mesh.vertices = mesh.vertices
 
