@@ -43,6 +43,7 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     model_data = IntermediateFormat()
     add_meshes(model_data, imported_geomdata)
     add_textures(model_data, imported_geomdata, images_directory)
+    add_materials(model_data, imported_namedata, imported_geomdata, filename)
     add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata)
 
     return model_data
