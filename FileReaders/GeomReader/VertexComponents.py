@@ -50,9 +50,9 @@ class UV(BaseVertexComponent):
     num_elements = 2
     vertex_dtype = 'e'
 
-    @classmethod
-    def generator(cls, vtx):
-        return {cls.vertex_type: (vtx[cls.vertex_type][0], 1 - vtx[cls.vertex_type][-1]) if vtx[cls.vertex_type] is not None else vtx[cls.vertex_type]}
+    #@classmethod
+    #def generator(cls, vtx):
+    #    return {cls.vertex_type: (vtx[cls.vertex_type][0], 1 - vtx[cls.vertex_type][-1]) if vtx[cls.vertex_type] is not None else vtx[cls.vertex_type]}
 
 
 class UV2(BaseVertexComponent):
@@ -60,9 +60,9 @@ class UV2(BaseVertexComponent):
     num_elements = 2
     vertex_dtype = 'e'
 
-    @classmethod
-    def generator(cls, vtx):
-        return {cls.vertex_type: (vtx[cls.vertex_type][0], 1 - vtx[cls.vertex_type][-1]) if vtx[cls.vertex_type] is not None else vtx[cls.vertex_type]}
+    #@classmethod
+    #def generator(cls, vtx):
+    #    return {cls.vertex_type: (vtx[cls.vertex_type][0], 1 - vtx[cls.vertex_type][-1]) if vtx[cls.vertex_type] is not None else vtx[cls.vertex_type]}
 
 
 class UV3(BaseVertexComponent):
@@ -70,9 +70,9 @@ class UV3(BaseVertexComponent):
     num_elements = 2
     vertex_dtype = 'e'
 
-    @classmethod
-    def generator(cls, vtx):
-        return {cls.vertex_type: (vtx[cls.vertex_type][0], 1 - vtx[cls.vertex_type][-1]) if vtx[cls.vertex_type] is not None else vtx[cls.vertex_type]}
+    #@classmethod
+    #def generator(cls, vtx):
+    #    return {cls.vertex_type: (vtx[cls.vertex_type][0], 1 - vtx[cls.vertex_type][-1]) if vtx[cls.vertex_type] is not None else vtx[cls.vertex_type]}
 
 
 class Colour(BaseVertexComponent):
