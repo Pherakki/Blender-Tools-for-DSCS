@@ -14,6 +14,16 @@ class GeomInterface:
         self.inverse_bind_pose_matrices = []
         self.unknown_footer_data = []
 
+    def add_mesh(self):
+        interface = MeshInterface()
+        self.meshes.append(interface)
+        return interface
+
+    def add_material(self):
+        interface = MaterialInterface()
+        self.material_data.append(interface)
+        return interface
+
     @classmethod
     def from_file(cls, path, platform):
         with open(path, 'rb') as F:
@@ -101,7 +111,6 @@ class GeomInterface:
             virtual_pos += geomReader.num_bones * 12 * 4
 
             geomReader.padding_0x58 = 0
-
             # Dump the footer data
             geomReader.unknown_footer_data = self.unknown_footer_data
             geomReader.footer_data_start_offset = virtual_pos if len(geomReader.unknown_footer_data) else 0
