@@ -1,363 +1,88 @@
 from ..FileReaders.NameReader import NameReader
 from ..FileReaders.SkelReader import SkelReader
 from ..FileReaders.GeomReader import GeomReader
-from ..FileReaders.GeomReader.MaterialReader import MaterialComponent, UnknownMaterialData
+from ..FileReaders.GeomReader.MaterialReader import UnknownMaterialData
+from ..FileReaders.AnimReader import AnimReader
+
+from ..FileInterfaces.NameInterface import NameInterface
+from ..FileInterfaces.SkelInterface import SkelInterface
+from ..FileInterfaces.GeomInterface import GeomInterface
+# from ..FileInterfaces.AnimInterface import AnimInterface
+
+import os
 import numpy as np
 
 
 def generate_files_from_intermediate_format(filepath, model_data, platform='PC'):
-    make_namereader(filepath, model_data)
-    make_skelreader(filepath, model_data)
-    make_geomreader(filepath, model_data, platform)
+    file_folder = os.path.join(*os.path.split(filepath)[:-1])
+    make_nameinterface(filepath, model_data)
+    sk = make_skelinterface(filepath, model_data)
+    make_geominterface(filepath, model_data, platform)
+    #for animation_name in model_data.animations:
+    #    make_animreader(file_folder, model_data, animation_name, sk)
 
 
-def make_namereader(filepath, model_data):
-    bone_names = model_data.skeleton.bone_names
-    material_names = model_data.unknown_data['material names']
+def make_nameinterface(filepath, model_data):
+    nameInterface = NameInterface()
+    nameInterface.bone_names = model_data.skeleton.bone_names
+    nameInterface.material_names = model_data.unknown_data['material names']
 
-    with open(filepath + ".name", 'wb') as F:
-        nameReader = NameReader(F)
-
-        nameReader.num_bone_names = len(bone_names)
-        nameReader.num_material_names = len(material_names)
-
-        num_ptrs = len(bone_names) + len(material_names)
-        nameReader.bone_name_pointers = [8 + 4*num_ptrs + sum([len(name) for name in bone_names[:i]])
-                                         for i in range(len(bone_names))]
-
-        nameReader.material_name_pointers = [nameReader.bone_name_pointers[-1] + len(bone_names[-1]) +
-                                         sum([len(name) for name in material_names[:i]])
-                                         for i in range(len(material_names))]
-        nameReader.bone_names = bone_names
-        nameReader.material_names = material_names
-
-        nameReader.write()
+    nameInterface.to_file(filepath + ".name")
 
 
-def make_skelreader(filepath, model_data):
-    with open(filepath + '.skel', 'wb') as F:
-        skelReader = SkelReader(F)
+def make_skelinterface(filepath, model_data):
+    skelInterface = SkelInterface()
+    skelInterface.unknown_0x0C = model_data.skeleton.unknown_data['unknown_0x0C']
+    skelInterface.parent_bones = model_data.skeleton.bone_relations
+    skelInterface.bone_data = model_data.skeleton.unknown_data['bone_data']
 
-        skelReader.filetype = '20SE'
-        skelReader.num_bones = len(model_data.skeleton.unknown_data['bone_data'])
-        skelReader.unknown_0x0C = model_data.skeleton.unknown_data['unknown_0x0C']
+    skelInterface.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']
+    skelInterface.unknown_data_2 = model_data.skeleton.unknown_data['unknown_data_2']
+    skelInterface.unknown_data_3 = model_data.skeleton.unknown_data['unknown_data_3']
+    skelInterface.unknown_data_4 = model_data.skeleton.unknown_data['unknown_data_4']
 
-        skelReader.bone_data = model_data.skeleton.unknown_data['bone_data']
-        bone_hierarchy = gen_bone_hierarchy({c: p for c, p in model_data.skeleton.bone_relations})
+    skelInterface.to_file(filepath + ".skel")
 
-        skelReader.num_unknown_parent_child_data = len(bone_hierarchy)
-        skelReader.unknown_parent_child_data = bone_hierarchy
-        skelReader.parent_bones = model_data.skeleton.bone_relations
-        skelReader.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']
-        skelReader.unknown_data_2 = model_data.skeleton.unknown_data['unknown_data_2']
-        skelReader.unknown_data_3 = model_data.skeleton.unknown_data['unknown_data_3']
-        skelReader.unknown_data_4 = model_data.skeleton.unknown_data['unknown_data_4']
-
-        # Just give up and make the absolute pointers
-        skelReader.rel_ptr_to_end_of_unknown_parent_child_data = 40 + skelReader.num_unknown_parent_child_data*16
-        skelReader.rel_ptr_to_end_of_bone_defs = skelReader.rel_ptr_to_end_of_unknown_parent_child_data + skelReader.num_bones*12*4 - 4
-        skelReader.rel_ptr_to_end_of_parent_bones = skelReader.rel_ptr_to_end_of_bone_defs + skelReader.num_bones*2 - 16
-        abs_end_of_parent_bones_chunk = skelReader.rel_ptr_to_end_of_parent_bones + skelReader.unknown_0x0C + 44
-
-        skelReader.rel_ptr_to_end_of_parent_bones_chunk = skelReader.rel_ptr_to_end_of_parent_bones + skelReader.unknown_0x0C + 12
-        skelReader.rel_ptr_to_end_of_parent_bones_chunk += (16 - ((abs_end_of_parent_bones_chunk) % 16)) % 16
-        skelReader.unknown_rel_ptr_2 = skelReader.rel_ptr_to_end_of_parent_bones_chunk + skelReader.num_bones*4 - 4
-        skelReader.unknown_rel_ptr_3 = skelReader.unknown_rel_ptr_2 + skelReader.unknown_0x0C*4 - 4
-
-        bytes_after_parent_bones_chunk = (skelReader.unknown_rel_ptr_3 + 40) - (skelReader.rel_ptr_to_end_of_parent_bones_chunk + 32) + len(skelReader.unknown_data_4)
-        bytes_after_parent_bones_chunk += (16 - (bytes_after_parent_bones_chunk % 16))
-
-        skelReader.total_bytes = skelReader.rel_ptr_to_end_of_parent_bones_chunk + bytes_after_parent_bones_chunk + 32
-        skelReader.remaining_bytes_after_parent_bones_chunk = bytes_after_parent_bones_chunk
-
-        skelReader.padding_0x26 = 0
-        skelReader.padding_0x2A = 0
-        skelReader.padding_0x2E = 0
-        skelReader.padding_0x32 = 0
-
-        skelReader.write()
+    return skelInterface
 
 
-def make_geomreader(filepath, model_data, platform):
-    with open(filepath + '.geom', 'wb') as F:
-        geomReader = GeomReader.for_platform(F, platform)
+def make_geominterface(filepath, model_data, platform):
+    geomInterface = GeomInterface()
 
-        geomReader.filetype = 100
-        geomReader.num_meshes = len(model_data.meshes)
-        geomReader.num_materials = len(model_data.materials)
-        geomReader.num_unknown_cam_data_1 = len(model_data.unknown_data['unknown_cam_data_1'])
-        geomReader.num_unknown_cam_data_2 = len(model_data.unknown_data['unknown_cam_data_2'])
-        geomReader.num_bones = len(model_data.skeleton.bone_positions)
+    geomInterface.meshes = []
+    for mesh in model_data.meshes:
+        gi_mesh = geomInterface.add_mesh()
+        gi_mesh.unknown_0x31 = mesh.unknown_data['unknown_0x31']
+        gi_mesh.unknown_0x34 = mesh.unknown_data['unknown_0x34']
+        gi_mesh.unknown_0x36 = mesh.unknown_data['unknown_0x36']
+        gi_mesh.unknown_0x4C = mesh.unknown_data['unknown_0x4C']
 
-        geomReader.num_bytes_in_texture_names_section = 32*len(model_data.textures)
+        for uv_type in ['UV', 'UV2', 'UV3']:
+            if uv_type in mesh.vertices[0]:
+                for vertex in mesh.vertices:
+                    u, v = vertex[uv_type]
+                    vertex[uv_type] = (u, 1. - v)
+        gi_mesh.vertices = mesh.vertices
+        gi_mesh.vertex_group_bone_idxs = [vg.bone_idx for vg in mesh.vertex_groups]
+        gi_mesh.polygons = [p.indices for p in mesh.polygons]
+        gi_mesh.material_id = mesh.material_id
 
-        vertices = np.array([v.position[:3] for mesh in model_data.meshes for v in mesh.vertices])
-        if len(vertices) > 0:
-            minvs = np.min(vertices, axis=0)
-            maxvs = np.max(vertices, axis=0)
-        else:
-            minvs = np.zeros(3)
-            maxvs = np.zeros(3)
+    geomInterface.material_data = []
+    for mat in model_data.materials:
+        gi_mat = geomInterface.add_material()
+        gi_mat.unknown_0x00 = mat.unknown_data['unknown_0x00']
+        gi_mat.unknown_0x02 = mat.unknown_data['unknown_0x02']
+        gi_mat.shader_hex = mat.shader_hex
+        gi_mat.unknown_0x16 = mat.unknown_data['unknown_0x16']
 
-        geomReader.geom_centre = (maxvs + minvs) / 2
-        geomReader.geom_bounding_box_lengths = (maxvs - minvs) / 2
-        geomReader.padding_0x2C = 0
+        gi_mat.shader_uniforms = mat.shader_uniforms
+        gi_mat.unknown_material_components = mat.unknown_data['unknown_material_components']
 
-        geomReader.prepare_read_op()
-        virtual_pos = 112
-        geomReader.meshes_start_ptr = virtual_pos if len(model_data.meshes) > 0 else 0
-        virtual_pos += 104*geomReader.num_meshes
-        for mesh, meshReader in zip(model_data.meshes, geomReader.meshes):
-            meshReader.vertex_data_start_ptr = virtual_pos
+    geomInterface.texture_data = [td.name for td in model_data.textures]
+    geomInterface.unknown_cam_data_1 = model_data.unknown_data['unknown_cam_data_1']
+    geomInterface.unknown_cam_data_2 = model_data.unknown_data['unknown_cam_data_2']
+    geomInterface.inverse_bind_pose_matrices = model_data.skeleton.inverse_bind_pose_matrices
+    geomInterface.unknown_footer_data = model_data.unknown_data['unknown_footer_data']
 
-            vgroup_idxs = sorted([vgroup.bone_idx for vgroup in mesh.vertex_groups])
-            meshReader.bytes_per_vertex, meshReader.vertex_components, vertex_generators = calculate_vertex_properties(mesh.vertices, vgroup_idxs, geomReader.meshes[0].get_vertex_component())
-            try:
-                meshReader.vertex_data = generate_vertex_data(mesh.vertices, vertex_generators)
-            except MissingWeightsError as mwe:
-                print("Bad mesh is mesh", model_data.meshes.index(mesh))
-                raise mwe
+    geomInterface.to_file(filepath + '.geom', platform)
 
-            virtual_pos += meshReader.bytes_per_vertex*len(meshReader.vertex_data)
-            meshReader.weighted_bone_data_start_ptr = virtual_pos
-            meshReader.weighted_bone_idxs = vgroup_idxs
-            virtual_pos += 4*len(meshReader.weighted_bone_idxs)
-            meshReader.polygon_data_start_ptr = virtual_pos
-            meshReader.polygon_data = polys_to_triangles(mesh.polygons)
-            virtual_pos += 2*len(meshReader.polygon_data)
-            virtual_pos += (4 - (virtual_pos % 4)) % 4  # Fix ragged chunk of size 4
-            meshReader.padding_0x18 = 0
-
-            meshReader.vertex_components_start_ptr = virtual_pos
-            virtual_pos += 8*len(meshReader.vertex_components)
-            meshReader.num_weighted_bone_idxs = len(meshReader.weighted_bone_idxs)
-            meshReader.num_vertex_components = len(meshReader.vertex_components)
-            meshReader.always_5123 = 5123
-
-            meshReader.max_vertex_groups_per_vertex = max([len(vtx.vertex_groups) if vtx.vertex_groups is not None else 0 for vtx in mesh.vertices])
-            meshReader.max_vertex_groups_per_vertex = 0 if len(meshReader.weighted_bone_idxs) == 1 else meshReader.max_vertex_groups_per_vertex
-            meshReader.unknown_0x31 = mesh.unknown_data['unknown_0x31']
-            meshReader.polygon_numeric_data_type = 4  # Can only write to triangles atm
-            meshReader.unknown_0x34 = mesh.unknown_data['unknown_0x34']
-            meshReader.unknown_0x36 = mesh.unknown_data['unknown_0x36']
-            meshReader.material_id = mesh.material_id
-            meshReader.num_vertices = len(meshReader.vertex_data)
-
-            meshReader.num_polygon_idxs = len(meshReader.polygon_data)
-            meshReader.padding_0x44 = 0
-            meshReader.padding_0x48 = 0
-            meshReader.unknown_0x4C = mesh.unknown_data['unknown_0x4C']
-
-            vertices = np.array([v.position for v in mesh.vertices])
-            minvs = np.min(vertices, axis=0)
-            maxvs = np.max(vertices, axis=0)
-
-            meshReader.mesh_centre = (maxvs + minvs)/2
-            meshReader.bounding_box_lengths = (maxvs - minvs)/2
-
-        geomReader.materials_start_ptr = virtual_pos if len(model_data.materials) > 0 else 0
-        for material, materialReader in zip(model_data.materials, geomReader.material_data):
-            materialReader.unknown_0x00 = material.unknown_data['unknown_0x00']
-            materialReader.unknown_0x02 = material.unknown_data['unknown_0x02']
-            materialReader.shader_hex = material.shader_hex
-            # No idea if this is anything close to correct...
-            if materialReader.shader_hex[20:22] == '08':
-                materialReader.unknown_0x16 = 5
-            elif materialReader.shader_hex[11:13] == '08' or materialReader.shader_hex[11:13] == '88':
-                materialReader.unknown_0x16 = 3
-            else:
-                materialReader.unknown_0x16 = 1
-            #  materialReader.unknown_0x16 = material.unknown_data['unknown_0x16']
-
-            for key in material.unknown_data:
-                if 'type_1_component_' in key:
-                    n_component = int(key[len('type_1_component_'):])
-                    material_component = material.unknown_data[key]
-                    mData = MaterialComponent(F)
-                    mData.data = material_component
-                    mData.component_type = n_component
-                    mData.num_floats_in_data = MaterialComponent.component_types[n_component][1]
-                    mData.always_65280 = 65280
-                    mData.padding_0x14 = 0
-
-                    materialReader.material_components.append(mData)
-                    virtual_pos += 24
-            for key in material.unknown_data:
-                if 'type_2_component_' in key:
-                    n_component = int(key[len('type_2_component_'):])
-                    unknown_material_component = material.unknown_data[key]
-                    unknown_mData = UnknownMaterialData(F)
-                    unknown_mData.data = unknown_material_component
-                    unknown_mData.padding_0x08 = 0
-                    unknown_mData.padding_0x0A = 0
-                    unknown_mData.padding_0x0C = 0
-                    unknown_mData.padding_0x0E = 0
-                    unknown_mData.maybe_component_type = n_component
-                    unknown_mData.always_100 = 100
-                    unknown_mData.always_65280 = 65280
-                    unknown_mData.padding_0x14 = 0
-
-                    materialReader.unknown_data.append(unknown_mData)
-                    virtual_pos += 24
-
-            materialReader.num_material_components = len(materialReader.material_components)
-            materialReader.num_unknown_data = len(materialReader.unknown_data)
-
-            virtual_pos += 24
-
-        geomReader.texture_names_start_ptr = virtual_pos if len(model_data.textures) > 0 else 0
-        for texture in model_data.textures:
-            geomReader.texture_data.append(texture.name)
-            virtual_pos += 32
-
-        geomReader.unknown_cam_data_1_start_ptr = virtual_pos if len(model_data.unknown_data['unknown_cam_data_1']) > 0 else 0
-        for elem in model_data.unknown_data['unknown_cam_data_1']:
-            geomReader.unknown_cam_data_1.append(elem)
-            virtual_pos += 64
-
-        geomReader.unknown_cam_data_2_start_ptr = virtual_pos if len(model_data.unknown_data['unknown_cam_data_2']) > 0 else 0
-        for elem in model_data.unknown_data['unknown_cam_data_2']:
-            geomReader.unknown_cam_data_2.append(elem)
-            virtual_pos += 48
-
-        # Ragged chunk fixing
-        virtual_pos += (16 - (virtual_pos % 16)) % 16
-
-        geomReader.bone_matrices_start_ptr = virtual_pos if len(model_data.skeleton.bone_positions) > 0 else 0
-        geomReader.bone_matrices = model_data.skeleton.bone_matrices
-        virtual_pos += geomReader.num_bones*12*4
-
-        geomReader.padding_0x58 = 0
-
-        geomReader.unknown_footer_data = model_data.unknown_data['unknown_footer_data']
-        geomReader.footer_data_start_offset = virtual_pos if len(geomReader.unknown_footer_data) else 0
-        geomReader.write()
-
-
-def calculate_vertex_properties(vertices, num_vertex_groups, VertexComponent):
-    """
-    Contains some nasty repetition of non-trivial data but I just want to get this done at this point
-    """
-    bytes_per_vertex = 0
-    vertex_components = []
-    vertex_generators = []
-    example_vertex = vertices[0]
-    max_vtx_groups = max([len(vtx.vertex_groups) for vtx in vertices])
-    if example_vertex.position is not None:
-        if max_vtx_groups == 1 and len(num_vertex_groups) > 1:
-            vertex_components.append(VertexComponent([1, 4, 6, 20, bytes_per_vertex]))
-            bytes_per_vertex += 16
-            vertex_generators.append(lambda vtx: {'Position': [*vtx.position, float(3*vtx.vertex_groups[0])]})
-        else:
-            vertex_components.append(VertexComponent([1, 3, 6, 20, bytes_per_vertex]))
-            bytes_per_vertex += 12
-            vertex_generators.append(lambda vtx: {'Position': vtx.position})
-    if example_vertex.normal is not None:
-        vertex_components.append(VertexComponent([2, 3, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 8
-        vertex_generators.append(lambda vtx: {'Normal': vtx.normal})
-    if example_vertex.UV is not None:
-        vertex_components.append(VertexComponent([5, 2, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 4
-        vertex_generators.append(lambda vtx: {'UV': (vtx.UV[0], 1 - vtx.UV[-1]) if vtx.UV is not None else vtx.UV})
-    if 'UV2' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([6, 2, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 4
-        vertex_generators.append(lambda vtx: {'UV2': vtx.unknown_data['UV2']})
-    if 'UnknownVertexUsage4' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([7, 2, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 4
-        vertex_generators.append(lambda vtx: {'UnknownVertexUsage4': vtx.unknown_data['UnknownVertexUsage4']})
-    if 'UnknownVertexUsage5' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([9, 4, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 8
-        vertex_generators.append(lambda vtx: {'UnknownVertexUsage5': vtx.unknown_data['UnknownVertexUsage5']})
-    if 'UnknownVertexUsage1' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([3, 4, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 8
-        vertex_generators.append(lambda vtx: {'UnknownVertexUsage1': vtx.unknown_data['UnknownVertexUsage1']})
-    if 'UnknownVertexUsage2' in example_vertex.unknown_data:
-        vertex_components.append(VertexComponent([4, 3, 11, 20, bytes_per_vertex]))
-        bytes_per_vertex += 8
-        vertex_generators.append(lambda vtx: {'UnknownVertexUsage2': vtx.unknown_data['UnknownVertexUsage2']})
-    if example_vertex.vertex_groups is not None and max_vtx_groups >= 2:
-        num_grps = max_vtx_groups
-        vertex_components.append(VertexComponent([10, num_grps, 1, 20, bytes_per_vertex]))
-        nominal_bytes = num_grps
-        bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
-        vertex_generators.append(lambda vtx: {'WeightedBoneID': mk_extended_boneids(vtx, num_grps)})
-
-        vertex_components.append(VertexComponent([11, num_grps, 11, 20, bytes_per_vertex]))
-        nominal_bytes = 2*num_grps
-        bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
-        vertex_generators.append(lambda vtx: {'BoneWeight': mk_extended_boneweights(vtx, num_grps)})
-
-    return bytes_per_vertex, vertex_components, vertex_generators
-
-
-def generate_vertex_data(vertices, generators):
-    retval = []
-    for vertex in vertices:
-        vdata = [generator(vertex) for generator in generators]
-        retval.append({k: v for d in vdata for k, v in d.items()})
-    return retval
-
-
-def polys_to_triangles(polys):
-    return [sublist for list in [poly.indices for poly in polys] for sublist in list]
-
-
-def mk_extended_boneids(vtx, num_grps):
-    use_groups = [grp*3 for grp in vtx.vertex_groups]
-    if len(vtx.vertex_groups) < num_grps:
-        use_groups.extend([0]*(num_grps-len(vtx.vertex_groups)))
-    return use_groups
-
-
-def mk_extended_boneweights(vtx, num_grps):
-    try:
-        use_groups = [grp for grp in vtx.vertex_group_weights]
-    except TypeError as te:
-        print("bad vertex is at", vtx.position, "with vertex groups", vtx.vertex_groups)
-        raise MissingWeightsError from te
-    if len(vtx.vertex_group_weights) < num_grps:
-        use_groups.extend([0.]*(num_grps-len(vtx.vertex_group_weights)))
-    return use_groups
-
-
-class MissingWeightsError(TypeError):
-    pass
-
-def gen_bone_hierarchy(parent_bones):
-    to_return = []
-    parsed_bones = []
-    bones_left_to_parse = [bidx for bidx in parent_bones]
-    while len(bones_left_to_parse) > 0:
-        hierarchy_line, new_parsed_bone_idxs = gen_bone_hierarchy_line(parent_bones, parsed_bones, bones_left_to_parse)
-        to_return.append(hierarchy_line)
-
-        for bidx in new_parsed_bone_idxs[::-1]:
-            parsed_bones.append(bones_left_to_parse[bidx])
-            del bones_left_to_parse[bidx]
-    return to_return
-
-
-def gen_bone_hierarchy_line(parent_bones, parsed_bones, bones_left_to_parse):
-    """It ain't pretty, but it works"""
-    to_return = []
-    new_parsed_bone_idxs = []
-    bone_iter = iter(bones_left_to_parse)
-    prev_j = 0
-    for i in range(4):
-        for j, bone in enumerate(bone_iter):
-            mod_j = j + prev_j
-            parent_bone = parent_bones[bone]
-            if parent_bone == -1 or parent_bone in parsed_bones:
-                to_return.append(bone)
-                to_return.append(parent_bone)
-                new_parsed_bone_idxs.append(mod_j)
-                prev_j = mod_j + 1
-                break
-        if mod_j == len(bones_left_to_parse)-1 and len(to_return) < 8:
-            to_return.extend(to_return[-2:])
-    return to_return, new_parsed_bone_idxs
