@@ -100,7 +100,6 @@ class MeshInterface:
 
         meshReader.mesh_centre = (maxvs + minvs) / 2
         meshReader.bounding_box_lengths = (maxvs - minvs) / 2
-
         return virtual_pos
 
 
