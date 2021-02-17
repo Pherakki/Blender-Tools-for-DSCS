@@ -81,37 +81,57 @@ class Colour(BaseVertexComponent):
     vertex_dtype = 'e'
 
 
-class Indices2(BaseVertexComponent):
+class BaseIndexComponent(BaseVertexComponent):
+    @classmethod
+    def generator(cls, vtx):
+        num_missing_items = cls.num_elements - len(vtx[cls.vertex_type])
+        current_items = [item*3 for item in vtx[cls.vertex_type]]
+        current_items.extend([0] * num_missing_items)
+        assert len(current_items) == cls.num_elements, "Something went wrong extending vertex indices."
+        return {cls.vertex_type: current_items}
+
+
+class BaseWeightComponent(BaseVertexComponent):
+    @classmethod
+    def generator(cls, vtx):
+        num_missing_items = cls.num_elements - len(vtx[cls.vertex_type])
+        current_items = vtx[cls.vertex_type]
+        current_items.extend([0.] * num_missing_items)
+        assert len(current_items) == cls.num_elements, "Something went wrong extending vertex indices."
+        return {cls.vertex_type: current_items}
+
+
+class Indices2(BaseIndexComponent):
     vertex_type = 'WeightedBoneID'
     num_elements = 2
     vertex_dtype = 'B'
 
 
-class Indices3(BaseVertexComponent):
+class Indices3(BaseIndexComponent):
     vertex_type = 'WeightedBoneID'
     num_elements = 3
     vertex_dtype = 'B'
 
 
-class Indices4(BaseVertexComponent):
+class Indices4(BaseIndexComponent):
     vertex_type = 'WeightedBoneID'
     num_elements = 4
     vertex_dtype = 'B'
 
 
-class Weights2(BaseVertexComponent):
+class Weights2(BaseWeightComponent):
     vertex_type = 'BoneWeight'
     num_elements = 2
     vertex_dtype = 'e'
 
 
-class Weights3(BaseVertexComponent):
+class Weights3(BaseWeightComponent):
     vertex_type = 'BoneWeight'
     num_elements = 3
     vertex_dtype = 'e'
 
 
-class Weights4(BaseVertexComponent):
+class Weights4(BaseWeightComponent):
     vertex_type = 'BoneWeight'
     num_elements = 4
     vertex_dtype = 'e'
