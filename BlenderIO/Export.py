@@ -140,7 +140,7 @@ class ExportDSCSBase:
             map_ids = ['UVMap']
         else:
             map_ids = []
-        generating_function = lambda lidx: tuple([mesh.uv_layers[map_id].data.values()[lidx] for map_id in map_ids])
+        generating_function = lambda lidx: tuple([tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids])
         for vert_idx, linked_loops in link_loops.items():
             vertex = mesh.vertices[vert_idx]
             loop_uvs = [generating_function(ll) for ll in linked_loops]
