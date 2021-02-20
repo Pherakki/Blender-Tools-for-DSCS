@@ -156,7 +156,7 @@ class ExportDSCSBase:
                 vert = {'Position': vertex.co,
                         'Normal': vertex.normal,
                         **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], unique_value)},
-                        'WeightedBoneIdx': [grp.group for grp in vertex.groups],
+                        'WeightedBoneID': [grp.group for grp in vertex.groups],
                         'BoneWeight': group_weights}
                 # Grab the tangents, bitangents, colours for each UV-split vertex?
 
