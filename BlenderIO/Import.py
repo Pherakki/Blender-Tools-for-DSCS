@@ -117,7 +117,7 @@ class ImportDSCSBase:
 
             for nm, value in IF_material.shader_uniforms.items():
                 new_material[nm] = value
-            for nm, value in IF_material.unknown_data.items():
+            for nm, value in IF_material.unknown_data['unknown_material_components'].items():
                 new_material[str(nm)] = value
 
             new_material.use_nodes = True
