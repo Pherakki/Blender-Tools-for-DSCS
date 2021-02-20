@@ -115,6 +115,11 @@ class ImportDSCSBase:
             new_material['shader_hex'] = IF_material.shader_hex
             new_material['unknown_0x16'] = IF_material.unknown_data['unknown_0x16']
 
+            for nm, value in IF_material.shader_uniforms.items():
+                new_material[nm] = value
+            for nm, value in IF_material.unknown_data.items():
+                new_material[str(nm)] = value
+
             new_material.use_nodes = True
 
             # Set some convenience variables
@@ -135,7 +140,7 @@ class ImportDSCSBase:
                 tex0_img_node = nodes.new('ShaderNodeTexImage')
                 tex0_img_node.name = "DiffuseTextureID"
                 tex0_img_node.label = "DiffuseTextureID"
-                set_texture_node_image(tex0_img_node, model_data.textures[shader_uniforms["DiffuseTextureID"].data[0]], imported_textures)
+                set_texture_node_image(tex0_img_node, model_data.textures[shader_uniforms["DiffuseTextureID"][0]], imported_textures)
                 tex0_node = nodes.new('ShaderNodeBsdfPrincipled')
                 tex0_node.name = "DiffuseShader"
                 tex0_node.label = "DiffuseShader"
@@ -151,7 +156,7 @@ class ImportDSCSBase:
                     toon_node.name = "ToonShader"
                     toon_node.label = "ToonShader"
                     connect(toon_texture_node.outputs['Color'], toon_node.inputs['Color'])
-                    set_texture_node_image(toon_texture_node, model_data.textures[shader_uniforms["ToonTextureID"].data[0]], imported_textures)
+                    set_texture_node_image(toon_texture_node, model_data.textures[shader_uniforms["ToonTextureID"][0]], imported_textures)
 
                     converter_node = nodes.new('ShaderNodeShaderToRGB')
                     connect(toon_node.outputs['BSDF'], converter_node.inputs['Shader'])
@@ -167,7 +172,7 @@ class ImportDSCSBase:
                     rgba_node = nodes.new('ShaderNodeRGB')
                     rgba_node.name = "DiffuseColour"
                     rgba_node.label = "DiffuseColour"
-                    rgba_node.outputs['Color'].default_value = shader_uniforms["DiffuseColour"].data
+                    rgba_node.outputs['Color'].default_value = shader_uniforms["DiffuseColour"]
 
                     mix_node = nodes.new('ShaderNodeMixRGB')
                     mix_node.blend_type = 'MULTIPLY'
@@ -180,7 +185,7 @@ class ImportDSCSBase:
                     specular_value = nodes.new('ShaderNodeValue')
                     specular_value.name = 'SpecularStrength'
                     specular_value.label = 'SpecularStrength'
-                    specular_value.outputs['Value'].default_value = shader_uniforms["SpecularStrength"].data[0]
+                    specular_value.outputs['Value'].default_value = shader_uniforms["SpecularStrength"][0]
                     connect(specular_value.outputs['Value'], tex0_node.inputs['Specular'])
                 connect(final_diffuse_colour_node.outputs['Color'], tex0_node.inputs['Base Color'])
                 final_diffuse_node = tex0_node
@@ -189,7 +194,7 @@ class ImportDSCSBase:
                 rgba_node = nodes.new('ShaderNodeRGB')
                 rgba_node.name = "DiffuseColour"
                 rgba_node.label = "DiffuseColour"
-                rgba_node.outputs['Color'].default_value = shader_uniforms["DiffuseColour"].data
+                rgba_node.outputs['Color'].default_value = shader_uniforms["DiffuseColour"]
 
                 diffuse_node = nodes.new('ShaderNodeBsdfDiffuse')
                 diffuse_node.name = "DiffuseColourShader"
@@ -254,9 +259,9 @@ class ImportDSCSBase:
             # Assign normals
             # if 'Normal' in map_of_blenderloops_to_modelloops[0]:
             if 'Normal' in IF_mesh.vertices[0]:
-                #loop_normals = [Vector(loop_data['Normal']) for loop_data in map_of_blenderloops_to_modelloops.values()]
+                # loop_normals = [Vector(loop_data['Normal']) for loop_data in map_of_blenderloops_to_modelloops.values()]
                 # loop_normals = [Vector(IF_mesh.vertices[loop.vertex_index]['Normal']) for loop in mesh_object.data.loops]
-                mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
+                # mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
                 # mesh_object.data.normals_split_custom_set(loop_normals)
                 mesh_object.data.normals_split_custom_set_from_vertices([Vector(v['Normal']) for v in IF_mesh.vertices])
 
