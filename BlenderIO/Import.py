@@ -8,6 +8,7 @@ from bpy_extras.image_utils import load_image
 from bpy_extras.object_utils import object_data_add
 from mathutils import Vector, Matrix
 from ..CollatedData.FromReadWrites import generate_intermediate_format_from_files
+from ..FileReaders.GeomReader.ShaderUniforms import shader_textures
 
 
 class ImportDSCSBase:
