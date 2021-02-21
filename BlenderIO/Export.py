@@ -11,7 +11,7 @@ from bpy_extras.object_utils import object_data_add
 from mathutils import Vector
 from ..CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ..CollatedData.IntermediateFormat import IntermediateFormat
-from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names
+from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
 
 
 class ExportDSCSBase:
@@ -28,19 +28,14 @@ class ExportDSCSBase:
         if copy_shaders:
             os.makedirs(export_shaders_folder, exist_ok=True)
 
-        used_materials = set()
+        used_materials = []
+        used_textures = []
         # Grab the parent object
         parent_obj = self.get_model_to_export()
         self.export_skeleton(parent_obj, model_data)
         self.export_meshes(parent_obj, model_data, used_materials)
-        used_textures, used_texture_paths = self.export_materials(model_data, used_materials, export_shaders_folder)
-        # Now get the material ids after all used material have been parsed
-
-        used_materials = [um[1] for um in used_materials]
-        for md in model_data.meshes:
-            md.material_id = used_materials.index(md.material_id)
-
-        self.export_textures(used_textures, used_texture_paths, model_data, export_images_folder)
+        self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
+        self.export_textures(used_textures, model_data, export_images_folder)
 
         model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data
@@ -83,6 +78,7 @@ class ExportDSCSBase:
         model_data.skeleton.unknown_data['unknown_data_4'] = model_armature.get('unknown_data_4', [])
 
     def export_meshes(self, parent_obj, model_data, used_materials):
+        mat_names = []
         for i, mesh_obj in enumerate(parent_obj.children[0].children):
             md = model_data.new_mesh()
             mesh = mesh_obj.data
@@ -101,9 +97,12 @@ class ExportDSCSBase:
                 bone_id = model_data.skeleton.bone_names.index(bone_name)
                 md.add_vertex_group(bone_id, vgroup_verts.get(bone_id, []), vgroup_wgts.get(bone_id, []))
 
-            # Do the material id later...
-            md.material_id = mesh.materials[0]
-            used_materials.add((i, mesh.materials[0]))
+            matname = mesh.materials[0].name
+            if matname not in mat_names:
+                md.material_id = len(used_materials)
+                used_materials.append(mesh.materials[0])
+            else:
+                md.material_id = mat_names.index(matname)
 
             md.unknown_data['unknown_0x31'] = mesh_obj.get('unknown_0x31', 1)
             md.unknown_data['unknown_0x34'] = mesh_obj.get('unknown_0x34', 0)
@@ -179,10 +178,9 @@ class ExportDSCSBase:
 
         return exported_vertices, faces, vgroup_verts, vgroup_wgts
 
-    def export_materials(self, model_data, used_materials, export_shaders_folder):
-        used_textures = []
-        used_texture_paths = []
-        for _, bmat in used_materials:
+    def export_materials(self, model_data, used_materials, used_textures, export_shaders_folder):
+        tex_names = []
+        for bmat in used_materials:
             material = model_data.new_material()
             node_tree = bmat.node_tree
             material.name = bmat.name
@@ -201,16 +199,31 @@ class ExportDSCSBase:
                         except shutil.SameFileError:
                             continue
 
-            # Export Shader Uniforms
-            if bmat.get('shader_hex') is not None and 'DiffuseTextureID' in [node.name for node in node_tree.nodes]:
-                material.shader_uniforms['DiffuseTextureID'] = [len(used_textures), 0, 0]
-                used_textures.append(node_tree.nodes['DiffuseTextureID'].image.name)
-                used_texture_paths.append(node_tree.nodes['DiffuseTextureID'].image.filepath)
-            else:
-                pass
+            # Export Textures
+            node_names = [node.name for node in node_tree.nodes]
+            for nm in shader_textures:
+                if nm in node_names:
+                    texture = node_tree.nodes[nm].image
+
+                    # Construct the texture index
+                    texname = texture.name
+                    if texname in tex_names:
+                        tex_idx = tex_names.index(texname)
+                    else:
+                        tex_idx = len(used_textures)
+
+                    # Construct the additional, unknown data
+                    extra_data = bmat.get(nm)
+                    if extra_data is None:
+                        extra_data = [0, 0]
+                    else:
+                        extra_data = extra_data[1:]  # Chop off the texture idx
+
+                    material.shader_uniforms[nm] = [tex_idx, *extra_data]
+                    used_textures.append(node_tree.nodes[nm].image)
 
             # Export the material components
-            for key in shader_uniforms_from_names.keys():
+            for key in shader_uniforms_vp_fp_from_names.keys():
                 if bmat.get(key) is not None:
                     material.shader_uniforms[key] = bmat.get(key)
             material.unknown_data['unknown_material_components'] = {}
@@ -218,10 +231,10 @@ class ExportDSCSBase:
                 if bmat.get(key) is not None:
                     material.unknown_data['unknown_material_components'][key] = bmat.get(key)
 
-        return used_textures, used_texture_paths
-
-    def export_textures(self, used_textures, used_texture_paths, model_data, export_images_folder):
-        for texture, texture_path in zip(used_textures, used_texture_paths):
+    def export_textures(self, used_textures, model_data, export_images_folder):
+        used_texture_names = [tex.name for tex in used_textures]
+        used_texture_paths = [tex.filepath for tex in used_textures]
+        for texture, texture_path in zip(used_texture_names, used_texture_paths):
             tex = model_data.new_texture()
             tex.name = texture
             try:
