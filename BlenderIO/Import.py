@@ -133,14 +133,11 @@ class ImportDSCSBase:
 
             output_node = new_material.node_tree.nodes.get('Material Output')
             new_material.node_tree.links.clear()
+            self.import_material_texture_nodes(nodes, model_data, IF_material.shader_uniforms)
 
-            imported_textures = []
             final_diffuse_node = None
             if 'DiffuseTextureID' in shader_uniforms:
-                tex0_img_node = nodes.new('ShaderNodeTexImage')
-                tex0_img_node.name = "DiffuseTextureID"
-                tex0_img_node.label = "DiffuseTextureID"
-                set_texture_node_image(tex0_img_node, model_data.textures[shader_uniforms["DiffuseTextureID"][0]], imported_textures)
+                tex0_img_node = nodes["DiffuseTextureID"]
                 tex0_node = nodes.new('ShaderNodeBsdfPrincipled')
                 tex0_node.name = "DiffuseShader"
                 tex0_node.label = "DiffuseShader"
@@ -149,14 +146,11 @@ class ImportDSCSBase:
                 # Might be updated by following nodes
                 final_diffuse_colour_node = tex0_img_node
                 if "ToonTextureID" in shader_uniforms:
-                    toon_texture_node = nodes.new('ShaderNodeTexImage')
-                    toon_texture_node.name = "ToonTextureID"
-                    toon_texture_node.label = "ToonTextureID"
+                    toon_texture_node = nodes["ToonTextureID"]
                     toon_node = nodes.new('ShaderNodeBsdfToon')
                     toon_node.name = "ToonShader"
                     toon_node.label = "ToonShader"
                     connect(toon_texture_node.outputs['Color'], toon_node.inputs['Color'])
-                    set_texture_node_image(toon_texture_node, model_data.textures[shader_uniforms["ToonTextureID"][0]], imported_textures)
 
                     converter_node = nodes.new('ShaderNodeShaderToRGB')
                     connect(toon_node.outputs['BSDF'], converter_node.inputs['Shader'])
@@ -209,6 +203,15 @@ class ImportDSCSBase:
             new_material.use_backface_culling = True
             new_material.blend_method = 'CLIP'
             new_material.alpha_threshold = 0.7
+
+    def import_material_texture_nodes(self, nodes, model_data, mat_shader_uniforms):
+        imported_textures = {}
+        for nm in shader_textures.keys():
+            if nm in mat_shader_uniforms:
+                tex_img_node = nodes.new('ShaderNodeTexImage')
+                tex_img_node.name = nm
+                tex_img_node.label = nm
+                set_texture_node_image(tex_img_node, mat_shader_uniforms[nm][0], model_data.textures[mat_shader_uniforms[nm][0]], imported_textures)
 
     def build_loops_and_verts(self, model_vertices, model_polygons):
         # Currently unused because it doesn't distinguish overlapping polygons with the same vertices but different vertex orders
@@ -361,12 +364,12 @@ class ImportDSCSBase:
         return {'FINISHED'}
 
 
-def set_texture_node_image(node, IF_texture, import_memory):
+def set_texture_node_image(node, texture_idx, IF_texture, import_memory):
     tex_filename = os.path.split(IF_texture.filepath)[-1]
     tempdir = bpy.app.tempdir
     dds_loc = os.path.join(tempdir, tex_filename)
-    if tex_filename not in import_memory:
-        import_memory.append(tex_filename)
+    if texture_idx not in import_memory:
+        import_memory[texture_idx] = tex_filename
         shutil.copy2(IF_texture.filepath, dds_loc)
         bpy.data.images.load(dds_loc)
     node.image = bpy.data.images[tex_filename]
