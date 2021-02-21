@@ -49,15 +49,27 @@ class ZBias(BaseUniform): num_floats = 1  # VP uniform, half-float?
 class UnknownTextureSlot3(BaseUniform): num_floats = 0
 
 
-all_shader_uniforms = [DiffuseTextureID, NormalMapTextureID, CubeMapTextureID, UnknownTextureSlot1,
-                       OverlayTextureID, UnknownTextureSlot2, ToonTextureID, UnknownTextureSlot3,
-                       DiffuseColour, Bumpiness, SpecularStrength, SpecularPower, ReflectionStrength,
+texture_nodes = [DiffuseTextureID, NormalMapTextureID, CubeMapTextureID, UnknownTextureSlot1,
+                 OverlayTextureID, UnknownTextureSlot2, ToonTextureID, UnknownTextureSlot3]
+# VP_uniforms = [Time, ScrollSpeedSet1, ScrollSpeedSet2, ScrollSpeedSet3, OffsetSet1, OffsetSet2, OffsetSet3,
+#                Fat, RotationSet1, RotationSet2, ScaleSet1, ZBias]
+# FP_uniforms = [DiffuseColour, Bumpiness, SpecularStrength, SpecularPower, ReflectionStrength, FresnelExp, FresnelMin,
+#                FuzzySpecColor, SubColor, SurfaceColor, Rolloff, VelvetStrength, OverlayBumpiness, OverlayStrength,
+#                Curvature, GlassStrength, UpsideDown, ParallaxBiasX, ParallaxBiasY, DistortionStrength,
+#                LightMapStrength, LightMapPower]
+
+shader_uniforms_vp_fp = [DiffuseColour, Bumpiness, SpecularStrength, SpecularPower, ReflectionStrength,
                        FresnelExp, FresnelMin, FuzzySpecColor, SubColor, SurfaceColor, Rolloff, VelvetStrength,
                        OverlayBumpiness, OverlayStrength, Curvature, GlassStrength, UpsideDown,
                        ParallaxBiasX, ParallaxBiasY, Time, ScrollSpeedSet1, ScrollSpeedSet2, ScrollSpeedSet3,
                        OffsetSet1, OffsetSet2, DistortionStrength, LightMapStrength, LightMapPower, OffsetSet3,
                        Fat, RotationSet1, RotationSet2, ScaleSet1, ZBias]
 
+all_shader_uniforms = [*texture_nodes, *shader_uniforms_vp_fp]
+
+
 # These dictionaries are how the shader uniforms are accessed from other files via factory methods
 shader_uniforms_from_names = {cls.__name__: cls for cls in all_shader_uniforms}
 shader_uniforms_from_defn = {(cls.__name__, cls.num_floats): cls for cls in all_shader_uniforms}
+shader_textures = {cls.__name__: cls for cls in texture_nodes}
+shader_uniforms_vp_fp_from_names = {cls.__name__: cls for cls in shader_uniforms_vp_fp}
