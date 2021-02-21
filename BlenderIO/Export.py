@@ -268,98 +268,9 @@ class ExportDSCSPS4(ExportDSCSBase, bpy.types.Operator, ExportHelper):
     def execute(self, context):
         return super().execute_func(context, self.filepath, 'PS4')
 
-# UV help from:
-# https://blender.stackexchange.com/questions/49341/how-to-get-the-uv-corresponding-to-a-vertex-via-the-python-api
-# ... and to do this without needing bmesh:
-# [mesh.data.uv_layers["UVMap"].data.items()[loop][1].uv for loop in [l.index for l in mesh.data.loops if l.vertex_index == 7]]
-def get_associated_uvs(uv_layer, v):
-    return [tuple(l[uv_layer].uv) for l in v.link_loops]
-
-
-def uv_from_vert_first(uv_layer, v):
-    for l in v.link_loops:
-        uv_data = l[uv_layer]
-        return list(uv_data.uv)
-    return [0., 1.]
-
-
-# With help from
-# https://stackoverflow.com/a/20872750
-def uv_from_vert_median(uv_layer, v):
-    uvs = ([tuple(l[uv_layer].uv) for l in v.link_loops])
-    if len(uvs) == 0:
-        return [0., 1.]
-    else:
-        return max(uvs, key=Counter(uvs).get)
-
-#def uv_from_vert_first(uv_layer, v):
-#    for lidx in v.link_loops:
-#        uv_data = uv_layer.data.items()[lidx][1]
-#        return list(uv_data.uv)
-#    return [0., 1.]
-
 
 def get_bone_id(mesh_obj, bone_names, grp):
     group_idx = grp.group
     bone_name = mesh_obj.vertex_groups[group_idx].name
     bone_id = bone_names.index(bone_name)
     return bone_id
-
-
-def clean_texname(name):
-    elems = name.split('.')
-    cutoff = None
-    for i, elem in enumerate(reversed(elems)):
-        if len(elem) == 3 and elem.isnumeric():
-            cutoff = i + 1
-    if cutoff is not None:
-        name = '.'.join(elems[:-cutoff])
-    return name
-
-
-def split_verts_with_multiple_uvs(bm, uv_layer, backup_normals):
-    """
-    The output format requires vertices to be output a single set of UV coordinates attached. In Blender, vertices have
-    multiple UV coordinates (one per face they are part of) and so if all these coordinates are not the same, the vertex
-    must be split into multiple vertices with an unique UV coordinate that is appropriate for all the faces it is
-    attached to.
-
-    This function finds all vertices with more than one unique set of UV coordinates and splits them into multiple
-    vertices, each with a unique set of UVs.
-    """
-    verts_to_split = []
-    for bvertex in bm.verts:
-        uvs = get_associated_uvs(uv_layer, bvertex)
-        if len(set(uvs)) > 1:
-            verts_to_split.append(bvertex)
-
-    for vert_to_split in verts_to_split:
-        bm.verts.ensure_lookup_table()
-        #normal = backup_normals[vert_to_split]
-        #  del backup_normals[vert_to_split]
-
-        bpy.ops.mesh.select_mode(type="VERT")
-        bpy.ops.mesh.select_all(action='DESELECT')
-        vert_to_split.select_set(True)
-
-        old_verts = list(bm.verts)
-        old_verts.remove(vert_to_split)
-
-        bpy.ops.mesh.edge_split(type='VERT')
-        new_verts = [vert for vert in bm.verts if vert not in old_verts]
-        bm.verts.ensure_lookup_table()
-        vert_to_split.select_set(False)
-
-        # Group and merge new verts by uv coords
-        unique_uvs = [(uv_from_vert_first(uv_layer, bvert), bvert) for bvert in new_verts]
-        groups = itertools.groupby(sorted(unique_uvs, key=lambda x: x[0]), key=lambda x: x[0])
-        for uv, group in groups:
-            # Dist is arbitrary since only verts to be merged are passed, and they have the same position...
-            bmesh.ops.remove_doubles(bm, verts=[elem[1] for elem in group], dist=0.0001)
-
-        new_verts = [vert for vert in bm.verts if vert not in old_verts]
-
-        # Just make sure nothing has done horribly wrong...
-        for bvert in new_verts:
-            assert len(set(get_associated_uvs(uv_layer, bvert))) == 1
-            #  backup_normals[bvert] = normal
