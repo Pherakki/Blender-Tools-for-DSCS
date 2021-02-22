@@ -25,19 +25,17 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     filename = directory[-1]
     directory = os.path.join(*directory[:-1])
 
-    #
-    #     imported_animdata = {}
-    #     if import_anims:
-    #         for afile in os.listdir(directory):
-    #             afilepath = os.path.join(directory, afile)
-    #             if afile[-4:] == 'anim' and afile[:len(filename)] == filename:
-    #                 afile_name, afile_ext = os.path.splitext(afile)
-    #                 print(afile)
-    #                 with open(afilepath, 'rb') as F:
-    #                     iar = AnimReader(F, imported_skeldata)
-    #                     iar.read()
-    #                 imported_animdata[afile_name] = iar
-    #
+    imported_animdata = {}
+    if import_anims:
+        for afile in os.listdir(directory):
+            afilepath = os.path.join(directory, afile)
+            if afile[-4:] == 'anim' and afile[:len(filename)] == filename:
+                afile_name, afile_ext = os.path.splitext(afile)
+                print(afile)
+                with open(afilepath, 'rb') as F:
+                    iar = AnimReader(F, imported_skeldata)
+                    iar.read()
+                imported_animdata[afile_name] = iar
 
     images_directory = os.path.join(*os.path.split(filepath)[:-1], 'images')
     model_data = IntermediateFormat()
@@ -45,6 +43,7 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     add_textures(model_data, imported_geomdata, images_directory)
     add_materials(model_data, imported_namedata, imported_geomdata, filename)
     add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata)
+    add_anims(model_data, imported_animdata)
 
     return model_data
 
@@ -126,101 +125,102 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
     model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4
 
-# def add_anims(model_data, imported_animdata):
-#     for key, ar in imported_animdata.items():
-#         ad = model_data.new_anim(key)
-#
-#         ad.playback_rate = ar.playback_rate
-#
-#         # Set up some data holders
-#         rotation_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
-#         rotation_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
-#         location_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
-#         location_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
-#         scale_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
-#         scale_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
-#
-#         # First add in the rotations, locations, and scales that are constant throughout the animation
-#         for bone_idx, value in zip(ar.initial_pose_rotations_bone_idxs, ar.initial_pose_bone_rotations):
-#             rotation_fcurves_frames[bone_idx].append(0)
-#             rotation_fcurves_values[bone_idx].append(value)
-#         for bone_idx, value in zip(ar.initial_pose_locations_bone_idxs, ar.initial_pose_bone_locations):
-#             location_fcurves_frames[bone_idx].append(0)
-#             location_fcurves_values[bone_idx].append(value)
-#         for bone_idx, value in zip(ar.initial_pose_scales_bone_idxs, ar.initial_pose_bone_scales):
-#             scale_fcurves_frames[bone_idx].append(0)
-#             scale_fcurves_values[bone_idx].append(value)
-#
-#         # Now add in the rotations, locations, and scales that change throughout the animation
-#         for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.keyframe_chunks):
-#             for bone_idx, value in zip(ar.keyframe_rotations_bone_idxs, substructure.frame_0_rotations):
-#                 rotation_fcurves_frames[bone_idx].append(cumulative_frames)
-#                 rotation_fcurves_values[bone_idx].append(value)
-#             for bone_idx, value in zip(ar.keyframe_locations_bone_idxs, substructure.frame_0_locations):
-#                 location_fcurves_frames[bone_idx].append(cumulative_frames)
-#                 location_fcurves_values[bone_idx].append(value)
-#             for bone_idx, value in zip(ar.keyframe_scales_bone_idxs, substructure.frame_0_scales):
-#                 scale_fcurves_frames[bone_idx].append(cumulative_frames)
-#                 scale_fcurves_values[bone_idx].append(value)
-#
-#             # The keyframe rotations, locations, etc. for all bones are all concatenated together into one big list
-#             # per transform type.
-#             # The keyframes that use each transform are stored in a bit-vector with an equal length to the number of
-#             # frames. These bit-vectors are all concatenated together in one huge bit-vector, in the order
-#             # rotations->locations->scales->unknown_4
-#             # Therefore, it's pretty reasonable to turn these lists of keyframe rotations, locations, etc.
-#             # into generators using the built-in 'iter' function or the 'chunks' function defined at the bottom of the
-#             # file.
-#             if nframes != 0:
-#                 masks = chunks(substructure.keyframes_in_use, nframes)
-#             else:
-#                 masks = []
-#             rotations = iter(substructure.keyframed_rotations)
-#             locations = iter(substructure.keyframed_locations)
-#             scales = iter(substructure.keyframed_scales)
-#
-#             # The benefit of doing this is that generators behave like a Queue. We can pop the next element off these
-#             # generators and never have to worry about keeping track of the state of each generator.
-#             # In the code, the bit-vector is chunked and labelled 'masks'.
-#             # Schematically, the bit-vector might look like this: (annotated)
-#             #
-#             # <------------------ Rotations -------------------><------------- Locations --------------><-Scales->
-#             # <-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames->
-#             # 0001101011000011010010101011111000010100101010001010111001010010101000000001101011100100101011111101
-#             #
-#             # In this case, the animation is 11 frames long (the number of 1s and 0s under each bit annotated as
-#             # '<-Frames->')
-#             # Starting from the beginning, we see that there are 5 1s in the first section of 11 frames. This means
-#             # that we need to record the indices of these 1s (modulo 11, the number of frames) and then take the first
-#             # 5 elements from the big list of keyframe rotations. We then record these frame indices and rotation
-#             # values as the keyframe data (points on the 'f-curve') for whichever bone this first set of 11 frames
-#             # corresponds to. We continue iterating through this bit-vector by grabbing the next mask from 'masks',
-#             # and we should consume the entire generator of rotation data after 5 masks. The next mask we grab should
-#             # then correspond to location data, so we move onto the next for-loop below, and so on for the scale data.
-#             for bone_idx, mask in zip(ar.keyframe_rotations_bone_idxs, masks):
-#                 frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
-#                 values = itertools.islice(rotations, len(frames))  # Pop the next num_frames rotations
-#                 rotation_fcurves_frames[bone_idx].extend(frames)
-#                 rotation_fcurves_values[bone_idx].extend(values)
-#             for bone_idx, mask in zip(ar.keyframe_locations_bone_idxs, masks):
-#                 frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
-#                 values = itertools.islice(locations, len(frames))  # Pop the next num_frames locations
-#                 location_fcurves_frames[bone_idx].extend(frames)
-#                 location_fcurves_values[bone_idx].extend(values)
-#             for bone_idx, mask in zip(ar.keyframe_scales_bone_idxs, masks):
-#                 frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
-#                 values = itertools.islice(scales, len(frames))  # Pop the next num_frames scales
-#                 scale_fcurves_frames[bone_idx].extend(frames)
-#                 scale_fcurves_values[bone_idx].extend(values)
-#
-#         # Having iterated through the data, we can now add the keyframe data to the intermediate format object.
-#         for bone_idx in range(ar.num_bones):
-#             ad.add_rotation_fcurve(bone_idx, rotation_fcurves_frames[bone_idx], rotation_fcurves_values[bone_idx])
-#             ad.add_location_fcurve(bone_idx, location_fcurves_frames[bone_idx], location_fcurves_values[bone_idx])
-#             ad.add_scale_fcurve(bone_idx, scale_fcurves_frames[bone_idx], scale_fcurves_values[bone_idx])
-#
-#
-# def chunks(lst, n):
-#     """Yield successive n-sized chunks from lst."""
-#     for i in range(0, len(lst), n):
-#         yield lst[i:i + n]
+
+def add_anims(model_data, imported_animdata):
+    for key, ar in imported_animdata.items():
+        ad = model_data.new_anim(key)
+
+        ad.playback_rate = ar.playback_rate
+
+        # Set up some data holders
+        rotation_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        rotation_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        location_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        location_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        scale_fcurves_frames = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+        scale_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
+
+        # First add in the rotations, locations, and scales that are constant throughout the animation
+        for bone_idx, value in zip(ar.initial_pose_rotations_bone_idxs, ar.initial_pose_bone_rotations):
+            rotation_fcurves_frames[bone_idx].append(0)
+            rotation_fcurves_values[bone_idx].append(value)
+        for bone_idx, value in zip(ar.initial_pose_locations_bone_idxs, ar.initial_pose_bone_locations):
+            location_fcurves_frames[bone_idx].append(0)
+            location_fcurves_values[bone_idx].append(value)
+        for bone_idx, value in zip(ar.initial_pose_scales_bone_idxs, ar.initial_pose_bone_scales):
+            scale_fcurves_frames[bone_idx].append(0)
+            scale_fcurves_values[bone_idx].append(value)
+
+        # Now add in the rotations, locations, and scales that change throughout the animation
+        for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.keyframe_chunks):
+            for bone_idx, value in zip(ar.keyframe_rotations_bone_idxs, substructure.frame_0_rotations):
+                rotation_fcurves_frames[bone_idx].append(cumulative_frames)
+                rotation_fcurves_values[bone_idx].append(value)
+            for bone_idx, value in zip(ar.keyframe_locations_bone_idxs, substructure.frame_0_locations):
+                location_fcurves_frames[bone_idx].append(cumulative_frames)
+                location_fcurves_values[bone_idx].append(value)
+            for bone_idx, value in zip(ar.keyframe_scales_bone_idxs, substructure.frame_0_scales):
+                scale_fcurves_frames[bone_idx].append(cumulative_frames)
+                scale_fcurves_values[bone_idx].append(value)
+
+            # The keyframe rotations, locations, etc. for all bones are all concatenated together into one big list
+            # per transform type.
+            # The keyframes that use each transform are stored in a bit-vector with an equal length to the number of
+            # frames. These bit-vectors are all concatenated together in one huge bit-vector, in the order
+            # rotations->locations->scales->unknown_4
+            # Therefore, it's pretty reasonable to turn these lists of keyframe rotations, locations, etc.
+            # into generators using the built-in 'iter' function or the 'chunks' function defined at the bottom of the
+            # file.
+            if nframes != 0:
+                masks = chunks(substructure.keyframes_in_use, nframes)
+            else:
+                masks = []
+            rotations = iter(substructure.keyframed_rotations)
+            locations = iter(substructure.keyframed_locations)
+            scales = iter(substructure.keyframed_scales)
+
+            # The benefit of doing this is that generators behave like a Queue. We can pop the next element off these
+            # generators and never have to worry about keeping track of the state of each generator.
+            # In the code, the bit-vector is chunked and labelled 'masks'.
+            # Schematically, the bit-vector might look like this: (annotated)
+            #
+            # <------------------ Rotations -------------------><------------- Locations --------------><-Scales->
+            # <-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames->
+            # 0001101011000011010010101011111000010100101010001010111001010010101000000001101011100100101011111101
+            #
+            # In this case, the animation is 11 frames long (the number of 1s and 0s under each bit annotated as
+            # '<-Frames->')
+            # Starting from the beginning, we see that there are 5 1s in the first section of 11 frames. This means
+            # that we need to record the indices of these 1s (modulo 11, the number of frames) and then take the first
+            # 5 elements from the big list of keyframe rotations. We then record these frame indices and rotation
+            # values as the keyframe data (points on the 'f-curve') for whichever bone this first set of 11 frames
+            # corresponds to. We continue iterating through this bit-vector by grabbing the next mask from 'masks',
+            # and we should consume the entire generator of rotation data after 5 masks. The next mask we grab should
+            # then correspond to location data, so we move onto the next for-loop below, and so on for the scale data.
+            for bone_idx, mask in zip(ar.keyframe_rotations_bone_idxs, masks):
+                frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
+                values = itertools.islice(rotations, len(frames))  # Pop the next num_frames rotations
+                rotation_fcurves_frames[bone_idx].extend(frames)
+                rotation_fcurves_values[bone_idx].extend(values)
+            for bone_idx, mask in zip(ar.keyframe_locations_bone_idxs, masks):
+                frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
+                values = itertools.islice(locations, len(frames))  # Pop the next num_frames locations
+                location_fcurves_frames[bone_idx].extend(frames)
+                location_fcurves_values[bone_idx].extend(values)
+            for bone_idx, mask in zip(ar.keyframe_scales_bone_idxs, masks):
+                frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
+                values = itertools.islice(scales, len(frames))  # Pop the next num_frames scales
+                scale_fcurves_frames[bone_idx].extend(frames)
+                scale_fcurves_values[bone_idx].extend(values)
+
+        # Having iterated through the data, we can now add the keyframe data to the intermediate format object.
+        for bone_idx in range(ar.num_bones):
+            ad.add_rotation_fcurve(bone_idx, rotation_fcurves_frames[bone_idx], rotation_fcurves_values[bone_idx])
+            ad.add_location_fcurve(bone_idx, location_fcurves_frames[bone_idx], location_fcurves_values[bone_idx])
+            ad.add_scale_fcurve(bone_idx, scale_fcurves_frames[bone_idx], scale_fcurves_values[bone_idx])
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]

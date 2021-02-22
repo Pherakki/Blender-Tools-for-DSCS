@@ -38,7 +38,7 @@ class ImportDSCSBase:
         self.import_skeleton(parent_obj, filename, model_data, armature_name)
         self.import_materials(model_data)
         self.import_meshes(parent_obj, filename, model_data, armature_name)
-        # Do animations
+        self.import_animations(armature_name, model_data)
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj
@@ -316,8 +316,9 @@ class ImportDSCSBase:
         parent_obj['unknown_cam_data_2'] = model_data.unknown_data['unknown_cam_data_2']
         parent_obj['unknown_footer_data'] = model_data.unknown_data['unknown_footer_data']
 
-    def import_animations(self, parent_obj, model_armature, model_data):
+    def import_animations(self, armature_name, model_data):
         bpy.ops.object.mode_set(mode="POSE")
+        model_armature = bpy.data.objects[armature_name]
         model_armature.animation_data_create()
         for animation_name, animation_data in list(model_data.animations.items())[::-1]:
             action = bpy.data.actions.new(animation_name)
