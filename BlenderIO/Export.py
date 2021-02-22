@@ -222,6 +222,17 @@ class ExportDSCSBase:
                     material.shader_uniforms[nm] = [tex_idx, *extra_data]
                     used_textures.append(node_tree.nodes[nm].image)
 
+            if 'ToonTextureID' not in node_names:
+                texname = 'pc001ah01s'
+                if texname in tex_names:
+                    tex_idx = tex_names.index(texname)
+                else:
+                    tex_idx = len(used_textures)
+                material.shader_uniforms['ToonTextureID'] = [tex_idx, 0, 0]
+                used_textures.append(DummyTexture(texname))
+            if 'DiffuseColour' not in node_names:
+                material.shader_uniforms['DiffuseColour'] = [1., 1., 1., 1.]
+
             # Export the material components
             for key in shader_uniforms_vp_fp_from_names.keys():
                 if bmat.get(key) is not None:
@@ -237,14 +248,15 @@ class ExportDSCSBase:
         for texture, texture_path in zip(used_texture_names, used_texture_paths):
             tex = model_data.new_texture()
             tex.name = texture
-            try:
-                shutil.copy2(texture_path,
-                             os.path.join(export_images_folder, texture + ".img"))
-            except shutil.SameFileError:
-                continue
-            except FileNotFoundError:
-                print(texture_path, "not found.")
-                continue
+            if texture_path is not None:
+                try:
+                    shutil.copy2(texture_path,
+                                 os.path.join(export_images_folder, texture + ".img"))
+                except shutil.SameFileError:
+                    continue
+                except FileNotFoundError:
+                    print(texture_path, "not found.")
+                    continue
 
     def execute_func(self, context, filepath, platform):
         filepath, file_extension = os.path.splitext(filepath)
@@ -274,3 +286,9 @@ def get_bone_id(mesh_obj, bone_names, grp):
     bone_name = mesh_obj.vertex_groups[group_idx].name
     bone_id = bone_names.index(bone_name)
     return bone_id
+
+
+class DummyTexture:
+    def __init__(self, name):
+        self.name = name
+        self.filepath = None
