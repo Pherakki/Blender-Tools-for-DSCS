@@ -73,9 +73,9 @@ class ExportDSCSBase:
         # Get the unknown data
         model_data.skeleton.unknown_data['unknown_0x0C'] = model_armature.get('unknown_0x0C', 0)
         model_data.skeleton.unknown_data['unknown_data_1'] = model_armature.get('unknown_data_1', [])
-        model_data.skeleton.unknown_data['unknown_data_2'] = model_armature.get('unknown_data_2', [])
+        model_data.skeleton.unknown_data['unknown_data_2'] = model_armature.get('unknown_data_2', b'\x00'*len(bone_name_list)*4)
         model_data.skeleton.unknown_data['unknown_data_3'] = model_armature.get('unknown_data_3', [])
-        model_data.skeleton.unknown_data['unknown_data_4'] = model_armature.get('unknown_data_4', [])
+        model_data.skeleton.unknown_data['unknown_data_4'] = model_armature.get('unknown_data_4', b'')
 
     def export_meshes(self, parent_obj, model_data, used_materials):
         mat_names = []
