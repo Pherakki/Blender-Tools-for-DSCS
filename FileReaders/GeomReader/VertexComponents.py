@@ -83,7 +83,7 @@ class BaseWeightComponent(BaseVertexComponent):
     @classmethod
     def generator(cls, vtx):
         num_missing_items = cls.num_elements - len(vtx[cls.vertex_type])
-        current_items = vtx[cls.vertex_type]
+        current_items = [item for item in vtx[cls.vertex_type]]
         current_items.extend([0.] * num_missing_items)
         assert len(current_items) == cls.num_elements, "Something went wrong extending vertex indices."
         return {cls.vertex_type: current_items}
