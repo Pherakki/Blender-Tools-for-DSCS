@@ -115,6 +115,8 @@ def process_posweights(vertices, max_vertex_groups_per_vertex):
                     res_wghts.append(wght)
             vtx['WeightedBoneID'] = res_ids
             vtx['BoneWeight'] = res_wghts
+            if len(vtx['WeightedBoneID']) != len(vtx['BoneWeight']):
+                assert 0, f"{vtx['WeightedBoneID']} {vtx['BoneWeight']}"
     elif max_vertex_groups_per_vertex == 0:
         for vtx in vertices:
             vtx['WeightedBoneID'] = [0]
