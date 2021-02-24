@@ -20,6 +20,11 @@ class ExportDSCSBase:
     filename_ext = ".name"
 
     def export_file(self, context, filepath, platform, copy_shaders=True):
+        # Grab the parent object
+        parent_obj = self.get_model_to_export()
+        assert parent_obj.mode == 'OBJECT', f"Current mode is {parent_obj.mode}; ensure that Object Mode is selected before attempting to export."
+        validate_blender_data(parent_obj)
+
         model_data = IntermediateFormat()
         export_folder = os.path.join(*os.path.split(filepath)[:-1])
         export_images_folder = os.path.join(export_folder, 'images')
@@ -30,8 +35,6 @@ class ExportDSCSBase:
 
         used_materials = []
         used_textures = []
-        # Grab the parent object
-        parent_obj = self.get_model_to_export()
         self.export_skeleton(parent_obj, model_data)
         self.export_meshes(parent_obj, model_data, used_materials)
         self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
@@ -247,12 +250,10 @@ class ExportDSCSBase:
         used_texture_paths = [tex.filepath for tex in used_textures]
         for texture, texture_path in zip(used_texture_names, used_texture_paths):
             tex = model_data.new_texture()
-            tex.name = texture
             tex.name = os.path.splitext(texture)[0]
             if texture_path is not None:
                 try:
                     shutil.copy2(texture_path,
-                                 os.path.join(export_images_folder, texture + ".img"))
                                  os.path.join(export_images_folder, texture))
                 except shutil.SameFileError:
                     continue
@@ -294,3 +295,59 @@ class DummyTexture:
     def __init__(self, name):
         self.name = name
         self.filepath = None
+
+
+def validate_blender_data(parent_obj):
+    armature = parent_obj.children[0]
+    meshes = armature.children
+    check_vertex_group_counts(meshes)
+    check_vertex_weight_counts(meshes)
+
+
+def check_vertex_group_counts(mesh_objs):
+    bad_meshes = []
+    for mesh_obj in mesh_objs:
+        if len(mesh_obj.vertex_groups) > 56:
+            bad_meshes.append(mesh_obj)
+    if len(bad_meshes):
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.select_all(action='DESELECT')
+        for mesh in bad_meshes:
+            mesh.select = True
+        newline = '\n'
+        raise Exception(f"The following meshes have more than 56 vertex groups:\n{newline.join([mesh.name for mesh in bad_meshes])}\n"
+                        f"These meshes have been selected for you.\n"
+                        f"Reduce the number of vertex groups in these meshes by removing unused vertex groups and/or "
+                        f"dividing the mesh such that some vertex groups are unused by one of the two resulting meshes,"
+                        f"and are thus removable for those meshes.")
+
+
+def check_vertex_weight_counts(mesh_objs):
+    bad_meshes = []
+    all_bad_vertices = []
+    for mesh_obj in mesh_objs:
+        bad_vertices = []
+        for vertex in mesh_obj.data.vertices:
+            if len(vertex.groups) > 4:
+                bad_vertices.append(vertex)
+        if len(bad_vertices):
+            bad_meshes.append(mesh_obj)
+            all_bad_vertices.append(bad_vertices)
+
+    if len(bad_meshes):
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_mode(type='VERT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.select_all(action='DESELECT')
+        bad_meshes[0].select = True
+        bad_vertex_counts = [len(bvs) for bvs in all_bad_vertices]
+        for bv in all_bad_vertices[0]:
+            bv.select = True
+        bpy.ops.object.mode_set(mode="EDIT")
+        newline = '\n'
+        raise Exception(f"The following meshes have vertices included in more than 4 vertex groups:\n"
+                        f"{newline.join([f'{mesh.name} ({bvc} bad vertices)' for mesh, bvc in zip(bad_meshes, bad_vertex_counts)])}\n"
+                        f"The vertices for the mesh \"{bad_meshes[0].name}\" have been selected for you.\n"
+                        f"Reduce the number of vertex groups these vertices are part of to 4 or less.\n"
+                        f"You can do this per-vertex via the 'Items' panel of the pop-out menu near the top-right of the 3D viewport.")
