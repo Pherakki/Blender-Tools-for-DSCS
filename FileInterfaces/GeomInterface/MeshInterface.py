@@ -57,7 +57,7 @@ class MeshInterface:
     def to_subfile(self, meshReader, virtual_pos):
         meshReader.vertex_data_start_ptr = virtual_pos
 
-        vgroup_idxs = sorted(self.vertex_group_bone_idxs)
+        vgroup_idxs = self.vertex_group_bone_idxs
         meshReader.bytes_per_vertex, meshReader.vertex_components = calculate_vertex_properties(self.vertices, vgroup_idxs)
         vertex_generators = [vc.generator for vc in meshReader.vertex_components]
 
