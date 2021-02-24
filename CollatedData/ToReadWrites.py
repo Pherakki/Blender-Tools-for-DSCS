@@ -88,8 +88,9 @@ def make_geominterface(filepath, model_data, platform):
                 for vertex in mesh.vertices:
                     u, v = vertex[uv_type]
                     vertex[uv_type] = (u, 1. - v)
-        gi_mesh.vertices = mesh.vertices
+
         gi_mesh.vertex_group_bone_idxs = [vg.bone_idx for vg in mesh.vertex_groups]
+        gi_mesh.vertices = mesh.vertices
         gi_mesh.polygons = [p.indices for p in mesh.polygons]
         gi_mesh.material_id = mesh.material_id
 
