@@ -248,10 +248,12 @@ class ExportDSCSBase:
         for texture, texture_path in zip(used_texture_names, used_texture_paths):
             tex = model_data.new_texture()
             tex.name = texture
+            tex.name = os.path.splitext(texture)[0]
             if texture_path is not None:
                 try:
                     shutil.copy2(texture_path,
                                  os.path.join(export_images_folder, texture + ".img"))
+                                 os.path.join(export_images_folder, texture))
                 except shutil.SameFileError:
                     continue
                 except FileNotFoundError:
