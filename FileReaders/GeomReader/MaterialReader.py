@@ -89,18 +89,19 @@ class MaterialReader(BaseRW):
         self.subreaders = [self.unknown_data]
 
     def read(self):
-        self.read_write(self.read_buffer, 'read', self.read_raw, self.prepare_material_read)
+        self.read_write(self.read_buffer, self.read_raw)
         self.interpret_material()
+        self.interpret_unknown_material_components()
 
     def write(self):
+        self.reinterpret_unknown_material_components()
         self.reinterpret_material()
-        self.read_write(self.write_buffer, 'write', self.write_raw, lambda: None)
+        self.read_write(self.write_buffer, self.write_raw)
 
-    def read_write(self, rw_operator, rw_method_name, rw_operator_raw, preparation_operator):
+    def read_write(self, rw_operator, rw_operator_raw):
         self.rw_header(rw_operator, rw_operator_raw)
-        preparation_operator()
         self.rw_material_components(rw_operator_raw)
-        self.rw_unknown_data(rw_method_name)
+        self.rw_unknown_data(rw_operator_raw)
 
     def rw_header(self, rw_operator, rw_operator_raw):
         rw_operator('unknown_0x00', 'H')
@@ -115,12 +116,8 @@ class MaterialReader(BaseRW):
     def rw_material_components(self, rw_operator_raw):
         rw_operator_raw("shader_uniforms", 24 * self.num_shader_uniforms)
 
-    def rw_unknown_data(self, rw_method_name):
-        for component_reader in self.unknown_data:
-            getattr(component_reader, rw_method_name)()
-
-    def prepare_material_read(self):
-        self.unknown_data = [UnknownMaterialData(self.bytestream) for _ in range(self.num_unknown_data)]
+    def rw_unknown_data(self, rw_operator_raw):
+        rw_operator_raw("shader_uniforms", 24 * self.num_unknown_data)
 
     def interpret_material(self):
         self.shader_hex: bytes
@@ -182,78 +179,57 @@ class MaterialReader(BaseRW):
 
         return data
 
+    def interpret_unknown_material_components(self):
+        self.unknown_data : bytes
+        self.unknown_data = [self.umc_factory(data) for data in self.chunk_list(self.unknown_data, 24)]
+        self.unknown_data = {elem[0]: elem[1] for elem in self.unknown_data}
 
-class UnknownMaterialData(BaseRW):
-    """
-    A class holding unknown data that only occurs in some materials.
+    def reinterpret_unknown_material_components(self):
+        self.unknown_data: dict
+        self.unknown_data = [self.umc_data_factory(key, value) for key, value in self.unknown_data.items()]
+        self.unknown_data = b''.join(self.unknown_data)
 
-    Current hypotheses and observations
-    ------
-    None
-    """
+    def umc_factory(self, data):
+        padding_0x08 = struct.unpack('H', data[8:10])  # Always 0
+        padding_0x0A = struct.unpack('H', data[10:12])  # Always 0
+        padding_0x0C = struct.unpack('H', data[12:14])  # Always 0
+        padding_0x0E = struct.unpack('H', data[14:16])  # Always 0
+        assert padding_0x08 == 0, f"padding_0x08 is {padding_0x08}, not 0"
+        assert padding_0x0A == 0, f"padding_0x0A is {padding_0x0A}, not 0"
+        assert padding_0x0C == 0, f"padding_0x0C is {padding_0x0C}, not 0"
+        assert padding_0x0E == 0, f"padding_0x0E is {padding_0x0E}, not 0"
 
-    possibly_types = {160: 'If',  # 516, then one of eight float values between 0 and 0.5..?
-                      161: 'II',  # Always (1, 0)
-                      162: 'II',  # (0, 768) or (770, 1)
-                      163: 'HHI',  # (32779, 0) or (32774, 0)
-                      164: 'II',  # Always (1, 0)
-                      166: 'II',  # Always (0, 0)
-                      167: 'II',  # Always (516, 0)
-                      168: 'II',  # Always (0, 0)
-                      169: 'II',  # Always (0, 0)
-                      172: 'II',  # Always (0, 0)
-                      }
+        maybe_component_type = struct.unpack('B', data[16])  # Few values, 160 - 169 + 172 # Presumably the component type?
+        always_100 = struct.unpack('B', data[17])
+        always_65280 = struct.unpack('H', data[18:20])
+        padding_0x14 = struct.unpack('I', data[20:24])
+        assert always_100 == 100, f"always_100 is {always_100}, not 100"
+        assert always_65280 == 65280, f"always_65280 is {always_65280}, not 65280"
+        assert padding_0x14 == 0, f"padding_0x14 is {padding_0x14}, not 0"
 
-    def __init__(self, io_stream):
-        super().__init__(io_stream)
+        return maybe_component_type, struct.unpack(possibly_umc_types[maybe_component_type], data[0:8])
 
-        self.data = None
-        self.padding_0x08 = None
-        self.padding_0x0A = None
-        self.padding_0x0C = None
-        self.padding_0x0E = None
-        self.maybe_component_type = None
-        self.always_100 = None
-        self.always_65280 = None
-        self.padding_0x14 = None
-
-    def read(self):
-        args = self.bytestream.read(24)
-
-        self.data = args[:8]
-
-        data = struct.unpack('HHHHBBHI', args[8:])
-        self.padding_0x08 = data[0]  # Always 0
-        assert self.padding_0x08 == 0, f"padding_0x08 is {self.padding_0x08}, not 0"
-        self.padding_0x0A = data[1]  # Always 0
-        assert self.padding_0x0A == 0, f"padding_0x0A is {self.padding_0x0A}, not 0"
-        self.padding_0x0C = data[2]  # Always 0
-        assert self.padding_0x0C == 0, f"padding_0x0C is {self.padding_0x0C}, not 0"
-        self.padding_0x0E = data[3]  # Always 0
-        assert self.padding_0x0E == 0, f"padding_0x0E is {self.padding_0x0E}, not 0"
-
-        self.maybe_component_type = data[4]  # Few values, 160 - 169 + 172 # Presumably the component type?
-
-        self.always_100 = data[5]  # Always 100
-        assert self.always_100 == 100, f"always_100 is {self.always_100}, not 100"
-        self.always_65280 = data[6]  # Always 65280
-        assert self.always_65280 == 65280, f"always_65280 is {self.always_65280}, not 65280"
-        self.padding_0x14 = data[7]  # Always 0
-        assert self.padding_0x14 == 0, f"padding_0x14 is {self.padding_0x14}, not 0"
-
-        self.data = struct.unpack(UnknownMaterialData.possibly_types[self.maybe_component_type], self.data)
-
-        self.header = (*self.data, self.maybe_component_type, self.always_100, self.always_65280, self.padding_0x14)
-
-    def write(self):
-        data = struct.pack(UnknownMaterialData.possibly_types[self.maybe_component_type], *self.data)
-        data += struct.pack('H', self.padding_0x08)
-        data += struct.pack('H', self.padding_0x0A)
-        data += struct.pack('H', self.padding_0x0C)
-        data += struct.pack('H', self.padding_0x0E)
-        data += struct.pack('B', self.maybe_component_type)
-        data += struct.pack('B', self.always_100)
-        data += struct.pack('H', self.always_65280)
-        data += struct.pack('I', self.padding_0x14)
+    def umc_data_factory(self, maybe_component_type, data):
+        data = struct.pack(possibly_umc_types[maybe_component_type], data)
+        data += struct.pack('H', 0)
+        data += struct.pack('H', 0)
+        data += struct.pack('H', 0)
+        data += struct.pack('H', 0)
+        data += struct.pack('B', maybe_component_type)
+        data += struct.pack('B', 100)
+        data += struct.pack('H', 65280)
+        data += struct.pack('I', 0)
         assert len(data) == 24
-        self.bytestream.write(data)
+        return data
+
+possibly_umc_types = {160: 'If',
+                  161: 'II',
+                  162: 'II',
+                  163: 'HHI',  # (32779, 0) or (32774, 0)
+                  164: 'II',
+                  166: 'II',
+                  167: 'II',  # Always (516, 0)
+                  168: 'II',  # Always (0, 0)
+                  169: 'II',  # Always (0, 0)
+                  172: 'II',  # Always (0, 0)
+                  }
