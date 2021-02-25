@@ -28,7 +28,7 @@ If you want to save an imported model as a .blend file, or if you want to extrac
 
 ## Installing your editted models
 1. Currently, only model replacement is available. Give your files the same name as those they are intended to replace (e.g. to replace the male main character in Cyber Sleuth, name your files pc001.name, pc001.skel, pc001.geom).
-2. Put the files into the DSDBA archive, which you need to extract with [DSCSTools](https://github.com/SydMontague/DSCSTools).
+2. Put the files into the DSDBP archive, which you need to extract with [DSCSTools](https://github.com/SydMontague/DSCSTools).
 3. Put any replaced textures in DSDBP/images
 4. Put any exported shaders in DSDBP/shaders
 5. Re-pack the DSDBP archive with [DSCSTools](https://github.com/SydMontague/DSCSTools).
