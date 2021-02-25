@@ -190,19 +190,20 @@ class MaterialReader(BaseRW):
         self.unknown_data = b''.join(self.unknown_data)
 
     def umc_factory(self, data):
-        padding_0x08 = struct.unpack('H', data[8:10])  # Always 0
-        padding_0x0A = struct.unpack('H', data[10:12])  # Always 0
-        padding_0x0C = struct.unpack('H', data[12:14])  # Always 0
-        padding_0x0E = struct.unpack('H', data[14:16])  # Always 0
+        padding_0x08 = struct.unpack('H', data[8:10])[0]  # Always 0
+        padding_0x0A = struct.unpack('H', data[10:12])[0]   # Always 0
+        padding_0x0C = struct.unpack('H', data[12:14])[0]   # Always 0
+        padding_0x0E = struct.unpack('H', data[14:16])[0]   # Always 0
         assert padding_0x08 == 0, f"padding_0x08 is {padding_0x08}, not 0"
         assert padding_0x0A == 0, f"padding_0x0A is {padding_0x0A}, not 0"
         assert padding_0x0C == 0, f"padding_0x0C is {padding_0x0C}, not 0"
         assert padding_0x0E == 0, f"padding_0x0E is {padding_0x0E}, not 0"
 
-        maybe_component_type = struct.unpack('B', data[16])  # Few values, 160 - 169 + 172 # Presumably the component type?
-        always_100 = struct.unpack('B', data[17])
-        always_65280 = struct.unpack('H', data[18:20])
-        padding_0x14 = struct.unpack('I', data[20:24])
+        # If you index a single byte from a bytestring, Python automatically turns it into an integer...
+        maybe_component_type = data[16]   # Few values, 160 - 169 + 172 # Presumably the component type?
+        always_100 = data[17]
+        always_65280 = struct.unpack('H', data[18:20])[0]
+        padding_0x14 = struct.unpack('I', data[20:24])[0]
         assert always_100 == 100, f"always_100 is {always_100}, not 100"
         assert always_65280 == 65280, f"always_65280 is {always_65280}, not 65280"
         assert padding_0x14 == 0, f"padding_0x14 is {padding_0x14}, not 0"
