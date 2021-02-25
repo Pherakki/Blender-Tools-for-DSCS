@@ -117,7 +117,7 @@ class MaterialReader(BaseRW):
         rw_operator_raw("shader_uniforms", 24 * self.num_shader_uniforms)
 
     def rw_unknown_data(self, rw_operator_raw):
-        rw_operator_raw("shader_uniforms", 24 * self.num_unknown_data)
+        rw_operator_raw("unknown_data", 24 * self.num_unknown_data)
 
     def interpret_material(self):
         self.shader_hex: bytes
