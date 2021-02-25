@@ -95,7 +95,7 @@ class ExportDSCSBase:
                 assert len(face) == 3, f"Polygon {j} is not a triangle."
                 md.add_polygon(face)
 
-            for group in mesh_obj.vertex_groups:
+            for group in get_all_nonempty_vertex_groups(mesh_obj):
                 bone_name = group.name
                 bone_id = model_data.skeleton.bone_names.index(bone_name)
                 md.add_vertex_group(bone_id, vgroup_verts.get(bone_id, []), vgroup_wgts.get(bone_id, []))
@@ -133,6 +133,7 @@ class ExportDSCSBase:
         vgroup_verts = {}
         vgroup_wgts = {}
         faces = [{l: mesh.loops[l].vertex_index for l in f.loop_indices} for f in mesh.polygons]
+        group_map = {g.index: i for i, g in enumerate(get_all_nonempty_vertex_groups(mesh_obj))}
 
         if 'UV3Map' in mesh.uv_layers:
             map_ids = ['UVMap', 'UV2Map', 'UV3Map']
@@ -158,7 +159,7 @@ class ExportDSCSBase:
                 vert = {'Position': vertex.co,
                         'Normal': vertex.normal,
                         **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], unique_value)},
-                        'WeightedBoneID': [grp.group for grp in vertex.groups],
+                        'WeightedBoneID': [group_map[grp.group] for grp in vertex.groups],
                         'BoneWeight': group_weights}
                 # Grab the tangents, bitangents, colours for each UV-split vertex?
 
@@ -297,6 +298,17 @@ class DummyTexture:
         self.filepath = None
 
 
+def get_all_nonempty_vertex_groups(mesh_obj):
+    nonempty_vgs = set()
+    for vertex in mesh_obj.data.vertices:
+        for group in vertex.groups:
+            nonempty_vgs.add(group.group)
+    nonempty_vgs = sorted(list(nonempty_vgs))
+    nonempty_vgs = [mesh_obj.vertex_groups[idx] for idx in nonempty_vgs]
+
+    return nonempty_vgs
+
+
 def validate_blender_data(parent_obj):
     armature = parent_obj.children[0]
     meshes = armature.children
@@ -307,19 +319,29 @@ def validate_blender_data(parent_obj):
 def check_vertex_group_counts(mesh_objs):
     bad_meshes = []
     for mesh_obj in mesh_objs:
-        if len(mesh_obj.vertex_groups) > 56:
+        if len(get_all_nonempty_vertex_groups(mesh_obj)) > 56:
             bad_meshes.append(mesh_obj)
     if len(bad_meshes):
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action='DESELECT')
         for mesh in bad_meshes:
             mesh.select = True
-        newline = '\n'
-        raise Exception(f"The following meshes have more than 56 vertex groups:\n{newline.join([mesh.name for mesh in bad_meshes])}\n"
+        to_print = []
+        for i, mesh_obj in enumerate(bad_meshes):
+            nonempties = get_all_nonempty_vertex_groups(mesh_obj)
+            empty_vgs = [vg.name for vg in mesh_obj.vertex_groups if vg not in nonempties]
+            printline = f"{i+1}) {mesh_obj.name}"
+            printline += f", {len(mesh_obj.vertex_groups)} vertex groups, {len(nonempties)} non-empty vertex groups.\n"
+            printline += "Empty vertex groups that can be safely removed are:\n"
+            printline += '\n'.join(['    ' + vg for vg in empty_vgs])
+            printline += '\n'
+            to_print.append(printline)
+        to_print = '\n'.join(to_print)
+        raise Exception(f"The following meshes have more than 56 vertex groups with at least 1 vertex:\n"
+                        f"{to_print}\n"
                         f"These meshes have been selected for you.\n"
-                        f"Reduce the number of vertex groups in these meshes by removing unused vertex groups and/or "
-                        f"dividing the mesh such that some vertex groups are unused by one of the two resulting meshes,"
-                        f"and are thus removable for those meshes.")
+                        f"Reduce the number of vertex groups in these meshes by dividing the mesh such that some "
+                        f"vertex groups are unused by one of the two resulting meshes.")
 
 
 def check_vertex_weight_counts(mesh_objs):
