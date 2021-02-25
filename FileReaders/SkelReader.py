@@ -85,9 +85,9 @@ class SkelReader(BaseRW):
         self.rw_parent_bones(rw_operator)
         self.rw_unknown_data_1(rw_operator)
         chunk_cleanup(self.bytestream.tell(), 16)
-        self.rw_unknown_data_2(rw_operator_raw)
+        self.rw_unknown_data_2(rw_operator)
         self.rw_unknown_data_3(rw_operator)
-        self.rw_unknown_data_4(rw_operator_raw)
+        self.rw_unknown_data_4(rw_operator)
         chunk_cleanup(self.bytestream.tell() - self.remaining_bytes_after_parent_bones_chunk, 16)
 
     def rw_header(self, rw_operator, rw_operator_ascii):
@@ -152,13 +152,13 @@ class SkelReader(BaseRW):
         #self.assert_file_pointer_now_at()
         rw_operator('unknown_data_1', 'B'*self.unknown_0x0C, force_1d=True)
 
-    def rw_unknown_data_2(self, rw_operator_raw):
+    def rw_unknown_data_2(self, rw_operator):
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_2)
         bytes_to_read = self.num_bones * 4
         # B, H, I, e, f all seem to give nonsensical results...
         # Changing the endianness doesn't help
         # Could be a float normalised in the range [-1, 1] using int16s (or equiv. for uint16)
-        rw_operator_raw('unknown_data_2', bytes_to_read)
+        rw_operator('unknown_data_2', 'I'*self.num_bones)
         # self.unknown_data_2 = self.decode_data_as('I', self.bytestream.read(bytes_to_read), endianness='<')
         # self.unknown_data_2 = [elem / 2**32 for elem in self.unknown_data_2]
 
@@ -168,9 +168,9 @@ class SkelReader(BaseRW):
         # Looks like uint32s, no idea what these are for though.
         rw_operator('unknown_data_3', 'I'*self.unknown_0x0C)
 
-    def rw_unknown_data_4(self, rw_operator_raw):
+    def rw_unknown_data_4(self, rw_operator):
         # ???
-        rw_operator_raw('unknown_data_4', 4*self.unknown_0x0C)
+        rw_operator('unknown_data_4', 'I'*self.unknown_0x0C)
 
     def interpret_skel_data(self):
         self.bone_hierarchy_data = self.chunk_list(self.bone_hierarchy_data, 8)
