@@ -29,10 +29,10 @@ If you want to save an imported model as a .blend file, or if you want to extrac
 ## Installing your editted models
 1. Currently, only model replacement is available. Give your files the same name as those they are intended to replace (e.g. to replace the male main character in Cyber Sleuth, name your files pc001.name, pc001.skel, pc001.geom).
 2. Put the files into the DSDBA archive, which you need to extract with [DSCSTools](https://github.com/SydMontague/DSCSTools).
-3. Put any replaced textures in DSDBA/images
-4. Put any exported shaders in DSDBA/shaders
-5. Re-pack the DSDBA archive with [DSCSTools](https://github.com/SydMontague/DSCSTools).
-6. Overwrite you game's DSDBA archive you your edited one (as always, make a backup!).
+3. Put any replaced textures in DSDBP/images
+4. Put any exported shaders in DSDBP/shaders
+5. Re-pack the DSDBP archive with [DSCSTools](https://github.com/SydMontague/DSCSTools).
+6. Overwrite you game's DSDBP archive you your edited one (as always, make a backup!).
 7. **You *might* also have some success using [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) to do this automatically.**
 
 ## Potential fixes for common "bugs"
@@ -40,19 +40,14 @@ If you want to save an imported model as a .blend file, or if you want to extrac
 2. If the import/export options do not appear, navigate to your Blender addons folder. On Windows, this folder is located in: drive\Users\User\AppData\Roaming\Blender Foundation\Blender\version\scripts\addons, and you can navigate to "User\AppData\Roaming\" by typing "%appdata%" into the file address bar in File Explorer. Ensure that the addon code is in a folder, perhaps named something like "Blender-Tools-For-DSCS_master", and not in a bunch of folders like "FileReaders", "CollatedData" etc. If the code is not contained in a single folder in this manner, create a new folder and drag + drop all the code from this addon into the folder. The contents of this folder should now contain files and folders in the GitHub repository. Restart Blender, and re-load the addon.
    
 ## Some Known Bugs and Limitations
-1. **Currently you can only use, mix, and edit models that are ripped from the game using `Blender Tools for DSCS`.** Adding custom meshes and materials will not work, because the ones loaded from the game files contain unknown and undecoded data that will not be present in any new meshes or materials initialised in Blender. Editing meshes and transferring meshes between models *should* be fine, but there will certainly be some issues somewhere at this early stage..!
-2. **Blender appears to re-calculate vertex normals incorrectly for these models.** If you edit meshes, you may find that they appear blocky. I'm looking into a writing a custom calculator to alleviate this issue.
-   * Blender runs into trouble because a lot of DSCS models are contain *non-manifold data*. Much of this can be fixed by 'merging vertices by distance'. However, this may obliterate some of the unknown data, so some models *might* have odd visual glitches if you do this.
-3. Splitting meshes can lead to incorrectly displayed polygons - cause unclear.
-4. Material names are not yet those found within the files.
-5. There are four types of data attached to vertices not currently understood.
-6. Materials need a lot of work.
-7. Please use the skeleton of the model you are replacing if you want animations to work correctly..!
+1. There are some issues with vertex normal import and export.
+2. Material names are not yet those found within the files.
 
 ## Future Plans
 1. Finish decoding the remaining unknown bytes
-2. Use AnimReader to import animations, adapt it for export
+2. Export Animations
 3. Readers for remaining filetypes: DETR, NAVI, NOTE, PHYS, SPRK
+4. An external program that can assign shaders to models
 
 ## Contact
 e-mail: pherakki@gmail.com
