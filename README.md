@@ -36,7 +36,7 @@ If you want to save an imported model as a .blend file, or if you want to extrac
 7. **You *might* also have some success using [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) to do this automatically.**
 
 ## Potential fixes for common "bugs"
-1. If your mesh has a few highly distorted polygons that converge at the centre of your current room, ensure that none of your meshes have empty or unnecessary vertex groups. Delete any the are not needed.
+1. If your mesh has some highly distorted polygons that converge at the centre of the room (or obscure the screen), this is likely an issue with vertex weights. Should be resolved in the future once investigated.
 2. If the import/export options do not appear, navigate to your Blender addons folder. On Windows, this folder is located in: drive\Users\User\AppData\Roaming\Blender Foundation\Blender\version\scripts\addons, and you can navigate to "User\AppData\Roaming\" by typing "%appdata%" into the file address bar in File Explorer. Ensure that the addon code is in a folder, perhaps named something like "Blender-Tools-For-DSCS_master", and not in a bunch of folders like "FileReaders", "CollatedData" etc. If the code is not contained in a single folder in this manner, create a new folder and drag + drop all the code from this addon into the folder. The contents of this folder should now contain files and folders in the GitHub repository. Restart Blender, and re-load the addon.
    
 ## Some Known Bugs and Limitations
