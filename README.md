@@ -32,7 +32,7 @@ If you want to save an imported model as a .blend file, or if you want to extrac
 3. Put any replaced textures in DSDBP/images
 4. Put any exported shaders in DSDBP/shaders
 5. Re-pack the DSDBP archive with [DSCSTools](https://github.com/SydMontague/DSCSTools).
-6. Overwrite you game's DSDBP archive you your edited one (as always, make a backup!).
+6. Overwrite your game's DSDBP archive you your edited one (as always, make a backup!).
 7. **You *might* also have some success using [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) to do this automatically.**
 
 ## Potential fixes for common "bugs"
