@@ -226,7 +226,7 @@ class ExportDSCSBase:
                     material.shader_uniforms[nm] = [tex_idx, *extra_data]
                     used_textures.append(node_tree.nodes[nm].image)
 
-            if 'ToonTextureID' not in node_names:
+            if 'ToonTextureID' not in node_names and 'DiffuseTextureID' in node_names:
                 texname = 'pc001ah01s'
                 if texname in tex_names:
                     tex_idx = tex_names.index(texname)
