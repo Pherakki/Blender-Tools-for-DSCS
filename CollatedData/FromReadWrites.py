@@ -3,6 +3,7 @@ from ..FileInterfaces.SkelInterface import SkelInterface
 from ..FileInterfaces.GeomInterface import GeomInterface
 from ..FileReaders.AnimReader import AnimReader
 from .IntermediateFormat import IntermediateFormat
+from ..Utilities.Rotation import bone_matrix_from_rotation_location, quat_to_matrix, rotation_matrix_to_quat
 
 import itertools
 import os
