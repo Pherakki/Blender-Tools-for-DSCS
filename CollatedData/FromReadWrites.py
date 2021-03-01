@@ -125,6 +125,46 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
     model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4
 
+    parent_bones = {p: c for p, c in imported_skeldata.parent_bones}
+    for i, (inverse_matrix, (quat, loc, scl)) in enumerate(zip(imported_geomdata.inverse_bind_pose_matrices, imported_skeldata.rest_pose)):
+        bone_matrix = np.zeros((4, 4))
+        bone_matrix[:3, :3] = quat_to_matrix(quat)
+        bone_matrix[:3, 3] = loc[:3]
+        bone_matrix[3, 3] = 1
+
+        bm = calculate_bone_matrix_relative_to_parent(i, parent_bones, model_data.skeleton.inverse_bind_pose_matrices)
+        diff = np.dot(np.linalg.inv(bm), bone_matrix)
+        diff_quat = rotation_matrix_to_quat(diff[:3, :3])
+        diff_pos = diff[:3, 3]
+        model_data.skeleton.rest_pose_delta.append([diff_quat, diff_pos, scl[:3]])
+
+        # rot_matrix, pos = get_total_transform(i, parent_bones, imported_skeldata.rest_pose)
+        # bone_matrix = np.zeros((4, 4))
+        # bone_matrix[:3, :3] = rot_matrix
+        # bone_matrix[:3, 3] = pos
+        # bone_matrix[3, 3] = 1
+        # bone_matrix = np.dot(inverse_matrix, bone_matrix)
+        # quat = rotation_matrix_to_quat(bone_matrix[:3, :3])
+        # pos = bone_matrix[:3, 3]
+        # model_data.skeleton.rest_pose_delta.append([quat, pos, scl[:3]])
+
+
+def calculate_bone_matrix_relative_to_parent(idx, parent_bones, inv_bind_pose_matrices):
+    par = parent_bones[idx]
+    if par == -1:
+        pbm = np.eye(4)
+    else:
+        pbm = inv_bind_pose_matrices[par]
+    bm = inv_bind_pose_matrices[idx]
+
+    # Remember that bm is the inverse of the bone matrix, and pbm is the inverse of the parent's bone matrix,
+    # so what we're really doing here is multiplying the inverse parent matrix by the ordinary child matrix.
+    # This leaves us with just the transform of the child relative to the parent, since all the parent's contribution
+    # to the child's transform has been taken off
+    diff = np.dot(pbm, np.linalg.inv(bm))
+
+    return diff
+
 
 def add_anims(model_data, imported_animdata):
     for key, ar in imported_animdata.items():
