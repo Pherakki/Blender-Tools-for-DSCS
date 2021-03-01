@@ -317,9 +317,12 @@ class ImportDSCSBase:
         parent_obj['unknown_cam_data_2'] = model_data.unknown_data['unknown_cam_data_2']
         parent_obj['unknown_footer_data'] = model_data.unknown_data['unknown_footer_data']
 
-    def import_animations(self, armature_name, model_data):
         bpy.ops.object.mode_set(mode="POSE")
+    def import_animations(self, armature_name, model_data):
         model_armature = bpy.data.objects[armature_name]
+        bpy.context.view_layer.objects.active = model_armature
+        bpy.ops.object.mode_set(mode="POSE")
+
         model_armature.animation_data_create()
         for animation_name, animation_data in list(model_data.animations.items())[::-1]:
             action = bpy.data.actions.new(animation_name)
