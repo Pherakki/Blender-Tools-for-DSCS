@@ -9,7 +9,6 @@ from bpy_extras.object_utils import object_data_add
 from mathutils import Vector, Matrix
 from ..CollatedData.FromReadWrites import generate_intermediate_format_from_files
 from ..FileReaders.GeomReader.ShaderUniforms import shader_textures
-from ..Utilities.Rotation import quat_to_matrix
 
 
 class ImportDSCSBase:
@@ -393,18 +392,3 @@ class ImportDSCSPS4(ImportDSCSBase, bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         return super().execute_func(context, self.filepath, 'PS4')
-
-
-def get_total_transform(idx, parent_bones, bone_data):
-    if idx == -1:
-        rot = np.eye(3)
-        loc = np.zeros(3)
-        return rot, loc
-    else:
-        parent_idx = parent_bones[idx]
-        parent_rot, parent_loc = get_total_transform(parent_idx, parent_bones, bone_data)
-
-        rot = np.dot(parent_rot.T, quat_to_matrix(bone_data[idx][0]))
-        loc = np.dot(parent_rot, np.array(bone_data[idx][1][:3])) + parent_loc
-
-        return rot, loc
