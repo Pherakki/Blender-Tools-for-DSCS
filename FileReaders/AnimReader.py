@@ -311,8 +311,8 @@ class AnimReader(BaseRW):
             assert d5[0] == 0
             scale_factor = (self.keyframe_bone_rotations_count + self.keyframe_bone_locations_count + self.keyframe_bone_scales_count + self.unknown_0x24) / 8
             part5_size = int(np.ceil(scale_factor * d6[1]))
-            unkdatareader.initialise_variables(self.keyframe_bone_rotations_count, self.keyframe_bone_locations_count, self.keyframe_bone_scales_count, self.unknown_0x24, d5[-1], part5_size, d6[1])
             getattr(unkdatareader, rw_method_name)()
+            kfchunkreader.initialise_variables(d5[-1], part5_size, d6[1])
 
     def prepare_read_op(self):
         self.keyframe_chunks = [KeyframeChunk(self.bytestream) for _ in range(self.num_keyframe_chunks)]
@@ -364,11 +364,7 @@ class KeyframeChunk(BaseRW):
         # Utility variables
         self.bytes_read = 0
 
-    def initialise_variables(self, part_1_count, part_2_count, part_3_count, part_4_count, start_pointer, part5_size, nframes):
-        self.part_1_count = part_1_count
-        self.part_2_count = part_2_count
-        self.part_3_count = part_3_count
-        self.part_4_count = part_4_count
+    def initialise_variables(self, start_pointer, part5_size, nframes):
         self.start_pointer = start_pointer
         # Temp variable
         self.part5_size = part5_size
