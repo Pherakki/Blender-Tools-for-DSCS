@@ -211,7 +211,7 @@ class MaterialReader(BaseRW):
         return maybe_component_type, struct.unpack(possibly_umc_types[maybe_component_type], data[0:8])
 
     def umc_data_factory(self, maybe_component_type, data):
-        data = struct.pack(possibly_umc_types[maybe_component_type], data)
+        data = struct.pack(possibly_umc_types[maybe_component_type], *data)
         data += struct.pack('H', 0)
         data += struct.pack('H', 0)
         data += struct.pack('H', 0)
