@@ -38,7 +38,7 @@ def make_skelinterface(filepath, model_data):
     skelInterface.parent_bones = model_data.skeleton.bone_relations
     # Add support for deltas and handle scale on import later
     parent_bones = {c: p for c, p in model_data.skeleton.bone_relations}
-    skelInterface.bone_data = [calculate_bone_relative_to_parent(i, parent_bones, model_data.skeleton.inverse_bind_pose_matrices)
+    skelInterface.rest_pose = [calculate_bone_relative_to_parent(i, parent_bones, model_data.skeleton.inverse_bind_pose_matrices)
                                for i in range(len(parent_bones))]
 
     skelInterface.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']

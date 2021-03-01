@@ -5,7 +5,7 @@ import numpy as np
 
 class SkelInterface:
     def __init__(self):
-        self.bone_data = []
+        self.rest_pose = []
         self.parent_bones = []
         self.unknown_data_1 = []
         self.unknown_data_2 = []
@@ -24,7 +24,7 @@ class SkelInterface:
         new_interface = cls()
         new_interface.unknown_0x0C = readwriter.unknown_0x0C
 
-        new_interface.bone_data = readwriter.bone_data
+        new_interface.rest_pose = readwriter.bone_data
         new_interface.parent_bones = readwriter.parent_bones
         new_interface.unknown_data_1 = readwriter.unknown_data_1
         new_interface.unknown_data_2 = readwriter.unknown_data_2
@@ -38,7 +38,7 @@ class SkelInterface:
             readwriter = SkelReader(F)
 
             readwriter.filetype = '20SE'
-            readwriter.num_bones = len(self.bone_data)
+            readwriter.num_bones = len(self.rest_pose)
             readwriter.unknown_0x0C = self.unknown_0x0C
 
             parent_bones = {c: p for c, p in self.parent_bones}
@@ -47,7 +47,7 @@ class SkelInterface:
             readwriter.num_bone_hierarchy_data_lines = len(bone_hierarchy)
             readwriter.bone_hierarchy_data = bone_hierarchy
 
-            readwriter.bone_data = self.bone_data
+            readwriter.bone_data = self.rest_pose
             readwriter.parent_bones = self.parent_bones
             readwriter.unknown_data_1 = self.unknown_data_1
             readwriter.unknown_data_2 = self.unknown_data_2
