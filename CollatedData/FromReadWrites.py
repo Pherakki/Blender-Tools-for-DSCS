@@ -181,25 +181,25 @@ def add_anims(model_data, imported_animdata):
         scale_fcurves_values = {bone_idx: [] for bone_idx in range(ar.num_bones)}
 
         # First add in the rotations, locations, and scales that are constant throughout the animation
-        for bone_idx, value in zip(ar.initial_pose_rotations_bone_idxs, ar.initial_pose_bone_rotations):
+        for bone_idx, value in zip(ar.static_pose_rotations_bone_idxs, ar.static_pose_bone_rotations):
             rotation_fcurves_frames[bone_idx].append(0)
             rotation_fcurves_values[bone_idx].append(value)
-        for bone_idx, value in zip(ar.initial_pose_locations_bone_idxs, ar.initial_pose_bone_locations):
+        for bone_idx, value in zip(ar.static_pose_locations_bone_idxs, ar.static_pose_bone_locations):
             location_fcurves_frames[bone_idx].append(0)
             location_fcurves_values[bone_idx].append(value)
-        for bone_idx, value in zip(ar.initial_pose_scales_bone_idxs, ar.initial_pose_bone_scales):
+        for bone_idx, value in zip(ar.static_pose_scales_bone_idxs, ar.static_pose_bone_scales):
             scale_fcurves_frames[bone_idx].append(0)
             scale_fcurves_values[bone_idx].append(value)
 
         # Now add in the rotations, locations, and scales that change throughout the animation
         for (cumulative_frames, nframes), substructure in zip(ar.keyframe_counts, ar.keyframe_chunks):
-            for bone_idx, value in zip(ar.keyframe_rotations_bone_idxs, substructure.frame_0_rotations):
+            for bone_idx, value in zip(ar.animated_rotations_bone_idxs, substructure.frame_0_rotations):
                 rotation_fcurves_frames[bone_idx].append(cumulative_frames)
                 rotation_fcurves_values[bone_idx].append(value)
-            for bone_idx, value in zip(ar.keyframe_locations_bone_idxs, substructure.frame_0_locations):
+            for bone_idx, value in zip(ar.animated_locations_bone_idxs, substructure.frame_0_locations):
                 location_fcurves_frames[bone_idx].append(cumulative_frames)
                 location_fcurves_values[bone_idx].append(value)
-            for bone_idx, value in zip(ar.keyframe_scales_bone_idxs, substructure.frame_0_scales):
+            for bone_idx, value in zip(ar.animated_scales_bone_idxs, substructure.frame_0_scales):
                 scale_fcurves_frames[bone_idx].append(cumulative_frames)
                 scale_fcurves_values[bone_idx].append(value)
 
@@ -237,17 +237,17 @@ def add_anims(model_data, imported_animdata):
             # corresponds to. We continue iterating through this bit-vector by grabbing the next mask from 'masks',
             # and we should consume the entire generator of rotation data after 5 masks. The next mask we grab should
             # then correspond to location data, so we move onto the next for-loop below, and so on for the scale data.
-            for bone_idx, mask in zip(ar.keyframe_rotations_bone_idxs, masks):
+            for bone_idx, mask in zip(ar.animated_rotations_bone_idxs, masks):
                 frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
                 values = itertools.islice(rotations, len(frames))  # Pop the next num_frames rotations
                 rotation_fcurves_frames[bone_idx].extend(frames)
                 rotation_fcurves_values[bone_idx].extend(values)
-            for bone_idx, mask in zip(ar.keyframe_locations_bone_idxs, masks):
+            for bone_idx, mask in zip(ar.animated_locations_bone_idxs, masks):
                 frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
                 values = itertools.islice(locations, len(frames))  # Pop the next num_frames locations
                 location_fcurves_frames[bone_idx].extend(frames)
                 location_fcurves_values[bone_idx].extend(values)
-            for bone_idx, mask in zip(ar.keyframe_scales_bone_idxs, masks):
+            for bone_idx, mask in zip(ar.animated_scales_bone_idxs, masks):
                 frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
                 values = itertools.islice(scales, len(frames))  # Pop the next num_frames scales
                 scale_fcurves_frames[bone_idx].extend(frames)

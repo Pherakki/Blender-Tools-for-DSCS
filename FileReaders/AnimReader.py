@@ -45,24 +45,24 @@ class AnimReader(BaseRW):
         self.num_keyframe_chunks = None  # part 5 is 8x this count, part 6 is 4x this count: count of KeyframeChunks.
         self.always_16384 = None  # Always 16384; maybe a section terminator, maybe the precision of the rotations
 
-        self.initial_pose_bone_rotations_count = None  # part 1 is 6x this count, counts bone idxs
-        self.initial_pose_bone_locations_count = None  # part 2 is 12x this count, counts bone idxs
-        self.initial_pose_bone_scales_count = None  # part 3 is 12x this count, counts bone idxs
+        self.static_pose_bone_rotations_count = None  # part 1 is 6x this count, counts bone idxs
+        self.static_pose_bone_locations_count = None  # part 2 is 12x this count, counts bone idxs
+        self.static_pose_bone_scales_count = None  # part 3 is 12x this count, counts bone idxs
         self.unknown_0x1C = None  # part 4 is 4x this count, counts bone idxs
-        self.keyframe_bone_rotations_count = None  # part 1 of subreaders is 6x this count, counts bone idxs
-        self.keyframe_bone_locations_count = None  # part 2 of subreaders is 12x this count,counts bone idxs
-        self.keyframe_bone_scales_count = None  # part 3 of subreaders is 12x this count,counts bone idxs
+        self.animated_bone_rotations_count = None  # part 1 of subreaders is 6x this count, counts bone idxs
+        self.animated_bone_locations_count = None  # part 2 of subreaders is 12x this count,counts bone idxs
+        self.animated_bone_scales_count = None  # part 3 of subreaders is 12x this count,counts bone idxs
         self.unknown_0x24 = None  # part 4 of subreaders is 4x this count, counts bone idxs
         self.padding_0x26 = None  # Always 0
         self.bone_mask_bytes = None  # Specifies size of the bone mask
         self.abs_ptr_bone_mask = None
 
-        self.unknown_0x30 = None  # Relative ptr
-        self.unknown_0x34 = None  # Relative ptr
-        self.rel_ptr_initial_pose_bone_rotations = None  # Relative ptr
-        self.rel_ptr_initial_pose_bone_locations = None  # Relative ptr
-        self.rel_ptr_initial_pose_bone_scales = None  # Relative ptr
-        self.unknown_0x44 = None  # Relative ptr
+        self.rel_ptr_keyframe_chunks_ptrs = None  # Relative ptr
+        self.rel_ptr_keyframe_chunks_counts = None  # Relative ptr
+        self.rel_ptr_static_pose_bone_rotations = None  # Relative ptr
+        self.rel_ptr_static_pose_bone_locations = None  # Relative ptr
+        self.rel_ptr_static_pose_bone_scales = None  # Relative ptr
+        self.rel_ptr_static_unknown_4 = None  # Relative ptr
 
         self.padding_0x48 = None
         self.padding_0x4C = None
@@ -72,26 +72,26 @@ class AnimReader(BaseRW):
         self.padding_0x5C = None
 
         # Utility variables
-        self.abs_ptr_part_5 = None
-        self.abs_ptr_part_6 = None
-        self.abs_ptr_initial_pose_bone_rotations = None
-        self.abs_ptr_initial_pose_bone_locations = None
-        self.abs_ptr_initial_pose_bone_scales = None
-        self.abs_ptr_part_4 = None
+        self.abs_ptr_keyframe_chunks_ptrs = None
+        self.abs_ptr_keyframe_chunks_counts = None
+        self.abs_ptr_static_pose_bone_rotations = None
+        self.abs_ptr_static_pose_bone_locations = None
+        self.abs_ptr_static_pose_bone_scales = None
+        self.abs_ptr_static_unknown_4 = None
 
         # Data holders
-        self.initial_pose_rotations_bone_idxs = None
-        self.initial_pose_locations_bone_idxs = None
-        self.initial_pose_scales_bone_idxs = None
+        self.static_pose_rotations_bone_idxs = None
+        self.static_pose_locations_bone_idxs = None
+        self.static_pose_scales_bone_idxs = None
         self.unknown_bone_idxs_4 = None
-        self.keyframe_rotations_bone_idxs = None
-        self.keyframe_locations_bone_idxs = None
-        self.keyframe_scales_bone_idxs = None
+        self.animated_rotations_bone_idxs = None
+        self.animated_locations_bone_idxs = None
+        self.animated_scales_bone_idxs = None
         self.unknown_bone_idxs_8 = None
 
-        self.initial_pose_bone_rotations = None
-        self.initial_pose_bone_locations = None
-        self.initial_pose_bone_scales = None
+        self.static_pose_bone_rotations = None
+        self.static_pose_bone_locations = None
+        self.static_pose_bone_scales = None
         self.unknown_data_4 = None
         self.keyframe_chunks_ptrs = None
         self.keyframe_counts = None
@@ -117,11 +117,11 @@ class AnimReader(BaseRW):
         self.rw_initial_pose_bone_rotations(rw_operator_raw, chunk_cleanup_operator)
         self.rw_initial_pose_bone_locations(rw_operator, chunk_cleanup_operator)
         self.rw_initial_pose_bone_scales(rw_operator)
-        self.rw_part_4(rw_operator, chunk_cleanup_operator)
-        self.rw_part_5(rw_operator)
+        self.rw_unknown_4(rw_operator, chunk_cleanup_operator)
+        self.rw_keyframe_chunks_pointers(rw_operator)
         self.rw_keyframes_per_substructure(rw_operator, chunk_cleanup_operator)
-        self.rw_part_7(rw_operator, chunk_cleanup_operator)
-        self.rw_part_8(rw_method_name)
+        self.rw_blend_bones(rw_operator, chunk_cleanup_operator)
+        self.rw_keyframe_chunks(rw_method_name)
 
     def rw_header(self, rw_operator, rw_operator_ascii):
         self.assert_file_pointer_now_at(0)
@@ -138,13 +138,13 @@ class AnimReader(BaseRW):
         self.assert_equal('always_16384', 16384)
         assert self.always_16384 == 16384, self.always_16384
 
-        rw_operator('initial_pose_bone_rotations_count', 'H')
-        rw_operator('initial_pose_bone_locations_count', 'H')
-        rw_operator('initial_pose_bone_scales_count', 'H')
+        rw_operator('static_pose_bone_rotations_count', 'H')
+        rw_operator('static_pose_bone_locations_count', 'H')
+        rw_operator('static_pose_bone_scales_count', 'H')
         rw_operator('unknown_0x1C', 'H')
-        rw_operator('keyframe_bone_rotations_count', 'H')
-        rw_operator('keyframe_bone_locations_count', 'H')
-        rw_operator('keyframe_bone_scales_count', 'H')
+        rw_operator('animated_bone_rotations_count', 'H')
+        rw_operator('animated_bone_locations_count', 'H')
+        rw_operator('animated_bone_scales_count', 'H')
         rw_operator('unknown_0x24', 'H')
         rw_operator('padding_0x26', 'H')
         self.assert_is_zero('padding_0x26')
@@ -155,23 +155,23 @@ class AnimReader(BaseRW):
             self.assert_equal('abs_ptr_bone_mask', self.setup_and_static_data_size)
 
         pos = self.bytestream.tell()
-        rw_operator('unknown_0x30', 'I')
-        self.abs_ptr_part_5 = pos + self.unknown_0x30
+        rw_operator('rel_ptr_keyframe_chunks_ptrs', 'I')
+        self.abs_ptr_keyframe_chunks_ptrs = pos + self.rel_ptr_keyframe_chunks_ptrs
         pos = self.bytestream.tell()
-        rw_operator('unknown_0x34', 'I')
-        self.abs_ptr_part_6 = pos + self.unknown_0x34
+        rw_operator('rel_ptr_keyframe_chunks_counts', 'I')
+        self.abs_ptr_keyframe_chunks_counts = pos + self.rel_ptr_keyframe_chunks_counts
         pos = self.bytestream.tell()
-        rw_operator('rel_ptr_initial_pose_bone_rotations', 'I')
-        self.abs_ptr_initial_pose_bone_rotations = pos + self.rel_ptr_initial_pose_bone_rotations
+        rw_operator('rel_ptr_static_pose_bone_rotations', 'I')
+        self.abs_ptr_static_pose_bone_rotations = pos + self.rel_ptr_static_pose_bone_rotations
         pos = self.bytestream.tell()
-        rw_operator('rel_ptr_initial_pose_bone_locations', 'I')
-        self.abs_ptr_initial_pose_bone_locations = pos + self.rel_ptr_initial_pose_bone_locations
+        rw_operator('rel_ptr_static_pose_bone_locations', 'I')
+        self.abs_ptr_static_pose_bone_locations = pos + self.rel_ptr_static_pose_bone_locations
         pos = self.bytestream.tell()
-        rw_operator('rel_ptr_initial_pose_bone_scales', 'I')
-        self.abs_ptr_initial_pose_bone_scales = pos + self.rel_ptr_initial_pose_bone_scales
+        rw_operator('rel_ptr_static_pose_bone_scales', 'I')
+        self.abs_ptr_static_pose_bone_scales = pos + self.rel_ptr_static_pose_bone_scales
         pos = self.bytestream.tell()
-        rw_operator('unknown_0x44', 'I')
-        self.abs_ptr_part_4 = pos + self.unknown_0x44
+        rw_operator('rel_ptr_static_unknown_4', 'I')
+        self.abs_ptr_static_unknown_4 = pos + self.rel_ptr_static_unknown_4
 
         rw_operator('padding_0x48', 'I')
         rw_operator('padding_0x4C', 'I')
@@ -207,30 +207,30 @@ class AnimReader(BaseRW):
         # UnknownAnimSubstructure
         # Eighth is similar to #4 but in every UnknownAnimSubstructure
         """
-        rw_operator('initial_pose_rotations_bone_idxs', self.initial_pose_bone_rotations_count * 'H', force_1d=True)
-        chunk_cleanup_operator(self.initial_pose_bone_rotations_count * 2, 16, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('initial_pose_locations_bone_idxs', self.initial_pose_bone_locations_count * 'H', force_1d=True)
-        chunk_cleanup_operator(self.initial_pose_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('initial_pose_scales_bone_idxs', self.initial_pose_bone_scales_count * 'H', force_1d=True)
-        chunk_cleanup_operator(self.initial_pose_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('static_pose_rotations_bone_idxs', self.static_pose_bone_rotations_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.static_pose_bone_rotations_count * 2, 16, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('static_pose_locations_bone_idxs', self.static_pose_bone_locations_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.static_pose_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('static_pose_scales_bone_idxs', self.static_pose_bone_scales_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.static_pose_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('unknown_bone_idxs_4', self.unknown_0x1C*'H', force_1d=True)
         # Cleanup value is max element
         maxval_op("max_val_1", "unknown_0x1C")
 
-        rw_operator('keyframe_rotations_bone_idxs', self.keyframe_bone_rotations_count * 'H', force_1d=True)
-        chunk_cleanup_operator(self.keyframe_bone_rotations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('keyframe_locations_bone_idxs', self.keyframe_bone_locations_count * 'H', force_1d=True)
-        chunk_cleanup_operator(self.keyframe_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('keyframe_scales_bone_idxs', self.keyframe_bone_scales_count * 'H', force_1d=True)
-        chunk_cleanup_operator(self.keyframe_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('animated_rotations_bone_idxs', self.animated_bone_rotations_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.animated_bone_rotations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('animated_locations_bone_idxs', self.animated_bone_locations_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.animated_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
+        rw_operator('animated_scales_bone_idxs', self.animated_bone_scales_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.animated_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('unknown_bone_idxs_8', self.unknown_0x24*'H', force_1d=True)
         #chunk_cleanup_operator(self.unknown_0x24*2, 8, stepsize=2, bytevalue=struct.pack('H', self.skelReader.unknown_0x0C))
         maxval_op("max_val_2", "unknown_0x24")
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_initial_pose_bone_rotations(self, rw_operator_raw, chunk_cleanup_operator):
-        self.assert_file_pointer_now_at(self.abs_ptr_initial_pose_bone_rotations)
-        rw_operator_raw('initial_pose_bone_rotations', 6 * self.initial_pose_bone_rotations_count)
+        self.assert_file_pointer_now_at(self.abs_ptr_static_pose_bone_rotations)
+        rw_operator_raw('static_pose_bone_rotations', 6 * self.static_pose_bone_rotations_count)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_initial_pose_bone_locations(self, rw_operator, chunk_cleanup_operator):
@@ -238,8 +238,8 @@ class AnimReader(BaseRW):
         # 12 bytes assigned to each bone in unknown_bone_idxs_2
         # this is a triplet of floats
         """
-        self.assert_file_pointer_now_at(self.abs_ptr_initial_pose_bone_locations)
-        rw_operator('initial_pose_bone_locations', 'fff' * self.initial_pose_bone_locations_count)
+        self.assert_file_pointer_now_at(self.abs_ptr_static_pose_bone_locations)
+        rw_operator('static_pose_bone_locations', 'fff' * self.static_pose_bone_locations_count)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_initial_pose_bone_scales(self, rw_operator):
@@ -247,19 +247,19 @@ class AnimReader(BaseRW):
         # 12 bytes assigned to each bone in unknown_bone_idxs_3
         # this is a triplet of floats
         """
-        self.assert_file_pointer_now_at(self.abs_ptr_initial_pose_bone_scales)
-        rw_operator('initial_pose_bone_scales', 'fff' * self.initial_pose_bone_scales_count)
+        self.assert_file_pointer_now_at(self.abs_ptr_static_pose_bone_scales)
+        rw_operator('static_pose_bone_scales', 'fff' * self.static_pose_bone_scales_count)
 
-    def rw_part_4(self, rw_operator, chunk_cleanup_operator):
+    def rw_unknown_4(self, rw_operator, chunk_cleanup_operator):
         """
         # 4 bytes assigned to each idx in unknown_bone_idxs_4
         # Probably texture UVs
         """
-        self.assert_file_pointer_now_at(self.abs_ptr_part_4)
+        self.assert_file_pointer_now_at(self.abs_ptr_static_unknown_4)
         rw_operator('unknown_data_4', 'f'*self.unknown_0x1C, force_1d=True)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
-    def rw_part_5(self, rw_operator):
+    def rw_keyframe_chunks_pointers(self, rw_operator):
         """
         # Says where the UnknownDataReaders start
         # Format is (0, length, pointer)
@@ -267,19 +267,21 @@ class AnimReader(BaseRW):
         # 'length' is the number of bytes the UnknownDataReader contains, plus the number of bytes from the end of the
         # final data reader to the end of the file (WHY?!!?!)
         """
-        self.assert_file_pointer_now_at(self.abs_ptr_part_5)
+        self.assert_file_pointer_now_at(self.abs_ptr_keyframe_chunks_ptrs)
         rw_operator('keyframe_chunks_ptrs', 'HHI' * self.num_keyframe_chunks)
 
     def rw_keyframes_per_substructure(self, rw_operator, chunk_cleanup_operator):
         """
-        # In the format (cumulative_count, increment)
-        # Presumably the total count of frames and the gap between each keyframe
+        In the format (cumulative_count, increment).
+        'Increment' is the number of frames in the second half of the keyframe chunks datastructure
+        This doesn't count the initial frame defined in the first half of the datastructure, meaning that there are
+        increment + 1 frames per keyframe chunk.
         """
-        self.assert_file_pointer_now_at(self.abs_ptr_part_6)
+        self.assert_file_pointer_now_at(self.abs_ptr_keyframe_chunks_counts)
         rw_operator('keyframe_counts', 'HH' * self.num_keyframe_chunks)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
-    def rw_part_7(self, rw_operator, chunk_cleanup_operator):
+    def rw_blend_bones(self, rw_operator, chunk_cleanup_operator):
         """
         Contains 0 or -1 for each bone: If 0, that bone isn't given any location data in the file
         Same for whatever goes in unknown_data_7b - that other set of indices that are unknown
@@ -303,34 +305,32 @@ class AnimReader(BaseRW):
         if self.bone_mask_bytes != 0:
             chunk_cleanup_operator(self.bytestream.tell(), 16)
 
-    def rw_part_8(self, rw_method_name):
-        for i, (unkdatareader, d5, d6) in enumerate(zip(self.keyframe_chunks, self.chunk_list(self.keyframe_chunks_ptrs, 3),
+    def rw_keyframe_chunks(self, rw_method_name):
+        for i, (kfchunkreader, d5, d6) in enumerate(zip(self.keyframe_chunks, self.chunk_list(self.keyframe_chunks_ptrs, 3),
                                                         self.chunk_list(self.keyframe_counts, 2))):
-            #print(i, self.unknown_data_7, self.unknown_0x28, self.num_bones)
-            # Currently misses off the final reader; will be fine once length is calculable
             assert d5[0] == 0
-            scale_factor = (self.keyframe_bone_rotations_count + self.keyframe_bone_locations_count + self.keyframe_bone_scales_count + self.unknown_0x24) / 8
+            scale_factor = (self.animated_bone_rotations_count + self.animated_bone_locations_count + self.animated_bone_scales_count + self.unknown_0x24) / 8
             part5_size = int(np.ceil(scale_factor * d6[1]))
-            getattr(unkdatareader, rw_method_name)()
             kfchunkreader.initialise_variables(d5[-1], part5_size, d6[1])
+            getattr(kfchunkreader, rw_method_name)()
 
     def prepare_read_op(self):
         self.keyframe_chunks = [KeyframeChunk(self.bytestream) for _ in range(self.num_keyframe_chunks)]
 
     def interpret_animdata(self):
-        self.initial_pose_bone_rotations = self.chunk_list(self.initial_pose_bone_rotations, 6)
-        self.initial_pose_bone_rotations = [deserialise_quaternion(elem) for elem in self.initial_pose_bone_rotations]
-        self.initial_pose_bone_locations = self.chunk_list(self.initial_pose_bone_locations, 3)
-        self.initial_pose_bone_scales = self.chunk_list(self.initial_pose_bone_scales, 3)
+        self.static_pose_bone_rotations = self.chunk_list(self.static_pose_bone_rotations, 6)
+        self.static_pose_bone_rotations = [deserialise_quaternion(elem) for elem in self.static_pose_bone_rotations]
+        self.static_pose_bone_locations = self.chunk_list(self.static_pose_bone_locations, 3)
+        self.static_pose_bone_scales = self.chunk_list(self.static_pose_bone_scales, 3)
 
         self.keyframe_chunks_ptrs = self.chunk_list(self.keyframe_chunks_ptrs, 3)
         self.keyframe_counts = self.chunk_list(self.keyframe_counts, 2)
 
     def reinterpret_animdata(self):
-        self.initial_pose_bone_rotations = [serialise_quaternion(elem) for elem in self.initial_pose_bone_rotations]
-        self.initial_pose_bone_rotations = b''.join(self.initial_pose_bone_rotations)
-        self.initial_pose_bone_locations = self.flatten_list(self.initial_pose_bone_locations)
-        self.initial_pose_bone_scales = self.flatten_list(self.initial_pose_bone_scales)
+        self.static_pose_bone_rotations = [serialise_quaternion(elem) for elem in self.static_pose_bone_rotations]
+        self.static_pose_bone_rotations = b''.join(self.static_pose_bone_rotations)
+        self.static_pose_bone_locations = self.flatten_list(self.static_pose_bone_locations)
+        self.static_pose_bone_scales = self.flatten_list(self.static_pose_bone_scales)
 
         self.keyframe_chunks_ptrs = self.flatten_list(self.keyframe_chunks_ptrs)
         self.keyframe_counts = self.flatten_list(self.keyframe_counts)
