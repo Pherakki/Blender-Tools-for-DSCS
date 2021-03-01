@@ -9,6 +9,7 @@ from bpy_extras.object_utils import object_data_add
 from mathutils import Vector, Matrix
 from ..CollatedData.FromReadWrites import generate_intermediate_format_from_files
 from ..FileReaders.GeomReader.ShaderUniforms import shader_textures
+from ..Utilities.Rotation import quat_to_matrix
 
 
 class ImportDSCSBase:
@@ -404,14 +405,3 @@ def get_total_transform(idx, parent_bones, bone_data):
         loc = np.dot(parent_rot, np.array(bone_data[idx][1][:3])) + parent_loc
 
         return rot, loc
-
-
-def quat_to_matrix(quat):
-    quat = np.array(quat)
-    x, y, z, w = quat
-    x2, y2, z2, w2 = quat**2
-
-    return 2*np.array([[.5 - y2 - z2,   x*y - z*w,   x*z + y*w],
-                       [   x*y + z*w, .5 - x2 - z2,   y*z - x*w],
-                       [   x*z - y*w,   y*z + x*w, .5 - x2 - y2]])
-
