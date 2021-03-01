@@ -30,3 +30,22 @@ def rotation_matrix_to_quat(matrix):
         quat[k] = (matrix[k, i] + matrix[i, k]) / S
 
     return quat
+
+
+def quat_to_matrix(quat):
+    quat = np.array(quat)
+    x, y, z, w = quat
+    x2, y2, z2, w2 = quat**2
+
+    return 2*np.array([[.5 - y2 - z2,   x*y - z*w,   x*z + y*w],
+                       [   x*y + z*w, .5 - x2 - z2,   y*z - x*w],
+                       [   x*z - y*w,   y*z + x*w, .5 - x2 - y2]])
+
+
+def bone_matrix_from_rotation_location(quaternion, position):
+    bone_matrix = np.zeros((4, 4))
+    bone_matrix[:3, :3] = quat_to_matrix(quaternion)
+    bone_matrix[:3, 3] = position
+    bone_matrix[3, 3] = 1
+
+    return bone_matrix
