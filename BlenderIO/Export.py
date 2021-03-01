@@ -244,7 +244,7 @@ class ExportDSCSBase:
             material.unknown_data['unknown_material_components'] = {}
             for key in ['160', '161', '162', '163', '164', '165', '166', '167', '168', '169', '172']:
                 if bmat.get(key) is not None:
-                    material.unknown_data['unknown_material_components'][key] = bmat.get(key)
+                    material.unknown_data['unknown_material_components'][int(key)] = bmat.get(key)
 
     def export_textures(self, used_textures, model_data, export_images_folder):
         used_texture_names = [tex.name for tex in used_textures]
