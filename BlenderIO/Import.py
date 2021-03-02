@@ -313,6 +313,47 @@ class ImportDSCSBase:
 
         return verts, polys, map_of_loops_to_model_vertices, map_of_model_verts_to_verts
 
+    def import_boundboxes(self, model_data, filename, armature_name):
+        bbox_material = bpy.data.materials.new(name='bbox_material')
+        bbox_material.use_backface_culling = True
+        bbox_material.blend_method = 'BLEND'
+        bbox_material.use_nodes = True
+        bsdf_node = bbox_material.node_tree.nodes.get('Principled BSDF')
+        bsdf_node.inputs['Alpha'].default_value = 0.2
+        for i, IF_mesh in enumerate(model_data.meshes):
+            bbox_name = f"{filename}_{i}_boundingbox"
+            bbox_mesh = bpy.data.meshes.new(name=bbox_name)
+            bbox_mesh_object = bpy.data.objects.new(bbox_name, bbox_mesh)
+            mults = [np.array([1., 1., 1.]),
+                     np.array([1., 1., -1.]),
+                     np.array([1., -1., -1.]),
+                     np.array([1., -1., 1.]),
+                     np.array([-1., 1., 1.]),
+                     np.array([-1., 1., -1.]),
+                     np.array([-1., -1., -1.]),
+                     np.array([-1., -1., 1.])]
+
+            bbox_verts = [Vector(np.array(IF_mesh.unknown_data['bbc']) + np.array(IF_mesh.unknown_data['bb'])*mult) for mult in mults]
+
+            bbox_faces = [(0, 1, 2, 3), (4, 5, 6, 7),
+                          (0, 1, 5, 4), (2, 3, 7, 6),
+                          (3, 0, 4, 7), (1, 2, 6, 5)]
+
+            bbox_mesh_object.data.from_pydata(bbox_verts, [], bbox_faces)
+            bpy.context.collection.objects.link(bbox_mesh_object)
+            bpy.data.objects[bbox_name].active_material = bpy.data.materials['bbox_material']
+
+            bpy.data.objects[bbox_name].select_set(True)
+            bpy.data.objects[armature_name].select_set(True)
+            bpy.context.view_layer.objects.active = bpy.data.objects[armature_name]
+            bpy.ops.object.parent_set(type='ARMATURE')
+
+            bbox_mesh.validate(verbose=True)
+            bbox_mesh.update()
+
+            bpy.data.objects[bbox_name].select_set(False)
+            bpy.data.objects[armature_name].select_set(False)
+
     def import_meshes(self, parent_obj, filename, model_data, armature_name):
         for i, IF_mesh in enumerate(model_data.meshes):
             # This function should be the best way to remove duplicate vertices (?) but doesn't pick up overlapping polygons with opposite normals
