@@ -39,6 +39,8 @@ class MeshInterface:
         self.polygons = []
         self.material_id = None
 
+        self.unknown_data = {}
+
     @classmethod
     def from_subfile(cls, meshReader):
         interface = cls()
@@ -51,6 +53,9 @@ class MeshInterface:
         interface.vertex_group_bone_idxs = meshReader.weighted_bone_idxs
         interface.polygons = triangle_converters[meshReader.polygon_data_type](meshReader.polygon_data)
         interface.material_id = meshReader.material_id
+
+        interface.unknown_data['bb'] = meshReader.bounding_box_lengths
+        interface.unknown_data['bbc'] = meshReader.mesh_centre
 
         return interface
 
