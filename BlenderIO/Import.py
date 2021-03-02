@@ -62,6 +62,14 @@ class ImportDSCSBase:
         name="Import Animations",
         description="Enable/disable to import/not import animations.",
         default=True)
+    import_pose_mesh: BoolProperty(
+        name="Import Alternative Skeleton",
+        description="Enable/disable to import/not import the second skeleton.",
+        default=False)
+    do_import_boundboxes: BoolProperty(
+        name="Import Bounding Boxes",
+        description="Enable/disable to import/not import bounding boxes.",
+        default=False)
 
     def import_file(self, context, filepath, platform):
         bpy.ops.object.select_all(action='DESELECT')
@@ -72,9 +80,16 @@ class ImportDSCSBase:
         bpy.context.collection.objects.link(parent_obj)
         armature_name = f'{filename}_armature'
         self.import_skeleton(parent_obj, filename, model_data, armature_name)
+        if self.import_pose_mesh:
+            self.import_rest_pose_skeleton(parent_obj, filename, model_data, armature_name+"_2")
+        if self.do_import_boundboxes:
+            use_arm_name = armature_name
+            if self.import_pose_mesh:
+                use_arm_name += "_2"
+            self.import_boundboxes(model_data, filename, use_arm_name)
         self.import_materials(model_data)
         self.import_meshes(parent_obj, filename, model_data, armature_name)
-        set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
+        # set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
         self.import_animations(armature_name, model_data)
 
         bpy.ops.object.mode_set(mode="OBJECT")
@@ -157,6 +172,8 @@ class ImportDSCSBase:
             bone_matrix[3, :3] = pos
             bone_matrix[:3, :3] = rotation.T
             bone_matrix[3, 3] = 1
+
+            #bone_matrix = np.linalg.inv(bm)
 
             #####
 
@@ -355,6 +372,7 @@ class ImportDSCSBase:
             bpy.data.objects[armature_name].select_set(False)
 
     def import_meshes(self, parent_obj, filename, model_data, armature_name):
+
         for i, IF_mesh in enumerate(model_data.meshes):
             # This function should be the best way to remove duplicate vertices (?) but doesn't pick up overlapping polygons with opposite normals
             # verts, faces, map_of_loops_to_model_vertices, map_of_model_verts_to_verts = self.build_loops_and_verts(IF_mesh.vertices, IF_mesh.polygons)
@@ -370,6 +388,7 @@ class ImportDSCSBase:
             faces = [poly.indices for poly in IF_mesh.polygons]
             mesh_object.data.from_pydata(verts, edges, faces)
             bpy.context.collection.objects.link(mesh_object)
+
 
             # Get the loop data
             # map_of_blenderloops_to_modelloops = {}
