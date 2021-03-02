@@ -103,6 +103,7 @@ class Skeleton:
     def __init__(self):
         self.bone_names = []
         self.inverse_bind_pose_matrices = []
+        self.rest_pose = []
         self.rest_pose_delta = []
         self.bone_relations = []
 

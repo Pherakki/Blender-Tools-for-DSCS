@@ -124,8 +124,8 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     model_data.skeleton.unknown_data['unknown_data_2'] = imported_skeldata.unknown_data_2
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
     model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4
-
     parent_bones = {p: c for p, c in imported_skeldata.parent_bones}
+    model_data.skeleton.rest_pose = [get_total_transform_matrix(i, parent_bones, imported_skeldata.rest_pose) for i in range(len(imported_skeldata.rest_pose))]
     for i, (inverse_matrix, (quat, loc, scl)) in enumerate(zip(imported_geomdata.inverse_bind_pose_matrices, imported_skeldata.rest_pose)):
         bone_matrix = np.zeros((4, 4))
         bone_matrix[:3, :3] = quat_to_matrix(quat)
@@ -137,6 +137,18 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
         diff_quat = rotation_matrix_to_quat(diff[:3, :3])
         diff_pos = diff[:3, 3]
         model_data.skeleton.rest_pose_delta.append([diff_quat, diff_pos, scl[:3]])
+
+
+        # bone_matrix = np.zeros((4, 4))
+        # bone_matrix[:3, :3] = quat_to_matrix(quat)
+        # bone_matrix[:3, 3] = loc[:3]
+        # bone_matrix[3, 3] = 1
+        #
+        # bm = get_total_transform(parent_bones[i], parent_bones, imported_skeldata.rest_pose)
+        # diff = np.dot(bm, bone_matrix)
+        # diff_quat = rotation_matrix_to_quat(diff[:3, :3])
+        # diff_pos = diff[:3, 3]
+        # model_data.skeleton.rest_pose_delta.append([diff_quat, diff_pos, scl[:3]])
 
         # rot_matrix, pos = get_total_transform(i, parent_bones, imported_skeldata.rest_pose)
         # bone_matrix = np.zeros((4, 4))
@@ -279,3 +291,18 @@ def get_total_transform(idx, parent_bones, bone_data):
         loc = np.dot(parent_rot, np.array(bone_data[idx][1][:3])) + parent_loc
 
         return rot, loc
+
+
+def get_total_transform_matrix(idx, parent_bones, bone_data):
+    if idx == -1:
+        bone_matrix = np.eye(4)
+        return bone_matrix
+    else:
+        parent_idx = parent_bones[idx]
+        parent_bone_matrix = get_total_transform_matrix(parent_idx, parent_bones, bone_data)
+
+        diff_bone_matrix = np.zeros((4, 4))
+        diff_bone_matrix[:3, :3] = quat_to_matrix(bone_data[idx][0])
+        diff_bone_matrix[:, 3] = np.array(bone_data[idx][1])
+
+        return np.dot(parent_bone_matrix, diff_bone_matrix)
