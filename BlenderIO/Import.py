@@ -86,6 +86,47 @@ class ImportDSCSBase:
         bpy.ops.object.transform_apply(rotation=True)
         parent_obj.select_set(False)
 
+    def import_rest_pose_skeleton(self, parent_obj, filename, model_data, armature_name):
+        model_armature = bpy.data.objects.new(armature_name, bpy.data.armatures.new(f'{filename}_armature_data'))
+        bpy.context.collection.objects.link(model_armature)
+        model_armature.parent = parent_obj
+
+        # Rig
+        list_of_bones = {}
+
+        bpy.context.view_layer.objects.active = model_armature
+        bpy.ops.object.mode_set(mode='EDIT')
+
+        bone_matrices = model_data.skeleton.rest_pose
+        for i, relation in enumerate(model_data.skeleton.bone_relations):
+            child, parent = relation
+            child_name = model_data.skeleton.bone_names[child]
+            if child_name in list_of_bones:
+                continue
+
+            bone_matrix = bone_matrices[i]
+            #pos = bone_matrix[:, 3][:3]
+
+            #####
+
+            #child_pos = pos
+
+            bone = model_armature.data.edit_bones.new(child_name)
+
+            list_of_bones[child_name] = bone
+            bone.head = np.array([0., 0., 0.])
+            bone.tail = np.array([0., 0.2, 0.])  # Make this scale with the model size in the future, for convenience
+            bone.transform(Matrix(bone_matrix.tolist()))
+
+            #bone.head = np.array([0., 0., 0.]) + child_pos
+            #bone.tail = np.array(bone.tail) + child_pos
+
+            if parent != -1:
+                bone.parent = list_of_bones[model_data.skeleton.bone_names[parent]]
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.view_layer.objects.active = parent_obj
+
     def import_skeleton(self, parent_obj, filename, model_data, armature_name):
         model_armature = bpy.data.objects.new(armature_name, bpy.data.armatures.new(f'{filename}_armature_data'))
         bpy.context.collection.objects.link(model_armature)
