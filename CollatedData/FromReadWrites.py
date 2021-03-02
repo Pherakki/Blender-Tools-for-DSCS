@@ -81,6 +81,9 @@ def add_meshes(model_data, imported_geomdata):
 
         model_data.meshes[-1] = current_IF_mesh
 
+        current_IF_mesh.unknown_data['bb'] = mesh.unknown_data['bb']
+        current_IF_mesh.unknown_data['bbc'] = mesh.unknown_data['bbc']
+
     model_data.unknown_data['unknown_cam_data_1'] = imported_geomdata.unknown_cam_data_1
     model_data.unknown_data['unknown_cam_data_2'] = imported_geomdata.unknown_cam_data_2
     model_data.unknown_data['unknown_footer_data'] = imported_geomdata.unknown_footer_data
