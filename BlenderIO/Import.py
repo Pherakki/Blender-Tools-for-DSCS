@@ -363,7 +363,7 @@ class ImportDSCSBase:
 
             # Init mesh
             meshobj_name = f"{filename}_{i}"
-            mesh = bpy.data.meshes.new(name=f"{filename}_{i}")
+            mesh = bpy.data.meshes.new(name=meshobj_name)
             mesh_object = bpy.data.objects.new(meshobj_name, mesh)
 
             verts = [Vector(v['Position']) for v in IF_mesh.vertices]
