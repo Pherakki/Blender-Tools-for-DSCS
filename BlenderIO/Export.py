@@ -129,6 +129,9 @@ class ExportDSCSBase:
 
     def split_verts_by_uv(self, mesh_obj, link_loops, face_link_loops, model_data):
         mesh = mesh_obj.data
+        has_uvs = len(mesh.uv_layers) > 0
+        if has_uvs:
+            mesh.calc_tangents()
         exported_vertices = []
         vgroup_verts = {}
         vgroup_wgts = {}
@@ -143,25 +146,53 @@ class ExportDSCSBase:
             map_ids = ['UVMap']
         else:
             map_ids = []
-        generating_function = lambda lidx: tuple([tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids])
+        colour_map = []
+        if 'Map' in mesh.vertex_colors:
+            colour_map = ['Map']
+        n_uvs = len(map_ids)
+        n_colours = len(colour_map)
+
+        def generating_function(lidx):
+            uvs = [tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids]
+            colour = [tuple((mesh.vertex_colors[map_id].data.values()[lidx].color)) for map_id in colour_map]
+
+            return tuple([*uvs, *colour])
+
         for vert_idx, linked_loops in link_loops.items():
             vertex = mesh.vertices[vert_idx]
-            loop_uvs = [generating_function(ll) for ll in linked_loops]
-            unique_values = list(set(loop_uvs))
+            loop_datas = [generating_function(ll) for ll in linked_loops]
+            unique_values = list(set(loop_datas))
             for unique_value in unique_values:
-                loops_with_this_value = [linked_loops[i] for i, x in enumerate(loop_uvs) if x == unique_value]
-
+                loops_with_this_value = [linked_loops[i] for i, x in enumerate(loop_datas) if x == unique_value]
+                loop_objs_with_this_value = [mesh.loops[lidx] for lidx in loops_with_this_value]
                 group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups]
                 group_bone_ids = None if len(group_bone_ids) == 0 else group_bone_ids
                 group_weights = [grp.weight for grp in vertex.groups]
                 group_weights = None if len(group_weights) == 0 else group_weights
 
+                if has_uvs:
+                    tangents = [l.tangent for l in loop_objs_with_this_value]
+                    normals = [l.normal for l in loop_objs_with_this_value]
+                    signs = [l.bitangent_sign  for l in loop_objs_with_this_value]
+                    if not all([sign == signs[0] for sign in signs]):
+                        print("!!!! WARNING !!!!")
+                        print("Not all bitangents of loops attached to an exported vertex have the same sign!!!")
+                    avg_tangent = np.mean(tangents, axis=0)
+                    avg_normal = np.mean(normals, axis=0)
+                    bitangent = signs[0]*np.cross(avg_normal, avg_tangent)
+                    tangent_data = {'Tangent': (*avg_tangent, signs[0]),
+                                    'Bitangent': bitangent}
+                else:
+                    tangent_data = {}
+
+
                 vert = {'Position': vertex.co,
                         'Normal': vertex.normal,
-                        **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], unique_value)},
+                        **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], unique_value[:n_uvs])},
+                        **{key: value for key, value in zip(['Colour'], unique_value[n_uvs:])},
+                        **tangent_data,
                         'WeightedBoneID': [group_map[grp.group] for grp in vertex.groups],
                         'BoneWeight': group_weights}
-                # Grab the tangents, bitangents, colours for each UV-split vertex?
 
                 n_verts = len(exported_vertices)
                 exported_vertices.append(vert)
