@@ -237,10 +237,10 @@ class ImportDSCSBase:
                 tex0_node = nodes.new('ShaderNodeBsdfPrincipled')
                 tex0_node.name = "DiffuseShader"
                 tex0_node.label = "DiffuseShader"
-                connect(tex0_img_node.outputs['Alpha'], tex0_node.inputs['Alpha'])
 
                 # Might be updated by following nodes
                 final_diffuse_colour_node = tex0_img_node
+                final_alpha_node = tex0_img_node
                 if "ToonTextureID" in shader_uniforms:
                     toon_texture_node = nodes["ToonTextureID"]
                     toon_node = nodes.new('ShaderNodeBsdfToon')
@@ -270,6 +270,24 @@ class ImportDSCSBase:
                     connect(rgba_node.outputs['Color'], mix_node.inputs['Color2'])
 
                     final_diffuse_colour_node = mix_node
+
+                # Vertex Colours
+                vertex_colour_input_node = nodes.new('ShaderNodeVertexColor')
+                vertex_colour_input_node.name = "VertexColour"
+                vertex_colour_input_node.label = "VertexColour"
+
+                mix_node = nodes.new('ShaderNodeMixRGB')
+                mix_node.blend_type = 'MULTIPLY'
+                connect(final_diffuse_colour_node.outputs['Color'], mix_node.inputs['Color1'])
+                connect(vertex_colour_input_node.outputs['Color'], mix_node.inputs['Color2'])
+                final_diffuse_colour_node = mix_node
+
+                alpha_mix_node = nodes.new('ShaderNodeMath')
+                alpha_mix_node.operation = "MULTIPLY"
+                connect(final_alpha_node.outputs['Alpha'], alpha_mix_node.inputs[0])
+                connect(vertex_colour_input_node.outputs['Alpha'], alpha_mix_node.inputs[1])
+                final_alpha_node = alpha_mix_node
+                connect(final_alpha_node.outputs['Value'], tex0_node.inputs['Alpha'])
 
                 if "SpecularStrength" in shader_uniforms:
                     specular_value = nodes.new('ShaderNodeValue')
@@ -422,6 +440,12 @@ class ImportDSCSBase:
                     for loop_idx, loop in enumerate(mesh.loops):
                         # uv_layer.data[loop_idx].uv = map_of_blenderloops_to_modelloops[loop_idx][uv_type]
                         uv_layer.data[loop_idx].uv = IF_mesh.vertices[loop.vertex_index][uv_type]
+
+            # Assign vertex colours
+            if 'Colour' in IF_mesh.vertices[0]:
+                colour_map = mesh.vertex_colors.new(name=f"Map", do_init=True)
+                for loop_idx, loop in enumerate(mesh.loops):
+                    colour_map.data[loop_idx].color = IF_mesh.vertices[loop.vertex_index]['Colour']
 
             # Rig the vertices
             for IF_vertex_group in IF_mesh.vertex_groups:
