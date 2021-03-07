@@ -10,7 +10,7 @@ _i.e._ the zip structure starts off looking like
 ```
 -BlenderIO
 -CollatedData
--CustomException
+-CustomExceptions
 -etc.
 ```
 and you should repackage it to look like
