@@ -5,7 +5,7 @@ Progress reports are hosted in the [discussions](https://github.com/Pherakki/Ble
 
 ## Preparation
 1. Get some files to work with by unpacking the game files with [DSCSTools](https://github.com/SydMontague/DSCSTools), following the instructions in the readme. Alternatively, install [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) and click 'Extract DSDB'.
-2. If you have cloned the code from the repository, unpack the zip file and put the contents into a folder. Then, re-pack the folder into a zip archive.
+2. If you have cloned the `Blender Tools for DSCS` code from the repository, unpack the zip file and put the contents into a folder. Then, re-pack the folder into a zip archive.
 _i.e._ the zip structure starts off looking like
 ```
 -BlenderIO
