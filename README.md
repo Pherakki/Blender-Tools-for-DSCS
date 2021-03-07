@@ -19,6 +19,7 @@ and you should repackage it to look like
     |-BlenderIO
     |-CollatedData
     |-CustomExceptions
+    |-...
 ```
 if you are instead downloading a release version, skip ahead to step 3.
 3. Install the zip archive for `Blender Tools for DSCS` like any other Blender addon:
