@@ -5,11 +5,28 @@ Progress reports are hosted in the [discussions](https://github.com/Pherakki/Ble
 
 ## Preparation
 1. Get some files to work with by unpacking the game files with [DSCSTools](https://github.com/SydMontague/DSCSTools), following the instructions in the readme. Alternatively, install [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) and click 'Extract DSDB'.
-2. Install `Blender Tools for DSCS` as a zip archive like any other Blender addon:
+2. If you have cloned the code from the repository, unpack the zip file and put the contents into a folder. Then, re-pack the folder into a zip archive.
+_i.e._ the zip structure starts off looking like
+```
+-BlenderIO
+-CollatedData
+-CustomException
+-etc.
+```
+and you should repackage it to look like
+```
+-some_folder_name
+    |-BlenderIO
+    |-CollatedData
+    |-CustomExceptions
+```
+if you are instead downloading a release version, skip ahead to step 3.
+3. Install the zip archive for `Blender Tools for DSCS` like any other Blender addon:
     * In Blender, open Edit > Preferences
     * Click 'Add-ons' on the left-hand pane of the pop-up
     * Click 'Install' at the top of the right-hand pane
-    * Navigate to the location of the `Blender Tools for DSCS` zip archive, select it, and click 'Install Add-on' in the file browser pop-up.
+    * Navigate to the location of the `Blender Tools for DSCS` zip archive in the file browser pop-up, select it, and click 'Install Add-on'.
+    * Tick the box next to the newly-added add-on in the Blender add-ons window to activate the plugin. You should now have the options to Import and Export DSCS models.
 
 ## Import Usage
 1. The model files are split into name, skel, and geom files. Currently, these must all be in the same directory in order for the import to be successful.
