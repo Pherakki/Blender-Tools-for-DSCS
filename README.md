@@ -21,7 +21,7 @@ and you should repackage it to look like
     |-CustomExceptions
     |-...
 ```
-if you are instead downloading a release version, skip ahead to step 3.
+If you are instead downloading a release version, skip ahead to step 3.
 
 3. Install the zip archive for `Blender Tools for DSCS` like any other Blender addon:
     * In Blender, open Edit > Preferences
