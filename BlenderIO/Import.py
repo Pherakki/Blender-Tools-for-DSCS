@@ -64,16 +64,16 @@ class ImportDSCSBase:
         description="Enable/disable to import/not import animations.",
         default=True)
     move_to_alt_skel: BoolProperty(
-        name="Adjust skeleton to alternative skeleton",
+        name="Use Rest Pose instead of Bind Pose",
         description="Enable/disable to switch which skeleton is imported.",
         default=False)
     import_pose_mesh: BoolProperty(
-        name="Import Alternative Skeleton",
-        description="Enable/disable to import/not import the second skeleton.",
+        name="Import Rest Pose Skeleton",
+        description="Import the rest pose as a second armature.",
         default=False)
     do_import_boundboxes: BoolProperty(
-        name="Import Bounding Boxes",
-        description="Enable/disable to import/not import bounding boxes.",
+        name="Import Bounding Boxes [DEBUG]",
+        description="Import bounding boxes (for debugging the skeletons).",
         default=False)
 
     def import_file(self, context, filepath, platform):
