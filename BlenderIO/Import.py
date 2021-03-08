@@ -29,7 +29,6 @@ def set_new_rest_pose(armature_name, bone_names, rest_pose_delta):
     for i, (bone_name, (rest_quat, rest_pos, rest_scl)) in enumerate(zip(bone_names, rest_pose_delta)):
         model_armature.pose.bones[bone_name].rotation_quaternion = np.roll(rest_quat, 1)
         model_armature.pose.bones[bone_name].location = rest_pos
-        model_armature.pose.bones[bone_name].scale = rest_scl
         if rest_scl != (0., 0., 0.):
             model_armature.pose.bones[bone_name].scale = rest_scl
 
