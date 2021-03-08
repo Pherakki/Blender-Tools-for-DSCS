@@ -211,24 +211,24 @@ class MaterialReader(BaseRW):
         return maybe_component_type, struct.unpack(possibly_umc_types[maybe_component_type], data[0:8])
 
     def umc_data_factory(self, maybe_component_type, data):
-        data = struct.pack(possibly_umc_types[maybe_component_type], *data)
-        data += struct.pack('H', 0)
-        data += struct.pack('H', 0)
-        data += struct.pack('H', 0)
-        data += struct.pack('H', 0)
-        data += struct.pack('B', maybe_component_type)
-        data += struct.pack('B', 100)
-        data += struct.pack('H', 65280)
-        data += struct.pack('I', 0)
-        assert len(data) == 24
-        return data
+        out = struct.pack(possibly_umc_types[maybe_component_type], *data)
+        out += struct.pack('H', 0)
+        out += struct.pack('H', 0)
+        out += struct.pack('H', 0)
+        out += struct.pack('H', 0)
+        out += struct.pack('B', maybe_component_type)
+        out += struct.pack('B', 100)
+        out += struct.pack('H', 65280)
+        out += struct.pack('I', 0)
+        assert len(out) == 24
+        return out
 
-possibly_umc_types = {160: 'If',
-                  161: 'II',
-                  162: 'II',
-                  163: 'HHI',  # (32779, 0) or (32774, 0)
-                  164: 'II',
-                  166: 'II',
+possibly_umc_types = {160: 'If', #  516, float between 0 and 1
+                  161: 'II',  # (1, 0)
+                  162: 'II',  # (770, 0), (770, 1)
+                  163: 'HHI',  # (32779, 0, 0) or (32774, 0, 0)
+                  164: 'II',  # (1, 0)
+                  166: 'II',  # (0, 0)  Disables backface culling
                   167: 'II',  # Always (516, 0)
                   168: 'II',  # Always (0, 0)
                   169: 'II',  # Always (0, 0)
