@@ -320,7 +320,7 @@ class ImportDSCSBase:
             if final_diffuse_node is not None:
                 connect(final_diffuse_node.outputs['BSDF'], output_node.inputs['Surface'])
 
-            new_material.use_backface_culling = True
+            new_material.use_backface_culling = (166 not in IF_material.unknown_data['unknown_material_components'])
             new_material.blend_method = 'CLIP'
             new_material.alpha_threshold = 0.7
 
