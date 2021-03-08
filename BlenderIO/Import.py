@@ -63,6 +63,10 @@ class ImportDSCSBase:
         name="Import Animations",
         description="Enable/disable to import/not import animations.",
         default=True)
+    move_to_alt_skel: BoolProperty(
+        name="Adjust skeleton to alternative skeleton",
+        description="Enable/disable to switch which skeleton is imported.",
+        default=False)
     import_pose_mesh: BoolProperty(
         name="Import Alternative Skeleton",
         description="Enable/disable to import/not import the second skeleton.",
@@ -90,7 +94,8 @@ class ImportDSCSBase:
             self.import_boundboxes(model_data, filename, use_arm_name)
         self.import_materials(model_data)
         self.import_meshes(parent_obj, filename, model_data, armature_name)
-        # set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
+        if self.move_to_alt_skel:
+            set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
         self.import_animations(armature_name, model_data)
 
         bpy.ops.object.mode_set(mode="OBJECT")
