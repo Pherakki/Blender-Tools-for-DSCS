@@ -185,7 +185,6 @@ class ExportDSCSBase:
                 else:
                     tangent_data = {}
 
-
                 vert = {'Position': vertex.co,
                         'Normal': vertex.normal,
                         **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], unique_value[:n_uvs])},
