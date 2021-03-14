@@ -6,6 +6,7 @@ import itertools
 import os
 import shutil
 from bpy_extras.io_utils import ExportHelper
+from bpy.props import BoolProperty
 from bpy_extras.image_utils import load_image
 from bpy_extras.object_utils import object_data_add
 from mathutils import Vector
@@ -18,6 +19,11 @@ class ExportDSCSBase:
     bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
     bl_options = {'REGISTER'}
     filename_ext = ".name"
+
+    export_anims: BoolProperty(
+        name="Export Animations",
+        description="Enable/disable to export/not export animations.",
+        default=True)
 
     def export_file(self, context, filepath, platform, copy_shaders=True):
         # Grab the parent object
@@ -39,6 +45,8 @@ class ExportDSCSBase:
         self.export_meshes(parent_obj, model_data, used_materials)
         self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
         self.export_textures(used_textures, model_data, export_images_folder)
+        if self.export_anims:
+            self.export_animations()
 
         model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data
@@ -291,6 +299,21 @@ class ExportDSCSBase:
                 except FileNotFoundError:
                     print(texture_path, "not found.")
                     continue
+
+    def export_animations(self, armature_name, model_data):
+        for nla_track in bpy.data.objects[armature_name].animation_data.nla_tracks:
+            strips = nla_track.strips
+            if len(strips) != 1:
+                print(f"NLA track \'{nla_track.name}\' has {len(strips)} strips; will not export if != 1.")
+                continue
+            nla_strip = strips[0]
+            fps = nla_strip.scale * 24
+
+            action = nla_strip.action
+            for fcurve in action.fcurves:
+                bone_name, elem_type = fcurve.data_path.split('[')[1].split(']')
+                bone_name = bone_name[1:-1]
+                elem_type = elem_type[1:]
 
     def execute_func(self, context, filepath, platform):
         filepath, file_extension = os.path.splitext(filepath)
