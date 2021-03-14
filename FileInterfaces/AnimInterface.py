@@ -7,6 +7,7 @@ from ..FileReaders.AnimReader import AnimReader
 class AnimInterface:
     def __init__(self):
         self.playback_rate = None
+        self.num_bones = None
 
         self.rotations = {}
         self.locations = {}
@@ -21,6 +22,7 @@ class AnimInterface:
 
         # Only need to take the playback rate; duration can be calculated from this and the total number of frames
         instance.playback_rate = readwriter.playback_rate
+        instance.num_bones = readwriter.num_bones
 
         # Set up the data holder variables
         for idx in range(readwriter.num_bones):
@@ -109,7 +111,7 @@ class AnimInterface:
                           max([list(self.locations[bone_idx].keys())[-1] if len(self.locations[bone_idx].keys()) else 0 for bone_idx in self.locations]),
                           max([list(self.scales[bone_idx].keys())[-1] if len(self.scales[bone_idx].keys()) else 0 for bone_idx in self.scales])])
         num_frames += 1  # This is because the frames start from index 0
-        num_bones = len(self.rotations)
+        num_bones = self.num_bones
 
         with open(path, 'wb') as F:
             readwriter = AnimReader(F, sk)
