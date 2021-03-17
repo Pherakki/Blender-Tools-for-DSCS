@@ -208,7 +208,7 @@ class AnimInterface:
 
             readwriter.rel_ptr_static_pose_bone_scales += virtual_pointer
             virtual_pointer += len(readwriter.static_pose_bone_scales)*12
-            # virtual_pointer = roundup(virtual_pointer, 16)  # No rounding for this section
+            # No rounding for this section
 
             readwriter.rel_ptr_static_unknown_4 += virtual_pointer
             virtual_pointer += len(readwriter.unknown_data_4)*4
