@@ -410,7 +410,6 @@ class KeyframeChunk(BaseRW):
 
     def rw_frame_0_rotations(self, rw_operator):
         rw_operator('frame_0_rotations', self.frame_0_rotations_bytecount)
-
         self.bytes_read += self.frame_0_rotations_bytecount
 
     def rw_frame_0_locations(self, rw_operator):
@@ -482,7 +481,6 @@ class KeyframeChunk(BaseRW):
 
     def reinterpret_keyframe_chunk(self):
         self.keyframes_in_use: str
-
         self.frame_0_rotations = [serialise_quaternion(elem) for elem in self.frame_0_rotations]
         self.frame_0_rotations = b''.join(self.frame_0_rotations)
         self.frame_0_locations = self.flatten_list(self.frame_0_locations)
@@ -494,7 +492,6 @@ class KeyframeChunk(BaseRW):
             self.keyframes_in_use = bits_to_bytes(self.keyframes_in_use)
         else:
             self.keyframes_in_use = b''
-
         self.keyframed_rotations = [serialise_quaternion(elem) for elem in self.keyframed_rotations]
         self.keyframed_rotations = b''.join(self.keyframed_rotations)
         self.keyframed_locations = self.flatten_list(self.keyframed_locations)
