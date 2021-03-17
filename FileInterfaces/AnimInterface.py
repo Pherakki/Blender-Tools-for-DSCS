@@ -439,13 +439,16 @@ def strip_and_validate(keyframes, chunksize, method):
     return reduced_chunks, bitvectors
 
 
-def strip_and_validate_all_bones(frame_data, chunksize):
+def strip_and_validate_all_bones(frame_data, chunksize, interpolation_method):
     keyframe_chunks_data = {}
     bitvector_data = {}
-    for bone_idx, chunks in frame_data.items():
-        reduced_chunks, bitvectors = strip_and_validate(chunks, chunksize)
+    for i, (bone_idx, chunks) in enumerate(frame_data.items()):
+        reduced_chunks, bitvectors = strip_and_validate(chunks, chunksize, interpolation_method)
         keyframe_chunks_data[bone_idx] = reduced_chunks
         bitvector_data[bone_idx] = bitvectors
+    for (bone_idx, bone_data), bitvectors in zip(keyframe_chunks_data.items(), bitvector_data.values()):
+        for subdata, bitvector in zip(bone_data, bitvectors):
+            assert len(subdata) == sum([elem == '1' for elem in bitvector]), f"{bone_idx}"
     return keyframe_chunks_data, bitvector_data
 
 
@@ -464,9 +467,9 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
     # We also might need to perform some interpolation inside these functions in order to satisfy the requirements of
     # the DSCS animation format
     # Also need to isolate the final frame in here for the same reasons
-    rotation_keyframe_chunks_data, rotation_bitvector_data = strip_and_validate_all_bones(rotations, chunksize)
-    location_keyframe_chunks_data, location_bitvector_data = strip_and_validate_all_bones(locations, chunksize)
-    scale_keyframe_chunks_data, scale_bitvector_data = strip_and_validate_all_bones(scales, chunksize)
+    rotation_keyframe_chunks_data, rotation_bitvector_data = strip_and_validate_all_bones(rotations, chunksize, slerp)
+    location_keyframe_chunks_data, location_bitvector_data = strip_and_validate_all_bones(locations, chunksize, lerp)
+    scale_keyframe_chunks_data, scale_bitvector_data = strip_and_validate_all_bones(scales, chunksize, lerp)
 
     # Now we can bundle all the chunks into a sequential list, ready for turning into KeyframeChunks instances
     chunk_data = [[{}, {}, {}] for _ in range((num_frames // chunksize) + 1)]
