@@ -223,7 +223,7 @@ class AnimInterface:
             readwriter.num_keyframe_chunks = len(chunk_holders)
             readwriter.prepare_read_op()  # This creates enough empty KeyFrameChunk objects for us to fill
 
-            # Note down the pointer to the keyframe chunks for now but fill in the later later
+            # Note down the pointer to the keyframe chunks for now but fill in later
             readwriter.rel_ptr_keyframe_chunks_ptrs += virtual_pointer
             # < This is where the data would go if it didn't rely on pointers that still have to be computed >
             virtual_pointer += 8 * len(chunk_holders)
