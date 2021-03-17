@@ -225,6 +225,7 @@ class MaterialReader(BaseRW):
         assert len(out) == 24
         return out
 
+
 possibly_umc_types = {160: 'If', #  516, float between 0 and 1
                   161: 'II',  # (1, 0)
                   162: 'II',  # (770, 0), (770, 1)
