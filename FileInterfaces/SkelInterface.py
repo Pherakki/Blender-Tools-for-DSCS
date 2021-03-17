@@ -15,6 +15,10 @@ class SkelInterface:
         # Variables that will be removed eventually
         self.unknown_0x0C = None
 
+    @property
+    def num_bones(self):
+        return len(self.parent_bones)
+
     @classmethod
     def from_file(cls, path):
         with open(path, 'rb') as F:
