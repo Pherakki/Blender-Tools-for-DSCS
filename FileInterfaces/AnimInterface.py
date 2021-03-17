@@ -560,6 +560,14 @@ class ChunkHolder:
 
         self.contained_frames = contained_frames
 
+        # Error checking
+        assert len(flatten_list(self.later_rotations)) == sum([elem == '1' for elem in total_rotation_bitvector]), \
+               "Number of rotation frames in keyframe chunk did not equal the number of rotations."
+        assert len(flatten_list(self.later_locations)) == sum([elem == '1' for elem in total_location_bitvector]), \
+               "Number of location frames in keyframe chunk did not equal the number of locations."
+        assert len(flatten_list(self.later_scales)) == sum([elem == '1' for elem in total_scale_bitvector]), \
+               "Number of scale frames in keyframe chunk did not equal the number of scales."
+
     @classmethod
     def init_penultimate_chunk(cls, rotations, locations, scales,
                                rotation_bitvector, location_bitvector, scale_bitvector,
