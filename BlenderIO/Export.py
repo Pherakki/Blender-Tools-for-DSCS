@@ -46,7 +46,7 @@ class ExportDSCSBase:
         self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
         self.export_textures(used_textures, model_data, export_images_folder)
         if self.export_anims:
-            self.export_animations()
+            self.export_animations(parent_obj.children[0], model_data)
 
         model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data
