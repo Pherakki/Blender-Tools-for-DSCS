@@ -20,8 +20,8 @@ def generate_files_from_intermediate_format(filepath, model_data, platform='PC')
     make_nameinterface(filepath, model_data)
     sk = make_skelinterface(filepath, model_data)
     make_geominterface(filepath, model_data, platform)
-    #for animation_name in model_data.animations:
-    #    make_animreader(file_folder, model_data, animation_name, sk)
+    for animation_name in model_data.animations:
+        make_animreader(file_folder, model_data, animation_name, sk)
 
 
 def make_nameinterface(filepath, model_data):
