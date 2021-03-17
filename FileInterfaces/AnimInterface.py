@@ -133,6 +133,7 @@ class AnimInterface:
             blend_bones = blend_locs
 
             # Sort the static bones into the correct order after adding malformed blend bones
+            # Redundant?
             static_rots = {k: v for k, v in sorted(list(static_rots.items()), key=lambda x: x[0])}
             static_locs = {k: v for k, v in sorted(list(static_locs.items()), key=lambda x: x[0])}
             static_scls = {k: v for k, v in sorted(list(static_scls.items()), key=lambda x: x[0])}
