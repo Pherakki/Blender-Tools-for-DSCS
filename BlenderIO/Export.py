@@ -338,6 +338,87 @@ class ExportDSCSPS4(ExportDSCSBase, bpy.types.Operator, ExportHelper):
         return super().execute_func(context, self.filepath, 'PS4')
 
 
+def get_used_animation_elements(group):
+    elements_used = {'location': False,
+                     'rotation_quaternion': False,
+                     'scale': False}
+
+    bone_data = {'location': {0: {}, 1: {}, 2: {}},
+                 'rotation_quaternion': {0: {}, 1: {}, 2: {}, 3: {}},
+                 'scale': {0: {}, 1: {}, 2: {}}}
+    for f_curve in group.channels:
+        curve_type = f_curve.data_path.split('.')[-1]
+        curve_idx = f_curve.array_index
+        elements_used[curve_type] = True
+        bone_data[curve_type][curve_idx] = {k: v for k, v in [kfp.co for kfp in f_curve.keyframe_points]}
+
+    return elements_used, bone_data
+
+
+def get_all_required_frames(curve_data):
+    res = set()
+    for dct in curve_data.values():
+        for key in tuple(dct.keys()):
+            res.add(int(key))
+    return sorted(list(res))
+
+
+def produce_interpolation_method(component_frame_idxs, framedata, default_value):
+    if len(component_frame_idxs) == 0:
+        def interp_method(input_frame_idx):
+            return default_value
+    elif len(component_frame_idxs) == 1:
+        value = framedata[component_frame_idxs[0]]
+
+        def interp_method(input_frame_idx):
+            return value
+    else:
+        def interp_method(input_frame_idx):
+            next_smallest_element = max([idx for idx in component_frame_idxs if idx < input_frame_idx])
+            next_largest_element = min([idx for idx in component_frame_idxs if idx > input_frame_idx])
+
+            min_value = framedata[next_smallest_element]
+            max_value = framedata[next_largest_element]
+
+            t = (input_frame_idx - min_value) / (max_value - min_value)
+
+            # Should change lerp to the proper interpolation method
+            return lerp(min_value, max_value, t)
+
+    return interp_method
+
+
+def interpolate_missing_frame_elements(curve_data, default_values):
+    all_frame_idxs = get_all_required_frames(curve_data)
+    for (component_idx, framedata), default_value in zip(curve_data.items(), default_values):
+        component_frame_idxs = list(framedata.keys())
+
+        # Need to pass interp_method_name in here and link to some implementation of all the interpolation methods
+        # Blender provides
+        interp_method = produce_interpolation_method(component_frame_idxs, framedata, default_value)
+        new_framedata = {}
+        for frame_idx in all_frame_idxs:
+            if frame_idx not in component_frame_idxs:
+                new_framedata[frame_idx] = interp_method(frame_idx)
+            else:
+                new_framedata[frame_idx] = framedata[frame_idx]
+
+        curve_data[component_idx] = new_framedata
+
+    return curve_data
+
+
+def zip_vector_elements(curve_data):
+    new_curve_data = {}
+    elements = list(curve_data.values())
+    for frame_idxs in zip(*[list(e.keys()) for e in elements]):
+        for frame_idx in frame_idxs:
+            assert frame_idx == frame_idxs[0]
+        frame_idx = frame_idxs[0]
+        new_curve_data[frame_idx] = np.array([e[frame_idx] for e in elements])
+    return new_curve_data
+
+
 def get_bone_id(mesh_obj, bone_names, grp):
     group_idx = grp.group
     bone_name = mesh_obj.vertex_groups[group_idx].name
