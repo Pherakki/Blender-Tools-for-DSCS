@@ -13,6 +13,7 @@ from mathutils import Vector
 from ..CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ..CollatedData.IntermediateFormat import IntermediateFormat
 from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
+from ..Utilities.Interpolation import lerp
 
 
 class ExportDSCSBase:
