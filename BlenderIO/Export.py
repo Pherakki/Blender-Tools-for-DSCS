@@ -310,10 +310,35 @@ class ExportDSCSBase:
             fps = nla_strip.scale * 24
 
             action = nla_strip.action
-            for fcurve in action.fcurves:
-                bone_name, elem_type = fcurve.data_path.split('[')[1].split(']')
-                bone_name = bone_name[1:-1]
-                elem_type = elem_type[1:]
+            for group in action.groups:
+                bone_name = group.name
+
+                curve_defaults = {'location': [0., 0., 0.],
+                                  'rotation_quaternion': [1., 0., 0., 0.],
+                                  'scale': [1., 1., 1.]}
+
+                # Get whether any of the locations, rotations, and scales are animated; plus the f-curves for those
+                # that are
+                elements_used, bone_data = get_used_animation_elements(group)
+                # For each set that is animated, interpolate missing keyframes for each component of the relevant vector
+                # on each keyframe where at least one element is used
+                for curve_type, isUsed in elements_used.items():
+                    if isUsed:
+                        curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type])
+                        zipped_data = zip_vector_elements(curve_data)
+                        animation_data[curve_type][bone_name] = zipped_data
+
+            ad = model_data.new_anim(nla_track.name)
+            ad.playback_rate = fps
+            for bone_name, data in animation_data['rotation_quaternion'].items():
+                bone_idx = model_data.skeleton.bone_names.index(bone_name)
+                ad.add_rotation_fcurve(bone_idx, list(data.keys()), list(data.values()))
+            for bone_name, data in animation_data['location'].items():
+                bone_idx = model_data.skeleton.bone_names.index(bone_name)
+                ad.add_location_fcurve(bone_idx, list(data.keys()), list(data.values()))
+            for bone_name, data in animation_data['scale'].items():
+                bone_idx = model_data.skeleton.bone_names.index(bone_name)
+                ad.add_scale_fcurve(bone_idx, list(data.keys()), list(data.values()))
 
     def execute_func(self, context, filepath, platform):
         filepath, file_extension = os.path.splitext(filepath)
