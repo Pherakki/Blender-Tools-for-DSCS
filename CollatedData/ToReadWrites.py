@@ -6,7 +6,7 @@ from ..FileReaders.AnimReader import AnimReader
 from ..FileInterfaces.NameInterface import NameInterface
 from ..FileInterfaces.SkelInterface import SkelInterface
 from ..FileInterfaces.GeomInterface import GeomInterface
-# from ..FileInterfaces.AnimInterface import AnimInterface
+from ..FileInterfaces.AnimInterface import AnimInterface
 
 from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names
 from ..Utilities.Rotation import rotation_matrix_to_quat
@@ -112,176 +112,24 @@ def make_geominterface(filepath, model_data, platform):
 
     geomInterface.to_file(filepath + '.geom', platform)
 
-# def make_animreader(file_folder, model_data, animation_name, sk):
-#     animation = model_data.animations[animation_name]
-#     with open(file_folder + animation_name + '.anim', 'wb') as F:
-#         animReader = AnimReader(F, sk)
-#         animReader.filetype = '40AE'
-#         animReader.animation_duration = animation.num_frames/animation.playback_rate
-#         animReader.playback_rate = animation.playback_rate
-#
-#         animReader.num_bones = sk.num_bones
-#         animReader.total_frames = animation.num_frames + 1
-#         animReader.always_16384 = 16384
-#
-#         static_rots, nonstatic_rots = get_static_animation_elements(animation.rotations)
-#         static_locs, nonstatic_locs = get_static_animation_elements(animation.locations)
-#         static_scls, nonstatic_scls = get_static_animation_elements(animation.scales)
-#
-#         animReader.initial_pose_bone_rotations_count = len(static_rots)
-#         animReader.initial_pose_bone_locations_count = len(static_locs)
-#         animReader.initial_pose_bone_scales_count = len(static_scls)
-#         animReader.unknown_0x1C = 0  # Hardcoded for now...
-#         animReader.keyframe_bone_rotations_count = len(nonstatic_rots)
-#         animReader.keyframe_bone_locations_count = len(nonstatic_locs)
-#         animReader.keyframe_bone_scales_count = len(nonstatic_scls)
-#         animReader.unknown_0x24 = 0  # Hardcoded for now...
-#
-#         animReader.padding_0x26 = 0
-#         animReader.bone_mask_bytes = 0  # Hardcoded for now...
-#         animReader.abs_ptr_bone_mask = 0  # Hardcoded for now...
-#
-#         ###### TODO #########
-#         animReader.unknown_0x30 = 0x30 + 0
-#         animReader.unknown_0x34 = 0x34 + 0
-#         animReader.rel_ptr_initial_pose_bone_rotations = 0x38 + 0
-#         animReader.rel_ptr_initial_pose_bone_locations = 0x3C + 0
-#         animReader.rel_ptr_initial_pose_bone_scales = 0x40 + 0
-#         animReader.unknown_0x44 = 0x44 + 0
-#
-#         animReader.padding_0x48 = 0
-#         animReader.padding_0x4C = 0
-#         animReader.padding_0x50 = 0
-#         animReader.padding_0x54 = 0
-#         animReader.padding_0x58 = 0
-#         animReader.padding_0x5C = 0
-#
-#         #
-#
-#         animReader.initial_pose_rotations_bone_idxs = static_rots
-#         animReader.initial_pose_locations_bone_idxs = static_locs
-#         animReader.initial_pose_scales_bone_idxs = static_scls
-#         animReader.unknown_bone_idxs_4 = []
-#         animReader.keyframe_rotations_bone_idxs = nonstatic_rots
-#         animReader.keyframe_locations_bone_idxs = nonstatic_locs
-#         animReader.keyframe_scales_bone_idxs = nonstatic_scls
-#         animReader.unknown_bone_idxs_8 = []
-#
-#         #
-#
-#         animReader.initial_pose_bone_rotations = [animation.rotations[bidx] for bidx in static_rots]
-#         animReader.initial_pose_bone_locations = [animation.locations[bidx] for bidx in static_locs]
-#         animReader.initial_pose_bone_scales = [animation.scales[bidx] for bidx in static_scls]
-#         animReader.unknown_data_4 = []
-#
-#         #
-#
-#         keyframe_chunks, frame_splits = chunk_keyframes({bidx: animation.rotations[bidx] for bidx in nonstatic_rots}, nonstatic_rots,
-#                                                         {bidx: animation.locations[bidx] for bidx in nonstatic_locs}, nonstatic_locs,
-#                                                         {bidx: animation.scales[bidx] for bidx in nonstatic_scls}, nonstatic_scls,
-#                                                         animation.num_frames)
-#         animReader.num_keyframe_chunks = len(keyframe_chunks)
-#         print(len(keyframe_chunks), frame_splits)
-#         animReader.keyframe_chunks_ptrs = None  # TODO
-#         animReader.keyframe_counts = [(frame_splits[i], frame_splits[i+1]-frame_splits[i])
-#                                       for i in range(len(frame_splits)-1)]
-#         animReader.bone_masks = None
-#         animReader.unknown_data_masks = []  # TODO
-#
-#         #
-#         print(animation_name, animReader.keyframe_counts)
-#
-#         animReader.prepare_read_op()
-#         for keyframe_chunks in animReader.keyframe_chunks:
-#             pass  # TODO
-#
-#
-# def get_static_animation_elements(elem_dict):
-#     statics = []
-#     nonstatics = []
-#     for bone_idx, elem in elem_dict.items():
-#         (statics if elem.frames == [0] else nonstatics).append(bone_idx)
-#     return statics, nonstatics
-#
-#
-# def chunk_keyframes(kf_rots, kf_rots_idxs, kf_locs, kf_locs_idxs, kf_scls, kf_scls_idxs, nframes):
-#     kf_chunks = [gen_kf_chunks_structure(kf_rots_idxs, kf_locs_idxs, kf_scls_idxs)]
-#     frame_splits = [0]
-#     rotbytes = 0
-#     locbytes = 0
-#     sclbytes = 0
-#     for i in range(nframes):
-#         rots = {bidx: (i, kf_rots[bidx].values[kf_rots[bidx].frames.index(i)]) for bidx in kf_rots_idxs if i in kf_rots[bidx].frames}
-#         locs = {bidx: (i, kf_locs[bidx].values[kf_locs[bidx].frames.index(i)]) for bidx in kf_locs_idxs if i in kf_locs[bidx].frames}
-#         scls = {bidx: (i, kf_scls[bidx].values[kf_scls[bidx].frames.index(i)]) for bidx in kf_scls_idxs if i in kf_scls[bidx].frames}
-#
-#         rotbytes += len(rots)*6
-#         locbytes += len(locs)*12
-#         sclbytes += len(scls)*12
-#
-#         if rotbytes > 0xFFFF or locbytes > 0xFFFF or sclbytes > 0xFFFF or (i == nframes-1):
-#             kf_chunks.append(gen_kf_chunks_structure(kf_rots_idxs, kf_locs_idxs, kf_scls_idxs))
-#             frame_splits.append(i - 1)
-#
-#             rotbytes = 0
-#             locbytes = 0
-#             sclbytes = 0
-#
-#             print(rots)
-#             print(locs)
-#             print(scls)
-#
-#         for bidx in rots:
-#             kf_chunks[-1][0][bidx].append(rots[bidx])
-#         for bidx in locs:
-#             kf_chunks[-1][1][bidx].append(locs[bidx])
-#         for bidx in scls:
-#             kf_chunks[-1][2][bidx].append(scls[bidx])
-#
-#     if nframes == 0:
-#         frame_splits.append(nframes)
-#     else:
-#         frame_splits.append(nframes-1)
-#
-#     return kf_chunks, frame_splits
-#
-#
-# def gen_kf_chunks_structure(kf_rots_idxs, kf_locs_idx, kf_scls_idxs):
-#     return [{bidx: [] for bidx in kf_rots_idxs},
-#             {bidx: [] for bidx in kf_locs_idx},
-#             {bidx: [] for bidx in kf_scls_idxs}]
-#
-#
-# def gen_bone_hierarchy(parent_bones):
-#     to_return = []
-#     parsed_bones = []
-#     bones_left_to_parse = [bidx for bidx in parent_bones]
-#     while len(bones_left_to_parse) > 0:
-#         hierarchy_line, new_parsed_bone_idxs = gen_bone_hierarchy_line(parent_bones, parsed_bones, bones_left_to_parse)
-#         to_return.append(hierarchy_line)
-#
-#         for bidx in new_parsed_bone_idxs[::-1]:
-#             parsed_bones.append(bones_left_to_parse[bidx])
-#             del bones_left_to_parse[bidx]
-#     return to_return
-#
-#
-# def gen_bone_hierarchy_line(parent_bones, parsed_bones, bones_left_to_parse):
-#     """It ain't pretty, but it works"""
-#     to_return = []
-#     new_parsed_bone_idxs = []
-#     bone_iter = iter(bones_left_to_parse)
-#     prev_j = 0
-#     for i in range(4):
-#         for j, bone in enumerate(bone_iter):
-#             mod_j = j + prev_j
-#             parent_bone = parent_bones[bone]
-#             if parent_bone == -1 or parent_bone in parsed_bones:
-#                 to_return.append(bone)
-#                 to_return.append(parent_bone)
-#                 new_parsed_bone_idxs.append(mod_j)
-#                 prev_j = mod_j + 1
-#                 break
-#         if mod_j == len(bones_left_to_parse)-1 and len(to_return) < 8:
-#             to_return.extend(to_return[-2:])
-#     return to_return, new_parsed_bone_idxs
+
+def make_animreader(file_folder, model_data, animation_name, sk):
+    anim_interface = AnimInterface()
+    animation = model_data.animations[animation_name]
+
+    anim_interface.playback_rate = animation.playback_rate
+    anim_interface.num_bones = sk.num_bones
+
+    for bone_idx, fcurve in animation.rotations.items():
+        data = {k: v for k, v in zip(fcurve.frames, fcurve.values)}
+        anim_interface.rotations[bone_idx] = data
+
+    for bone_idx, fcurve in animation.locations.items():
+        data = {k: v for k, v in zip(fcurve.frames, fcurve.values)}
+        anim_interface.locations[bone_idx] = data
+
+    for bone_idx, fcurve in animation.scales.items():
+        data = {k: v for k, v in zip(fcurve.frames, fcurve.values)}
+        anim_interface.scales[bone_idx] = data
+
+    anim_interface.to_file(os.path.join(file_folder, animation_name) + '.anim', sk)
