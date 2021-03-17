@@ -300,8 +300,11 @@ class ExportDSCSBase:
                     print(texture_path, "not found.")
                     continue
 
-    def export_animations(self, armature_name, model_data):
-        for nla_track in bpy.data.objects[armature_name].animation_data.nla_tracks:
+    def export_animations(self, armature, model_data):
+        for nla_track in armature.animation_data.nla_tracks:
+            animation_data = {'location': {},
+                              'rotation_quaternion': {},
+                              'scale': {}}
             strips = nla_track.strips
             if len(strips) != 1:
                 print(f"NLA track \'{nla_track.name}\' has {len(strips)} strips; will not export if != 1.")
