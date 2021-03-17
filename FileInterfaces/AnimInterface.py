@@ -264,7 +264,6 @@ class AnimInterface:
                 virtual_pointer += chunk_size
 
             # Then finally dump the chunks themselves
-            # SET PTR TO THIS SECTION HERE
             for chunk, kf_chunk in zip(chunk_holders, readwriter.keyframe_chunks):
                 # Header variables
                 kf_chunk.frame_0_rotations_bytecount = chunk.initial_rotation_bytes
