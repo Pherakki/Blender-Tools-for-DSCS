@@ -2,6 +2,7 @@ import itertools
 import numpy as np
 
 from ..FileReaders.AnimReader import AnimReader
+from ..Utilities.Interpolation import lerp, slerp
 
 
 class AnimInterface:
@@ -402,22 +403,7 @@ def generate_keyframe_chunks_entry_data(keyframes):
     return reduced_chunks, bitvectors, initial_values, final_values
 
 
-def interpolate_frame_linear(initial_pair, final_pair, chunksize):
-    initial_data, initial_frame = initial_pair
-    final_data, final_frame = final_pair
-
-    frame_delta = final_frame + chunksize - initial_frame
-    value_delta = np.array(final_data) - np.array(initial_data)
-    value_density = value_delta / frame_delta
-
-    frame_delta_to_interpolate = chunksize - initial_frame
-
-    interpolated_frame_data = value_density*frame_delta_to_interpolate
-
-    return interpolated_frame_data
-
-
-def strip_and_validate(keyframes, chunksize):
+def strip_and_validate(keyframes, chunksize, method):
     reduced_chunks, bitvectors, initial_values, final_values = generate_keyframe_chunks_entry_data(keyframes)
     already_handled_chunks = []
     for chunk_idx, (reduced_chunk, bitvector, initial_pair, final_pair) in enumerate(zip(reduced_chunks, bitvectors, initial_values, final_values)):
@@ -429,21 +415,25 @@ def strip_and_validate(keyframes, chunksize):
             # Get the previous chunk so we can use that as the first point to interpolate from
             interp_origin = final_values[chunk_idx - 1]
             interp_end = None
-            for i, initial_pair in enumerate(initial_values[chunk_idx:]):
-                if initial_pair is None:
+            for i, (iter_initial_pair, bv) in enumerate(zip(initial_values[chunk_idx:], bitvectors[chunk_idx:])):
+                # If the chunk doesn't have an initial value, we need to interpolate that value
+                # So keep track of the chunk if we need to interpolate its first value
+                if bv[0] == '0':
                     skipped_chunks.append(chunk_idx + i)
-                else:
-                    interp_end = initial_pair
+                # If the chunk contains *some* data, stop here because we've found the next non-zero value
+                # We'll carry this value forward and use it as the end point of the interpolation.
+                if iter_initial_pair is not None:
+                    interp_end = iter_initial_pair
                     break
+
             for skipped_chunk_idx in skipped_chunks:
                 interp_end_data, interp_end_frame = interp_end
                 relative_frame_idx = (skipped_chunk_idx - chunk_idx + 1)*chunksize + interp_end_frame  # i.e. (i+1)*chunksize + interp_end_frame
-                interpolated_frame_data = interpolate_frame_linear(interp_origin, (interp_end_data, relative_frame_idx), chunksize)  # Needs to be lerp for pos, slerp for quat
+                initial_frame = interp_origin[1]
+                t = (chunksize - initial_frame) / (relative_frame_idx - initial_frame)
+                interpolated_frame_data = method(interp_origin[0], interp_end_data, t)  # Needs to be lerp for pos, slerp for quat
                 bitvectors[skipped_chunk_idx] = '1' + bitvectors[skipped_chunk_idx][1:]
-                if len(reduced_chunks[skipped_chunk_idx]):
-                    reduced_chunks[skipped_chunk_idx][0] = interpolated_frame_data
-                else:
-                    reduced_chunks[skipped_chunk_idx] = [interpolated_frame_data]
+                reduced_chunks[skipped_chunk_idx] = [interpolated_frame_data, *reduced_chunks[skipped_chunk_idx]]
                 already_handled_chunks.extend(skipped_chunks)
 
     return reduced_chunks, bitvectors
