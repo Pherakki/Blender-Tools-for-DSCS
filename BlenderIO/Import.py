@@ -497,12 +497,14 @@ class ImportDSCSBase:
                                                                            animation_data.locations.values(),
                                                                            animation_data.scales.values(),
                                                                            model_data.skeleton.bone_names):
+                actiongroup = action.groups.new(bone_name)
                 if len(rotation_data.frames) != 0:
                     for i in range(4):
                         fc = action.fcurves.new(f'pose.bones["{bone_name}"].rotation_quaternion', index=i)
                         fc.keyframe_points.add(count=len(rotation_data.frames))
                         fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in rotation_data.frames],
                                                                               [elem[i] for elem in rotation_data.values]) for x in co])
+                        fc.group = actiongroup
                         fc.update()
                 if len(location_data.frames) != 0:
                     for i in range(3):
@@ -510,6 +512,7 @@ class ImportDSCSBase:
                         fc.keyframe_points.add(count=len(location_data.frames))
                         fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in location_data.frames],
                                                                               [elem[i] for elem in location_data.values]) for x in co])
+                        fc.group = actiongroup
                         fc.update()
                 if len(scale_data.frames) != 0:
                     for i in range(3):
@@ -517,6 +520,7 @@ class ImportDSCSBase:
                         fc.keyframe_points.add(count=len(scale_data.frames))
                         fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in scale_data.frames],
                                                                               [elem[i] for elem in scale_data.values]) for x in co])
+                        fc.group = actiongroup
                         fc.update()
 
             model_armature.animation_data.action = action
