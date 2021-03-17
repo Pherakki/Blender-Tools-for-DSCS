@@ -76,7 +76,7 @@ class AnimInterface:
             # <-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames-><-Frames->
             # 0001101011000011010010101011111000010100101010001010111001010010101000000001101011100100101011111101
             #
-            # In this case, the animation is 11 frames long (the number of 1s and 0s under each bit annotated as
+            # In this case, the animation is 11 frames long (the number of 1s and 0s under each part annotated as
             # '<-Frames->'), and each part labelled "<-Frames->" corresponds to the frames attached to a single bone
             # index in the animated_<TYPE>_bone_idxs variables. For this example, there would be 5 bone indices in the
             # animated_rotations_bone_idxs, four in animated_locations_bone_idxs, and one in animated_scales_bone_idxs.
