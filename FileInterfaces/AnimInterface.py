@@ -151,7 +151,7 @@ class AnimInterface:
             readwriter.bone_mask_bytes = num_bones if len(blend_bones) else 0
 
             # Fill in the pointers to the main data sections, just add in the offset for now
-            # readwriter.abs_ptr_bone_mask  Fix me!
+            # readwriter.abs_ptr_bone_mask is handled in the blend_bones section
             readwriter.rel_ptr_keyframe_chunks_ptrs = - 0x30
             readwriter.rel_ptr_keyframe_chunks_counts = - 0x34
             readwriter.rel_ptr_static_pose_bone_rotations = - 0x38
