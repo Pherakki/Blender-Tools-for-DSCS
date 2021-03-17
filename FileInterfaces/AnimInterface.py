@@ -130,11 +130,6 @@ class AnimInterface:
             static_locs, anim_locs, blend_locs = split_keyframes_by_role(self.locations)
             static_scls, anim_scls, blend_scls = split_keyframes_by_role(self.scales)
 
-            #blend_bones, extra_statics = staticify_malformed_blend_bones(blend_rots, blend_locs, blend_scls)
-            # for bone in extra_statics:
-            #     static_rots[bone] = (0., 0., 0., 1.)
-            #     static_locs[bone] = (0., 0., 0.)
-            #     static_scls[bone] = (1., 1., 1.)
             blend_bones = blend_locs
 
             # Sort the static bones into the correct order after adding malformed blend bones
