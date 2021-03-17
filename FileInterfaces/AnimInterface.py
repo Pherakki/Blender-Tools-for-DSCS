@@ -107,7 +107,6 @@ class AnimInterface:
         return instance
 
     def to_file(self, path, sk):
-        print("###### DUMPING TO FILE ######")
         num_frames = max([max([list(self.rotations[bone_idx].keys())[-1] if len(self.rotations[bone_idx].keys()) else 0 for bone_idx in self.rotations]),
                           max([list(self.locations[bone_idx].keys())[-1] if len(self.locations[bone_idx].keys()) else 0 for bone_idx in self.locations]),
                           max([list(self.scales[bone_idx].keys())[-1] if len(self.scales[bone_idx].keys()) else 0 for bone_idx in self.scales])])
@@ -554,7 +553,7 @@ class ChunkHolder:
 
         self.total_size = self.initial_rotation_bytes + self.initial_location_bytes + self.initial_scale_bytes + \
                           self.bitvector_size + self.later_rotation_bytes + self.later_location_bytes + \
-                          self.later_scale_bytes + 16 # 16 is for the header
+                          self.later_scale_bytes + 16  # 16 is for the header
 
         self.total_size = roundup(self.total_size, 16)
 
