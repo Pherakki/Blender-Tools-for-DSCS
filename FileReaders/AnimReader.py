@@ -310,7 +310,9 @@ class AnimReader(BaseRW):
                                                         self.chunk_list(self.keyframe_counts, 2))):
             assert d5[0] == 0
             scale_factor = (self.animated_bone_rotations_count + self.animated_bone_locations_count + self.animated_bone_scales_count + self.unknown_0x24) / 8
+                        
             part5_size = int(np.ceil(scale_factor * d6[1]))
+                  
             kfchunkreader.initialise_variables(d5[-1], part5_size, d6[1])
             getattr(kfchunkreader, rw_method_name)()
 

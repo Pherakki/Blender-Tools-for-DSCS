@@ -1,5 +1,4 @@
 import itertools
-import numpy as np
 
 from ..FileReaders.AnimReader import AnimReader
 from ..Utilities.Interpolation import lerp, slerp
@@ -107,9 +106,20 @@ class AnimInterface:
         return instance
 
     def to_file(self, path, sk):
-        num_frames = max([max([list(self.rotations[bone_idx].keys())[-1] if len(self.rotations[bone_idx].keys()) else 0 for bone_idx in self.rotations]),
-                          max([list(self.locations[bone_idx].keys())[-1] if len(self.locations[bone_idx].keys()) else 0 for bone_idx in self.locations]),
-                          max([list(self.scales[bone_idx].keys())[-1] if len(self.scales[bone_idx].keys()) else 0 for bone_idx in self.scales])])
+        try:
+            max_rotations = max([list(self.rotations[bone_idx].keys())[-1] if len(self.rotations[bone_idx].keys()) else 0 for bone_idx in self.rotations])
+        except:
+            max_rotations = 0
+        try:
+            max_locations = max([list(self.locations[bone_idx].keys())[-1] if len(self.locations[bone_idx].keys()) else 0 for bone_idx in self.locations])
+        except:
+            max_locations = 0
+        try:
+            max_scales = max([list(self.scales[bone_idx].keys())[-1] if len(self.scales[bone_idx].keys()) else 0 for bone_idx in self.scales])
+        except:
+            max_scales = 0
+
+        num_frames = max([max_rotations, max_locations, max_scales])
         num_frames += 1  # This is because the frames start from index 0
         num_bones = self.num_bones
 
@@ -217,7 +227,7 @@ class AnimInterface:
             # Now for the really tough bit
             # It's time to figure out how to divvy up the keyframes into chunks
             # Hardcode the chunk size to 1 + 16 for now
-            frames_per_chunk = 1 + 17
+            frames_per_chunk = 1 + 16
             frames_per_chunk = min(frames_per_chunk, num_frames-1)
             chunk_holders = generate_keyframe_chunks(anim_rots, anim_locs, anim_scls, num_frames, frames_per_chunk)
             readwriter.num_keyframe_chunks = len(chunk_holders)
@@ -447,6 +457,9 @@ def strip_and_validate_all_bones(frame_data, chunksize, interpolation_method):
 
 
 def generate_keyframe_chunks(animated_rotations, animated_locations, animated_scales, num_frames, chunksize):
+    """
+    This function has a very high bug potential...
+    """
     # These lines create lists of length num_frames with None for frames with no data
     rotations = populate_frames(num_frames, animated_rotations)
     locations = populate_frames(num_frames, animated_locations)
@@ -482,6 +495,7 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
     final_locations = {bone_id: [list(data.values())[-1]] for bone_id, data in animated_locations.items()}
     final_scales = {bone_id: [list(data.values())[-1]] for bone_id, data in animated_scales.items()}
 
+
     chunks = []
     for chunk_idx, chunk_datum in enumerate(chunk_data[:-1]):
         r_bitvecs = [rotation_bitvector_data[bone_id][chunk_idx] for bone_id in rotation_bitvector_data]
@@ -493,6 +507,7 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
     pen_r_bitvecs = [rotation_bitvector_data[bone_id][-1] for bone_id in rotation_bitvector_data]
     pen_l_bitvecs = [location_bitvector_data[bone_id][-1] for bone_id in location_bitvector_data]
     pen_s_bitvecs = [scale_bitvector_data[bone_id][-1] for bone_id in scale_bitvector_data]
+
     chunks.append(ChunkHolder.init_penultimate_chunk(*chunk_data[-1],
                                                      pen_r_bitvecs, pen_l_bitvecs, pen_s_bitvecs,
                                                      len(pen_r_bitvecs[0])))
@@ -530,7 +545,7 @@ class ChunkHolder:
         total_scale_bitvector = ''.join([elem[1:] for elem in scale_bitvector])
 
         self.total_bitvector = total_rotation_bitvector + total_location_bitvector + total_scale_bitvector
-        self.bitvector_size = (len(self.total_bitvector) + ((8 - (len(self.total_bitvector) % 8)) % 8)) // 8
+        self.bitvector_size = roundup(len(self.total_bitvector), 8) // 8
         bytes_read += self.bitvector_size
 
         self.later_rotations = [sublist[1:] for sublist in rotations]
@@ -571,18 +586,20 @@ class ChunkHolder:
         pass_scales, pass_scale_bitvector = cut_final_frame(scales, scale_bitvector)
 
         return cls(pass_rotations, pass_locations, pass_scales,
-                   rotation_bitvector, location_bitvector, scale_bitvector,
-                   contained_frames)
+                   pass_rotation_bitvector, pass_location_bitvector, pass_scale_bitvector,
+                   contained_frames - 1)
 
 
 def cut_final_frame(data, bitvector):
     return_data = {}
     return_bitvector = {}
     for i, ((bidx, datum), bv) in enumerate(zip(data.items(), bitvector)):
+        # If the data contains the final frame, remove it
         if bv[-1] == '1' and len(datum) > 1:
             return_data[bidx] = list(datum)[:-1]
         else:
             return_data[bidx] = list(datum)
-        return_bitvector[bidx] = bitvector[:-1]
+        # Irrespective of whether the final frame holds data, we're cutting it off - so remove it from the bitvector
+        return_bitvector[bidx] = bv[:-1]
 
-    return return_data, return_bitvector
+    return return_data, list(return_bitvector.values())
