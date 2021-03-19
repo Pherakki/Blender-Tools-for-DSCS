@@ -1,4 +1,5 @@
 import itertools
+import numpy as np
 
 from ..FileReaders.AnimReader import AnimReader
 from ..Utilities.Interpolation import lerp, slerp
@@ -256,6 +257,7 @@ class AnimInterface:
                 readwriter.abs_ptr_bone_mask = virtual_pointer
                 n_mask_entries = roundup(readwriter.num_bones, 4)
                 bone_mask = [-1 for _ in range(readwriter.num_bones)]
+                virtual_pointer += n_mask_entries
                 for bone_idx in blend_bones:
                     bone_mask[bone_idx] = 0
                 readwriter.bone_masks = bone_mask
@@ -264,7 +266,6 @@ class AnimInterface:
                 readwriter.bone_mask_bytes = n_mask_entries
 
                 virtual_pointer = roundup(virtual_pointer, 16)
-
             # Finally, go back and do KF chunk pointers
             readwriter.keyframe_chunks_ptrs = []
             final_chunk_size = chunk_holders[-1].total_size
