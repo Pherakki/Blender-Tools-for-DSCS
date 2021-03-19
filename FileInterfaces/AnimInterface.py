@@ -436,7 +436,7 @@ def strip_and_validate(keyframes, chunksize, method):
                 relative_frame_idx = (skipped_chunk_idx - chunk_idx + 1)*chunksize + interp_end_frame  # i.e. (i+1)*chunksize + interp_end_frame
                 initial_frame = interp_origin[1]
                 t = (chunksize - initial_frame) / (relative_frame_idx - initial_frame)
-                interpolated_frame_data = method(interp_origin[0], interp_end_data, t)  # Needs to be lerp for pos, slerp for quat
+                interpolated_frame_data = method(np.array(interp_origin[0]), np.array(interp_end_data), t)  # Needs to be lerp for pos, slerp for quat
                 bitvectors[skipped_chunk_idx] = '1' + bitvectors[skipped_chunk_idx][1:]
                 reduced_chunks[skipped_chunk_idx] = [interpolated_frame_data, *reduced_chunks[skipped_chunk_idx]]
                 already_handled_chunks.extend(skipped_chunks)
