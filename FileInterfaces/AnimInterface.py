@@ -228,7 +228,7 @@ class AnimInterface:
             # Now for the really tough bit
             # It's time to figure out how to divvy up the keyframes into chunks
             # Hardcode the chunk size to 1 + 16 for now
-            frames_per_chunk = 1 + 16
+            frames_per_chunk = 1 + 8
             frames_per_chunk = min(frames_per_chunk, num_frames-1)
             chunk_holders = generate_keyframe_chunks(anim_rots, anim_locs, anim_scls, num_frames, frames_per_chunk)
             readwriter.num_keyframe_chunks = len(chunk_holders)
