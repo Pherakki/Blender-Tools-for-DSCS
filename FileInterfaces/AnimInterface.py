@@ -604,3 +604,19 @@ def cut_final_frame(data, bitvector):
         return_bitvector[bidx] = bv[:-1]
 
     return return_data, list(return_bitvector.values())
+
+def match_quat_signs_in_list(quats):
+    if len(quats) > 0:
+        return [quats[0], *[match_quaternion_signs(q1, q2) for q1, q2 in zip(quats, quats[1:])]]
+    else:
+        return quats
+
+
+def match_quaternion_signs(quat_1, quat_2, prnt=True):
+    dp = np.dot(quat_1, quat_2)
+    sign = np.sign(dp)
+
+    if prnt:
+        print(quat_1, quat_2, dp, sign, sign*quat_2)
+
+    return sign*quat_2
