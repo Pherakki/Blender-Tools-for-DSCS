@@ -66,7 +66,8 @@ def group_fcurves(action):
     Kinda unnecessary, but the original code was written using the groups of an action rather than fcurves of an action,
     so this function emulates the group class (as a dict) so minimal changes needed to be made to the rest of the code.
     This *should* all be refactored to be f-curve-centric rather than group-centric, but no point fixing something that
-    isn't broken unless it becomes a problem.
+    isn't broken unless it becomes a problem. The appropriate change to this function would be to ensure that each
+    group only contains locations, rotations, or scales.
     """
     res = {}
     for fcurve in action.fcurves:
@@ -79,13 +80,19 @@ def group_fcurves(action):
 
 def get_used_animation_elements(group):
     """
+    Summary
+    -------
     Takes a list of f-curves and assigns the keyframe point co-ordinates in each f-curve to the appropriate transform
     and array index of a returned dictionary.
 
+    The animation export module should probably be refactored so that the groups that get passed into this function
+    are either locations, rotations, or scales, so that all three are not handled simultaneously, but rather by three
+    separate function calls.
+
     Parameters
-    -----
+    ----------
     :parameters:
-    dave -- dave
+    group -- A list of Blender f-curve objects.
 
     Returns
     -------
@@ -117,6 +124,9 @@ def get_used_animation_elements(group):
 
 
 def get_all_required_frames(curve_data):
+    """
+    Returns all keys in a list of dictionaries as a sorted list.
+    """
     res = set()
     for dct in curve_data.values():
         for key in tuple(dct.keys()):
@@ -125,6 +135,9 @@ def get_all_required_frames(curve_data):
 
 
 def produce_interpolation_method(component_frame_idxs, framedata, default_value):
+    """
+    Returns an interpolation function dependant on the number of passed frames.
+    """
     if len(component_frame_idxs) == 0:
         def interp_method(input_frame_idx):
             return default_value
@@ -150,6 +163,12 @@ def produce_interpolation_method(component_frame_idxs, framedata, default_value)
 
 
 def interpolate_missing_frame_elements(curve_data, default_values):
+    """
+    DSCS requires animations to be stored as whole quaternions, locations, and scales.
+    This function ensures that every passed f-curve has a value at every frame referenced by all f-curves - e.g. if
+    a location has values at frame 30 on its X f-curve but not on its Y and Z f-curves, the Y and Z values at frame 30
+    will be interpolated from the nearest frames on the Y and Z f-curves respectively and stored in the result.
+    """
     all_frame_idxs = get_all_required_frames(curve_data)
     for (component_idx, framedata), default_value in zip(curve_data.items(), default_values):
         component_frame_idxs = list(framedata.keys())
@@ -170,6 +189,12 @@ def interpolate_missing_frame_elements(curve_data, default_values):
 
 
 def zip_vector_elements(curve_data):
+    """
+    Takes n dictionaries in a list, with each dictionary containing the frame indices (as keys) and values (as values)
+    of a single component of a vector. All dictionaries must have exactly the same keys (frame indices).
+    Returns a single dictionary with the frame indices as keys, and the vector components for that frame stored in a
+    list as the value for that key.
+    """
     new_curve_data = {}
     elements = list(curve_data.values())
     for frame_idxs in zip(*[list(e.keys()) for e in elements]):
