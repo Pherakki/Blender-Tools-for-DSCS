@@ -10,10 +10,10 @@ from bpy.props import BoolProperty
 from bpy_extras.image_utils import load_image
 from bpy_extras.object_utils import object_data_add
 from mathutils import Vector
-from ..CollatedData.ToReadWrites import generate_files_from_intermediate_format
-from ..CollatedData.IntermediateFormat import IntermediateFormat
-from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
-from ..Utilities.Interpolation import lerp
+
+from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
+from ...CollatedData.IntermediateFormat import IntermediateFormat
+from ...FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
 from .ExportAnimation import export_animations
 
 
@@ -48,7 +48,7 @@ class ExportDSCSBase:
         self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
         self.export_textures(used_textures, model_data, export_images_folder)
         if self.export_anims:
-            self.export_animations(parent_obj.children[0], model_data)
+            export_animations(parent_obj.children[0], model_data)
 
         model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data
