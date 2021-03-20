@@ -125,7 +125,7 @@ def get_used_animation_elements(group):
         curve_type = f_curve.data_path.split('.')[-1]
         curve_idx = f_curve.array_index
         elements_used[curve_type] = True
-        bone_data[curve_type][curve_idx] = {k: v for k, v in [kfp.co for kfp in f_curve.keyframe_points]}
+        bone_data[curve_type][curve_idx] = {k-1: v for k, v in [kfp.co for kfp in f_curve.keyframe_points]}
 
     return elements_used, bone_data
 

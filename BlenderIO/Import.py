@@ -502,7 +502,7 @@ class ImportDSCSBase:
                     for i in range(4):
                         fc = action.fcurves.new(f'pose.bones["{bone_name}"].rotation_quaternion', index=i)
                         fc.keyframe_points.add(count=len(rotation_data.frames))
-                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in rotation_data.frames],
+                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem + 1) for elem in rotation_data.frames],
                                                                               [elem[i] for elem in rotation_data.values]) for x in co])
                         fc.group = actiongroup
                         fc.update()
@@ -510,7 +510,7 @@ class ImportDSCSBase:
                     for i in range(3):
                         fc = action.fcurves.new(f'pose.bones["{bone_name}"].location', index=i)
                         fc.keyframe_points.add(count=len(location_data.frames))
-                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in location_data.frames],
+                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem + 1) for elem in location_data.frames],
                                                                               [elem[i] for elem in location_data.values]) for x in co])
                         fc.group = actiongroup
                         fc.update()
@@ -518,7 +518,7 @@ class ImportDSCSBase:
                     for i in range(3):
                         fc = action.fcurves.new(f'pose.bones["{bone_name}"].scale', index=i)
                         fc.keyframe_points.add(count=len(scale_data.frames))
-                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem) for elem in scale_data.frames],
+                        fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem + 1) for elem in scale_data.frames],
                                                                               [elem[i] for elem in scale_data.values]) for x in co])
                         fc.group = actiongroup
                         fc.update()
