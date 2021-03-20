@@ -540,8 +540,11 @@ def deserialise_quaternion(dscs_rotation):
 def serialise_quaternion(quat):
     # Start from WXYZ ordering, put it into XYZW
     components = np.roll(quat, -1)
-    largest_component = np.amax(components)
-    largest_index = np.where(components == largest_component)[0][0]
+    abs_components = np.abs(components)
+    abs_largest_component = np.amax(abs_components)
+
+    largest_index = np.where(abs_components == abs_largest_component)[0][0]
+    largest_component = components[largest_index]
     largest_component_sign = np.sign(largest_component)
 
     # Get rid of the largest component
