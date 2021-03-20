@@ -46,17 +46,24 @@ def export_animations(armature, model_data):
 
         ad = model_data.new_anim(nla_track.name)
         ad.playback_rate = fps
+        for bone_idx in range(len(model_data.skeleton.bone_names)):
+            ad.add_rotation_fcurve(bone_idx, [], [])
+            ad.add_location_fcurve(bone_idx, [], [])
+            ad.add_scale_fcurve(bone_idx, [], [])
         for bone_name, data in animation_data['rotation_quaternion'].items():
             if bone_name in model_data.skeleton.bone_names:
                 bone_idx = model_data.skeleton.bone_names.index(bone_name)
+                # Overwrite the filler fcurve
                 ad.add_rotation_fcurve(bone_idx, list(data.keys()), list(data.values()))
         for bone_name, data in animation_data['location'].items():
             if bone_name in model_data.skeleton.bone_names:
                 bone_idx = model_data.skeleton.bone_names.index(bone_name)
+                # Overwrite the filler fcurve
                 ad.add_location_fcurve(bone_idx, list(data.keys()), list(data.values()))
         for bone_name, data in animation_data['scale'].items():
             if bone_name in model_data.skeleton.bone_names:
                 bone_idx = model_data.skeleton.bone_names.index(bone_name)
+                # Overwrite the filler fcurve
                 ad.add_scale_fcurve(bone_idx, list(data.keys()), list(data.values()))
 
 
