@@ -506,9 +506,12 @@ class ImportDSCSBase:
                         fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem + 1) for elem in rotation_data.frames],
                                                                               [elem[i] for elem in rotation_data.values]) for x in co])
                         fc.group = actiongroup
+                        fc.lock = True
                         fcs.append(fc)
                     for fc in fcs:
                         fc.update()
+                    for fc in fcs:
+                        fc.lock = False
                 if len(location_data.frames) != 0:
                     fcs = []
                     for i in range(3):
@@ -517,9 +520,12 @@ class ImportDSCSBase:
                         fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem + 1) for elem in location_data.frames],
                                                                               [elem[i] for elem in location_data.values]) for x in co])
                         fc.group = actiongroup
+                        fc.lock = True
                         fcs.append(fc)
                     for fc in fcs:
                         fc.update()
+                    for fc in fcs:
+                        fc.lock = False
                 if len(scale_data.frames) != 0:
                     fcs = []
                     for i in range(3):
@@ -528,9 +534,12 @@ class ImportDSCSBase:
                         fc.keyframe_points.foreach_set("co", [x for co in zip([float(elem + 1) for elem in scale_data.frames],
                                                                               [elem[i] for elem in scale_data.values]) for x in co])
                         fc.group = actiongroup
+                        fc.lock = True
                         fcs.append(fc)
                     for fc in fcs:
                         fc.update()
+                    for fc in fcs:
+                        fc.lock = False
 
             model_armature.animation_data.action = action
             track = model_armature.animation_data.nla_tracks.new()
