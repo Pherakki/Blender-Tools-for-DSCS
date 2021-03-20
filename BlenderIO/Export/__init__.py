@@ -1,15 +1,9 @@
 import bpy
-import bmesh
-from collections import Counter
 import numpy as np
-import itertools
 import os
 import shutil
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import BoolProperty
-from bpy_extras.image_utils import load_image
-from bpy_extras.object_utils import object_data_add
-from mathutils import Vector
 
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
