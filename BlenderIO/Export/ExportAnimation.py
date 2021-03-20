@@ -1,3 +1,7 @@
+import numpy as np
+from ...Utilities.Interpolation import lerp
+
+
 def export_animations(armature, model_data):
     """
     Main entry point to the animation export functionality.
