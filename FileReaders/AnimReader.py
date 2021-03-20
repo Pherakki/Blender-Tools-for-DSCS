@@ -550,11 +550,14 @@ def serialise_quaternion(quat):
     # So just multiply through by the sign of the removed component to create an equivalent quaternion
     # In this way, the largest component is always +ve
     components = largest_component_sign*np.delete(components, largest_index)
-    # Map the remaining components from the interval [-1/sqrt(2), 1/sqrt(2)] to [0, 32767]
+
+    # No other component can be larger than 1/sqrt(2) due to normalisation
+    # So map the remaining components from the interval [-1/sqrt(2), 1/sqrt(2)] to [0, 32767] to gain ~1.4x precision
     components *= np.sqrt(2)
     components *= 16384
     components = np.around(components).astype(np.int)
     components += 16383
+
     for i, elem in enumerate(components):
         if elem < 0:
             components[i] = 0
