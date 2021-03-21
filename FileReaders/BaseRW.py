@@ -200,7 +200,7 @@ class BaseRW:
 
         Returns
         ------
-        THe 1D input 'lst' converted to a 2D list, where each sub-list has length 'chunksize'.
+        The 1D input 'lst' converted to a 2D list, where each sub-list has length 'chunksize'.
         """
         return [lst[i:i + chunksize] for i in range(0, len(lst), chunksize)]
 
