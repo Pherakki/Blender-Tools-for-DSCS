@@ -23,7 +23,7 @@ class ExportDSCSBase:
 
     def export_file(self, context, filepath, platform, copy_shaders=True):
         # Grab the parent object
-        parent_obj = self.get_model_to_export()
+        parent_obj = self.find_model_to_export()
         assert parent_obj.mode == 'OBJECT', f"Current mode is {parent_obj.mode}; ensure that Object Mode is selected before attempting to export."
         validate_blender_data(parent_obj)
 
@@ -51,7 +51,7 @@ class ExportDSCSBase:
         model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
         generate_files_from_intermediate_format(filepath, model_data, platform)
 
-    def get_model_to_export(self):
+    def find_model_to_export(self):
         try:
             parent_obj = bpy.context.selected_objects[0]
 
