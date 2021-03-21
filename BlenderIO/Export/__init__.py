@@ -185,7 +185,7 @@ class ExportDSCSBase:
                     avg_normal = np.mean(normals, axis=0)
                     bitangent = signs[0]*np.cross(avg_normal, avg_tangent)
                     tangent_data = {'Tangent': (*avg_tangent, signs[0]),
-                                    'Bitangent': bitangent}
+                                    'Binormal': bitangent}
                 else:
                     tangent_data = {}
 
