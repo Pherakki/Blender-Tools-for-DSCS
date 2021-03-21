@@ -49,6 +49,7 @@ class ExportDSCSBase:
         model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
         model_data.unknown_data['unknown_cam_data_2'] = parent_obj.get('unknown_cam_data_2', [])
         model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
+
         generate_files_from_intermediate_format(filepath, model_data, platform)
 
     def find_model_to_export(self):
@@ -134,8 +135,9 @@ class ExportDSCSBase:
     def split_verts_by_uv(self, mesh_obj, link_loops, face_link_loops, model_data):
         mesh = mesh_obj.data
         has_uvs = len(mesh.uv_layers) > 0
-        if has_uvs:
-            mesh.calc_tangents()
+        can_export_tangents = has_uvs and mesh.uv_layers.get('UVMap') is not None
+        if can_export_tangents:
+            mesh.calc_tangents(mesh.uv_layers['UVMap'])
         exported_vertices = []
         vgroup_verts = {}
         vgroup_wgts = {}
@@ -174,7 +176,7 @@ class ExportDSCSBase:
                 group_weights = [grp.weight for grp in vertex.groups]
                 group_weights = None if len(group_weights) == 0 else group_weights
 
-                if has_uvs:
+                if can_export_tangents:
                     tangents = [l.tangent for l in loop_objs_with_this_value]
                     normals = [l.normal for l in loop_objs_with_this_value]
                     signs = [l.bitangent_sign  for l in loop_objs_with_this_value]
