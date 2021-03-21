@@ -136,6 +136,9 @@ class ExportDSCSBase:
         mesh = mesh_obj.data
         has_uvs = len(mesh.uv_layers) > 0
         can_export_tangents = has_uvs and mesh.uv_layers.get('UVMap') is not None
+
+        # Disable buggy tangent export for now...
+        can_export_tangents = False
         if can_export_tangents:
             mesh.calc_tangents(mesh.uv_layers['UVMap'])
         exported_vertices = []
