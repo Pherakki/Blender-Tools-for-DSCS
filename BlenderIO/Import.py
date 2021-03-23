@@ -103,9 +103,6 @@ class ImportDSCSBase:
 
         # Rotate to the Blender coordinate convention
         parent_obj.rotation_euler = (np.pi / 2, 0, 0)
-        parent_obj.select_set(True)
-        bpy.ops.object.transform_apply(rotation=True)
-        parent_obj.select_set(False)
 
     def import_rest_pose_skeleton(self, parent_obj, filename, model_data, armature_name):
         model_armature = bpy.data.objects.new(armature_name, bpy.data.armatures.new(f'{filename}_armature_data'))
