@@ -63,6 +63,10 @@ class ImportDSCSBase:
         name="Import Animations",
         description="Enable/disable to import/not import animations.",
         default=True)
+    use_alt_skel: BoolProperty(
+        name="Use Rest Pose",
+        description="Enable to use the rest pose without deforming meshes from the bind pose.",
+        default=False)
     move_to_alt_skel: BoolProperty(
         name="Use Rest Pose instead of Bind Pose",
         description="Enable/disable to switch which skeleton is imported.",
@@ -84,7 +88,10 @@ class ImportDSCSBase:
 
         bpy.context.collection.objects.link(parent_obj)
         armature_name = f'{filename}_armature'
-        self.import_skeleton(parent_obj, filename, model_data, armature_name)
+        if self.use_alt_skel:
+            self.import_rest_pose_skeleton(parent_obj, filename, model_data, armature_name)
+        else:
+            self.import_skeleton(parent_obj, filename, model_data, armature_name)
         if self.import_pose_mesh:
             self.import_rest_pose_skeleton(parent_obj, filename, model_data, armature_name+"_2")
         if self.do_import_boundboxes:
