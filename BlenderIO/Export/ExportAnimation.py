@@ -158,12 +158,12 @@ def produce_interpolation_method(component_frame_idxs, framedata, default_value)
             next_smallest_element = max([idx for idx in component_frame_idxs if idx < input_frame_idx])
             next_largest_element = min([idx for idx in component_frame_idxs if idx > input_frame_idx])
 
+            t = (input_frame_idx - next_smallest_element) / (next_largest_element - next_smallest_element)
+
+            # Should change lerp to the proper interpolation method
             min_value = framedata[next_smallest_element]
             max_value = framedata[next_largest_element]
 
-            t = (input_frame_idx - min_value) / (max_value - min_value)
-
-            # Should change lerp to the proper interpolation method
             return lerp(min_value, max_value, t)
 
     return interp_method
