@@ -431,12 +431,21 @@ def strip_and_validate(keyframes, chunksize, method):
                     interp_end = iter_initial_pair
                     break
 
-            for skipped_chunk_idx in skipped_chunks:
+            # Yeah, this is a total mess
+            # The point here is to calculate the normalised distance t between the
+            # two frames to be interpoalted between that the interpolated frame is placed at,
+            # and then register this frame
+            # There's plenty of unnecessary variables that need cleaning up...
+            for curr_skipped_chunk_idx, skipped_chunk_idx in enumerate(skipped_chunks):
+                # Calculate t
                 interp_end_data, interp_end_frame = interp_end
-                relative_frame_idx = (skipped_chunk_idx - chunk_idx + 1)*chunksize + interp_end_frame  # i.e. (i+1)*chunksize + interp_end_frame
+                relative_end_frame_index = (len(skipped_chunks)) * chunksize + interp_end_frame
                 initial_frame = interp_origin[1]
-                t = (chunksize - initial_frame) / (relative_frame_idx - initial_frame)
+                t = (chunksize * (curr_skipped_chunk_idx + 1) - initial_frame) / (relative_end_frame_index - initial_frame)
+                # Interpolate
                 interpolated_frame_data = method(np.array(interp_origin[0]), np.array(interp_end_data), t)  # Needs to be lerp for pos, slerp for quat
+
+                # Make relevant assignments to register the interpolated frame
                 bitvectors[skipped_chunk_idx] = '1' + bitvectors[skipped_chunk_idx][1:]
                 reduced_chunks[skipped_chunk_idx] = [interpolated_frame_data, *reduced_chunks[skipped_chunk_idx]]
                 already_handled_chunks.extend(skipped_chunks)
