@@ -96,8 +96,7 @@ class GeomReader(BaseRW):
 
     def rw_header(self, rw_operator):
         """
-        -> Only unknown values bytes 0x14-0x2B, assumed to be 6 floats.
-        
+
         Returns
         -------
         None.
