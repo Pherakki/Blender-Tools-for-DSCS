@@ -1,5 +1,5 @@
 import numpy as np
-from ...Utilities.Interpolation import lerp
+from ...Utilities.Interpolation import lerp, slerp
 
 
 def export_animations(armature, model_data):
@@ -16,6 +16,9 @@ def export_animations(armature, model_data):
     curve_defaults = {'location': [0., 0., 0.],
                       'rotation_quaternion': [1., 0., 0., 0.],
                       'scale': [1., 1., 1.]}
+    interp_methods = {'location': lerp,
+                      'rotation_quaternion': slerp,
+                      'scale': lerp}
     for nla_track in armature.animation_data.nla_tracks:
         animation_data = {'location': {},
                           'rotation_quaternion': {},
@@ -38,7 +41,7 @@ def export_animations(armature, model_data):
             # on each keyframe where at least one element is used
             for curve_type, isUsed in elements_used.items():
                 if isUsed:
-                    curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type])
+                    curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type], interp_methods[curve_type])
                     zipped_data = zip_vector_elements(curve_data)
                     animation_data[curve_type][bone_name] = zipped_data
 
@@ -139,7 +142,7 @@ def get_all_required_frames(curve_data):
     return sorted(list(res))
 
 
-def produce_interpolation_method(component_frame_idxs, framedata, default_value):
+def produce_interpolation_method(component_frame_idxs, framedata, default_value, interpolation_function):
     """
     Returns an interpolation function dependant on the number of passed frames.
     """
@@ -162,12 +165,12 @@ def produce_interpolation_method(component_frame_idxs, framedata, default_value)
             min_value = framedata[next_smallest_element]
             max_value = framedata[next_largest_element]
 
-            return lerp(min_value, max_value, t)
+            return interpolation_function(min_value, max_value, t)
 
     return interp_method
 
 
-def interpolate_missing_frame_elements(curve_data, default_values):
+def interpolate_missing_frame_elements(curve_data, default_values, interpolation_function):
     """
     DSCS requires animations to be stored as whole quaternions, locations, and scales.
     This function ensures that every passed f-curve has a value at every frame referenced by all f-curves - e.g. if
@@ -180,7 +183,7 @@ def interpolate_missing_frame_elements(curve_data, default_values):
 
         # Need to pass interp_method_name in here and link to some implementation of all the interpolation methods
         # Blender provides
-        interp_method = produce_interpolation_method(component_frame_idxs, framedata, default_value)
+        interp_method = produce_interpolation_method(component_frame_idxs, framedata, default_value, interpolation_function)
         new_framedata = {}
         for frame_idx in all_frame_idxs:
             if frame_idx not in component_frame_idxs:
