@@ -1,5 +1,5 @@
 import numpy as np
-from ...Utilities.Interpolation import lerp, slerp
+from ...Utilities.Interpolation import lerp
 
 
 def export_animations(armature, model_data):
@@ -16,9 +16,6 @@ def export_animations(armature, model_data):
     curve_defaults = {'location': [0., 0., 0.],
                       'rotation_quaternion': [1., 0., 0., 0.],
                       'scale': [1., 1., 1.]}
-    interp_methods = {'location': lerp,
-                      'rotation_quaternion': slerp,
-                      'scale': lerp}
     for nla_track in armature.animation_data.nla_tracks:
         animation_data = {'location': {},
                           'rotation_quaternion': {},
@@ -41,7 +38,7 @@ def export_animations(armature, model_data):
             # on each keyframe where at least one element is used
             for curve_type, isUsed in elements_used.items():
                 if isUsed:
-                    curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type], interp_methods[curve_type])
+                    curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type], lerp)
                     zipped_data = zip_vector_elements(curve_data)
                     animation_data[curve_type][bone_name] = zipped_data
 
