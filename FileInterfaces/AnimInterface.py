@@ -433,7 +433,7 @@ def strip_and_validate(keyframes, chunksize, method):
 
             # Yeah, this is a total mess
             # The point here is to calculate the normalised distance t between the
-            # two frames to be interpoalted between that the interpolated frame is placed at,
+            # two frames to be interpolated between that the interpolated frame is placed at,
             # and then register this frame
             # There's plenty of unnecessary variables that need cleaning up...
             for curr_skipped_chunk_idx, skipped_chunk_idx in enumerate(skipped_chunks):
