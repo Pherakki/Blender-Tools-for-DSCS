@@ -31,9 +31,6 @@ def export_animations(armature, model_data):
 
         groups = group_fcurves(action)
         for bone_name, group in groups.items():
-            # bone_name = group.name
-
-
             # Get whether any of the locations, rotations, and scales are animated; plus the f-curves for those
             # that are
             elements_used, bone_data = get_used_animation_elements(group)
