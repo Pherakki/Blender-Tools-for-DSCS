@@ -177,14 +177,16 @@ def interpolate_missing_frame_elements(curve_data, default_values, interpolation
     a location has values at frame 30 on its X f-curve but not on its Y and Z f-curves, the Y and Z values at frame 30
     will be interpolated from the nearest frames on the Y and Z f-curves respectively and stored in the result.
     """
+    # First get every frame required by the vector and which will be passed on to DSCS
+    # The returned frames are integers, even if the input frames are floats, because DSCS only likes integer frames
     all_frame_idxs = get_all_required_frames(curve_data)
     for (component_idx, framedata), default_value in zip(curve_data.items(), default_values):
+        # Get all the frames at which the curve has data
         component_frame_idxs = list(framedata.keys())
-
-        # Need to pass interp_method_name in here and link to some implementation of all the interpolation methods
-        # Blender provides
+        # Produce a function that will return the value for the frame, based on how many frames are available
         interp_method = produce_interpolation_method(component_frame_idxs, framedata, default_value, interpolation_function)
         new_framedata = {}
+        # Generate the DSCS-compatible data
         for frame_idx in all_frame_idxs:
             if frame_idx not in component_frame_idxs:
                 new_framedata[frame_idx] = interp_method(frame_idx)
