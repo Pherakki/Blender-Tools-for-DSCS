@@ -133,12 +133,15 @@ def get_used_animation_elements(group):
 
 def get_all_required_frames(curve_data):
     """
-    Returns all keys in a list of dictionaries as a sorted list.
+    Returns all keys in a list of dictionaries as a sorted list of rounded integers plus the rounded-up final key,
+    assuming all keys are floating-point values.
     """
     res = set()
     for dct in curve_data.values():
-        for key in tuple(dct.keys()):
-            res.add(int(key))
+        iter_keys = tuple(dct.keys())
+        for key in iter_keys:
+            res.add(int(round(key)))
+        res.add(int(np.ceil(iter_keys[-1])))
     return sorted(list(res))
 
 
@@ -156,14 +159,19 @@ def produce_interpolation_method(component_frame_idxs, framedata, default_value,
             return value
     else:
         def interp_method(input_frame_idx):
-            next_smallest_element = max([idx for idx in component_frame_idxs if idx < input_frame_idx])
-            next_largest_element = min([idx for idx in component_frame_idxs if idx > input_frame_idx])
+            smaller_elements = [idx for idx in component_frame_idxs if idx < input_frame_idx]
+            next_smallest_element_idx = max(smaller_elements) if len(smaller_elements) else component_frame_idxs[0]
+            larger_elements = [idx for idx in component_frame_idxs if idx > input_frame_idx]
+            next_largest_element_idx = min(larger_elements) if len(larger_elements) else component_frame_idxs[-1]
 
-            t = (input_frame_idx - next_smallest_element) / (next_largest_element - next_smallest_element)
+            if next_largest_element_idx == next_smallest_element_idx:
+                t = 0  # Totally arbitrary, since the interpolation will be between two identical values
+            else:
+                t = (input_frame_idx - next_smallest_element_idx) / (next_largest_element_idx - next_smallest_element_idx)
 
             # Should change lerp to the proper interpolation method
-            min_value = framedata[next_smallest_element]
-            max_value = framedata[next_largest_element]
+            min_value = framedata[next_smallest_element_idx]
+            max_value = framedata[next_largest_element_idx]
 
             return interpolation_function(min_value, max_value, t)
 
