@@ -12,6 +12,10 @@ def export_animations(armature, model_data):
     Creates an Animation instance in the input IntermediateFormat object ('model_data') for each NLA track in the
     animation data of the input armature.
     """
+
+    curve_defaults = {'location': [0., 0., 0.],
+                      'rotation_quaternion': [1., 0., 0., 0.],
+                      'scale': [1., 1., 1.]}
     for nla_track in armature.animation_data.nla_tracks:
         animation_data = {'location': {},
                           'rotation_quaternion': {},
@@ -29,9 +33,6 @@ def export_animations(armature, model_data):
         for bone_name, group in groups.items():
             # bone_name = group.name
 
-            curve_defaults = {'location': [0., 0., 0.],
-                              'rotation_quaternion': [1., 0., 0., 0.],
-                              'scale': [1., 1., 1.]}
 
             # Get whether any of the locations, rotations, and scales are animated; plus the f-curves for those
             # that are
