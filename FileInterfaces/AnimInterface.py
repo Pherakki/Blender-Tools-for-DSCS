@@ -400,11 +400,11 @@ def adaptive_chunk_frames(rotation_frames, location_frames, scale_frames, num_fr
     scale_chunks = {}
     chunksizes = [ed - st for st, ed in zip(cuts[:-1], cuts[1:])]
     for bone_idx, data in rotation_frames.items():
-        rotation_chunks[bone_idx] = (data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:]))
+        rotation_chunks[bone_idx] = [data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:])]
     for bone_idx, data in location_frames.items():
-        location_chunks[bone_idx] = (data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:]))
+        location_chunks[bone_idx] = [data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:])]
     for bone_idx, data in scale_frames.items():
-        scale_chunks[bone_idx] = (data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:]))
+        scale_chunks[bone_idx] = [data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:])]
 
     return rotation_chunks, location_chunks, scale_chunks, chunksizes
 
