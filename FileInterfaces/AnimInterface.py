@@ -374,6 +374,41 @@ def chunk_frames(frames, chunksize):
     return chunked_frames
 
 
+def adaptive_chunk_frames(rotation_frames, location_frames, scale_frames, num_frames):
+    cuts = [0]
+
+    # Calculate how many bytes each frame will cost to store
+    rotation_costs = bytecost_per_frame(rotation_frames, num_frames, 6)
+    location_costs = bytecost_per_frame(location_frames, num_frames, 12)
+    scale_costs = bytecost_per_frame(scale_frames, num_frames, 12)
+    frame_costs = [sum(frames) for frames in zip(rotation_costs, location_costs, scale_costs)]
+
+    first_frame_price = frame_costs[0]
+    current_cost = 0
+    maximum_cost = 0xFFFF - first_frame_price  # Presumably, need to subtract off the cost of the final frame chunk: the first frame price?
+    # Skip the first frame, we already know how much that one costs
+    for frame_idx in range(num_frames[1:]):
+        current_cost += frame_costs[frame_idx]
+        if current_cost > maximum_cost:
+            assert frame_idx-1 != cuts[-1], "Frame {frame_idx} too expensive to convert to DSCS frame [requires {current_cost}/{maximum_cost} available bytes]. Reduce number of animated bones in this frame to export."
+            cuts.append(frame_idx-1)
+            current_cost = first_frame_price
+    cuts.append(num_frames)
+
+    rotation_chunks = {}
+    location_chunks = {}
+    scale_chunks = {}
+    chunksizes = [ed - st for st, ed in zip(cuts[:-1], cuts[1:])]
+    for bone_idx, data in rotation_frames.items():
+        rotation_chunks[bone_idx] = (data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:]))
+    for bone_idx, data in location_frames.items():
+        location_chunks[bone_idx] = (data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:]))
+    for bone_idx, data in scale_frames.items():
+        scale_chunks[bone_idx] = (data[st:ed] for st, ed in zip(cuts[:-1], cuts[1:]))
+
+    return rotation_chunks, location_chunks, scale_chunks, chunksizes
+
+
 def bytecost_per_frame(frames, num_frames, cost):
     """
     Count the number of bytes required to store each frame in a series of frames organised in a nested dict as
