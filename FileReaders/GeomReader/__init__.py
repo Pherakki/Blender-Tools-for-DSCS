@@ -180,6 +180,10 @@ class GeomReader(BaseRW):
             return
         self.assert_file_pointer_now_at(self.unknown_cam_data_1_start_ptr)
 
+        # hhhh ID?
+        # hehe <- some section
+        # ffff <- another section
+        # HHHHHH <- a third section
         rw_operator('unknown_cam_data_1', 'hhhhheheffffHHHHHHIQQ'*self.num_unknown_cam_data_1)
         # clearly some structural alignment between (14, 15) and (16, 17)
         # 15 looks like a count, as does 17... everything past this is 0
@@ -324,20 +328,25 @@ class UnknownCamData1Reader(BaseRW):
         self.rw_header(self.write_buffer)
 
     def rw_header(self, rw_operator):
+        # First eight bytes seem to serve as some kind of ID - there are 7 combinations.
         rw_operator('unknown_0x00', 'h')
         rw_operator('unknown_0x02', 'h')
         rw_operator('unknown_0x04', 'h')
         rw_operator('unknown_0x06', 'h')
+
+        # Not sure.
         rw_operator('unknown_0x08', 'h')
         rw_operator('unknown_0x0A', 'e')
         rw_operator('unknown_0x0C', 'h')
         rw_operator('unknown_0x0E', 'e')
 
+        # For light sources, these are RGBA
         rw_operator('unknown_0x10', 'f')
         rw_operator('unknown_0x14', 'f')
         rw_operator('unknown_0x18', 'f')
         rw_operator('unknown_0x1C', 'f')
 
+        # Not sure.
         rw_operator('unknown_0x20', 'H')
         rw_operator('unknown_0x22', 'H')
         rw_operator('unknown_0x24', 'H')
@@ -381,8 +390,11 @@ class UnknownCamData2Reader(BaseRW):
         self.rw_header(self.write_buffer)
 
     def rw_header(self, rw_operator):
+        # These first two are very importart - will cause CTD if not set correctly
         rw_operator('unknown_0x00', 'H')
         rw_operator('unknown_0x02', 'H')
+
+        # Some parameters...
         rw_operator('unknown_0x04', 'H')
         rw_operator('unknown_0x06', 'e')  # approx. 2 - 3
         rw_operator('unknown_0x08', 'H')
