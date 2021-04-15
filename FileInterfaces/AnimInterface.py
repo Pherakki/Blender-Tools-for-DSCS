@@ -535,7 +535,7 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
     scale_keyframe_chunks_data, scale_bitvector_data = strip_and_validate_all_bones(scales, chunksizes, lerp)
 
     # Now we can bundle all the chunks into a sequential list, ready for turning into KeyframeChunks instances
-    chunk_data = [[{}, {}, {}] for _ in range(len(chunksizes) + 1)]
+    chunk_data = [[{}, {}, {}] for _ in range(len(chunksizes))]
     for bone_idx, rotation_chunks in rotation_keyframe_chunks_data.items():
         for i, rotation_data in enumerate(rotation_chunks):
             chunk_data[i][0][bone_idx] = rotation_data
