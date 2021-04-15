@@ -230,7 +230,7 @@ class AnimInterface:
             # Hardcode the chunk size to 1 + 16 for now
             frames_per_chunk = 1 + 8
             frames_per_chunk = min(frames_per_chunk, num_frames-1)
-            chunk_holders = generate_keyframe_chunks(anim_rots, anim_locs, anim_scls, num_frames, frames_per_chunk)
+            chunk_holders = generate_keyframe_chunks(anim_rots, anim_locs, anim_scls, num_frames)#, frames_per_chunk)
             readwriter.num_keyframe_chunks = len(chunk_holders)
             readwriter.prepare_read_op()  # This creates enough empty KeyFrameChunk objects for us to fill
 
@@ -456,7 +456,7 @@ def generate_keyframe_chunks_entry_data(keyframes):
     return reduced_chunks, bitvectors, initial_values, final_values
 
 
-def strip_and_validate(keyframes, chunksize, method):
+def strip_and_validate(keyframes, chunksizes, method):
     reduced_chunks, bitvectors, initial_values, final_values = generate_keyframe_chunks_entry_data(keyframes)
     already_handled_chunks = []
     for chunk_idx, (reduced_chunk, bitvector, initial_pair, final_pair) in enumerate(zip(reduced_chunks, bitvectors, initial_values, final_values)):
@@ -487,9 +487,9 @@ def strip_and_validate(keyframes, chunksize, method):
             for curr_skipped_chunk_idx, skipped_chunk_idx in enumerate(skipped_chunks):
                 # Calculate t
                 interp_end_data, interp_end_frame = interp_end
-                relative_end_frame_index = (len(skipped_chunks)) * chunksize + interp_end_frame
+                relative_end_frame_index = sum(chunksizes[:skipped_chunks[-1]]) + interp_end_frame
                 initial_frame = interp_origin[1]
-                t = (chunksize * (curr_skipped_chunk_idx + 1) - initial_frame) / (relative_end_frame_index - initial_frame)
+                t = ((sum(chunksizes[:curr_skipped_chunk_idx]) + 1) - initial_frame) / (relative_end_frame_index - initial_frame)
                 # Interpolate
                 interpolated_frame_data = method(np.array(interp_origin[0]), np.array(interp_end_data), t)  # Needs to be lerp for pos, slerp for quat
 
@@ -501,11 +501,11 @@ def strip_and_validate(keyframes, chunksize, method):
     return reduced_chunks, bitvectors
 
 
-def strip_and_validate_all_bones(frame_data, chunksize, interpolation_method):
+def strip_and_validate_all_bones(frame_data, chunksizes, interpolation_method):
     keyframe_chunks_data = {}
     bitvector_data = {}
     for i, (bone_idx, chunks) in enumerate(frame_data.items()):
-        reduced_chunks, bitvectors = strip_and_validate(chunks, chunksize, interpolation_method)
+        reduced_chunks, bitvectors = strip_and_validate(chunks, chunksizes, interpolation_method)
         keyframe_chunks_data[bone_idx] = reduced_chunks
         bitvector_data[bone_idx] = bitvectors
     for (bone_idx, bone_data), bitvectors in zip(keyframe_chunks_data.items(), bitvector_data.values()):
@@ -514,7 +514,7 @@ def strip_and_validate_all_bones(frame_data, chunksize, interpolation_method):
     return keyframe_chunks_data, bitvector_data
 
 
-def generate_keyframe_chunks(animated_rotations, animated_locations, animated_scales, num_frames, chunksize):
+def generate_keyframe_chunks(animated_rotations, animated_locations, animated_scales, num_frames):
     """
     This function has a very high bug potential...
     """
@@ -524,20 +524,18 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
     scales = populate_frames(num_frames, animated_scales)
 
     # The above is done so that the frames can be easily chunked by the following three lines:
-    rotations = chunk_frames(rotations, chunksize)
-    locations = chunk_frames(locations, chunksize)
-    scales = chunk_frames(scales, chunksize)
+    rotations, locations, scales, chunksizes = adaptive_chunk_frames(rotations, locations, scales, num_frames)
 
     # And now we can iterate through the chunks and strip out the None values, and save the results
     # We also might need to perform some interpolation inside these functions in order to satisfy the requirements of
     # the DSCS animation format
     # Also need to isolate the final frame in here for the same reasons
-    rotation_keyframe_chunks_data, rotation_bitvector_data = strip_and_validate_all_bones(rotations, chunksize, slerp)
-    location_keyframe_chunks_data, location_bitvector_data = strip_and_validate_all_bones(locations, chunksize, lerp)
-    scale_keyframe_chunks_data, scale_bitvector_data = strip_and_validate_all_bones(scales, chunksize, lerp)
+    rotation_keyframe_chunks_data, rotation_bitvector_data = strip_and_validate_all_bones(rotations, chunksizes, slerp)
+    location_keyframe_chunks_data, location_bitvector_data = strip_and_validate_all_bones(locations, chunksizes, lerp)
+    scale_keyframe_chunks_data, scale_bitvector_data = strip_and_validate_all_bones(scales, chunksizes, lerp)
 
     # Now we can bundle all the chunks into a sequential list, ready for turning into KeyframeChunks instances
-    chunk_data = [[{}, {}, {}] for _ in range((num_frames // chunksize) + 1)]
+    chunk_data = [[{}, {}, {}] for _ in range(len(chunksizes) + 1)]
     for bone_idx, rotation_chunks in rotation_keyframe_chunks_data.items():
         for i, rotation_data in enumerate(rotation_chunks):
             chunk_data[i][0][bone_idx] = rotation_data
@@ -553,9 +551,8 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
     final_locations = {bone_id: [list(data.values())[-1]] for bone_id, data in animated_locations.items()}
     final_scales = {bone_id: [list(data.values())[-1]] for bone_id, data in animated_scales.items()}
 
-
     chunks = []
-    for chunk_idx, chunk_datum in enumerate(chunk_data[:-1]):
+    for chunk_idx, (chunk_datum, chunksize) in enumerate(zip(chunk_data[:-1], chunksizes[:-1])):
         r_bitvecs = [rotation_bitvector_data[bone_id][chunk_idx] for bone_id in rotation_bitvector_data]
         l_bitvecs = [location_bitvector_data[bone_id][chunk_idx] for bone_id in location_bitvector_data]
         s_bitvecs = [scale_bitvector_data[bone_id][chunk_idx] for bone_id in scale_bitvector_data]
@@ -661,6 +658,7 @@ def cut_final_frame(data, bitvector):
         return_bitvector[bidx] = bv[:-1]
 
     return return_data, list(return_bitvector.values())
+
 
 def match_quat_signs_in_list(quats):
     if len(quats) > 0:
