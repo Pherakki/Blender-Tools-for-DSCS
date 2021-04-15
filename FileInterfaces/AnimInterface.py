@@ -374,6 +374,19 @@ def chunk_frames(frames, chunksize):
     return chunked_frames
 
 
+def cost_per_frame(frames, num_frames, cost):
+    """
+    Count the number of bytes required to store each frame in a series of frames organised in a nested dict as
+    {bone_idxs: {frame_idxs: value}}
+    """
+    costs = [0]*num_frames
+    for bone_id, data in frames.items():
+        for frame_idx, value in enumerate(data):
+            if value is not None:
+                costs[frame_idx] += cost
+    return costs
+
+
 def boil_down_chunk(chunk):
     bitvector = ''
     reduced_chunk = []
