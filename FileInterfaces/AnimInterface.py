@@ -387,7 +387,7 @@ def adaptive_chunk_frames(rotation_frames, location_frames, scale_frames, num_fr
     current_cost = 0
     maximum_cost = 0xFFFF - first_frame_price  # Presumably, need to subtract off the cost of the final frame chunk: the first frame price?
     # Skip the first frame, we already know how much that one costs
-    for frame_idx in range(num_frames[1:]):
+    for frame_idx in range(1, num_frames):
         current_cost += frame_costs[frame_idx]
         if current_cost > maximum_cost:
             assert frame_idx-1 != cuts[-1], "Frame {frame_idx} too expensive to convert to DSCS frame [requires {current_cost}/{maximum_cost} available bytes]. Reduce number of animated bones in this frame to export."
