@@ -374,7 +374,7 @@ def chunk_frames(frames, chunksize):
     return chunked_frames
 
 
-def cost_per_frame(frames, num_frames, cost):
+def bytecost_per_frame(frames, num_frames, cost):
     """
     Count the number of bytes required to store each frame in a series of frames organised in a nested dict as
     {bone_idxs: {frame_idxs: value}}
