@@ -557,6 +557,9 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
         l_bitvecs = [location_bitvector_data[bone_id][chunk_idx] for bone_id in location_bitvector_data]
         s_bitvecs = [scale_bitvector_data[bone_id][chunk_idx] for bone_id in scale_bitvector_data]
 
+        assert chunksize == len(r_bitvecs[0])
+        assert chunksize == len(l_bitvecs[0])
+        assert chunksize == len(s_bitvecs[0])
         chunks.append(ChunkHolder(*chunk_datum, r_bitvecs, l_bitvecs, s_bitvecs, chunksize))
 
     pen_r_bitvecs = [rotation_bitvector_data[bone_id][-1] for bone_id in rotation_bitvector_data]
