@@ -671,7 +671,10 @@ def cut_final_frame(data, bitvector):
 
 def match_quat_signs_in_list(quats):
     if len(quats) > 0:
-        return [quats[0], *[match_quaternion_signs(q1, q2) for q1, q2 in zip(quats, quats[1:])]]
+        to_return = [quats[0]]
+        for quat in quats[1:]:
+            to_return.append(match_quaternion_signs(to_return[-1], quat))
+        return to_return
     else:
         return quats
 
