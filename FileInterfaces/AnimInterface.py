@@ -104,6 +104,10 @@ class AnimInterface:
                 for frame, value in zip(frames, values):
                     instance.scales[bone_idx][frame] = value
 
+        # Recover quaternion signs lost during compression
+        for bone_idx, rotations in instance.rotations.items():
+            instance.rotations[bone_idx] = match_quat_signs_in_list(instance.rotations[bone_idx])
+
         return instance
 
     def to_file(self, path, sk):
@@ -228,6 +232,7 @@ class AnimInterface:
             # Now for the really tough bit
             # It's time to figure out how to divvy up the keyframes into chunks
             # Hardcode the chunk size to 1 + 16 for now
+            # This should now be adaptive and therefore unnecessary..!
             frames_per_chunk = 1 + 8
             frames_per_chunk = min(frames_per_chunk, num_frames-1)
             chunk_holders = generate_keyframe_chunks(anim_rots, anim_locs, anim_scls, num_frames)#, frames_per_chunk)
@@ -486,6 +491,7 @@ def strip_and_validate(keyframes, chunksizes, method):
             # There's plenty of unnecessary variables that need cleaning up...
             for curr_skipped_chunk_idx, skipped_chunk_idx in enumerate(skipped_chunks):
                 # Calculate t
+                # CHECK THAT THIS PRODUCES THE CORRECT INTERPOLATION FRAME IDXS!!!
                 interp_end_data, interp_end_frame = interp_end
                 relative_end_frame_index = sum(chunksizes[:skipped_chunks[-1]]) + interp_end_frame
                 initial_frame = interp_origin[1]
@@ -670,11 +676,9 @@ def match_quat_signs_in_list(quats):
         return quats
 
 
-def match_quaternion_signs(quat_1, quat_2, prnt=True):
-    dp = np.dot(quat_1, quat_2)
+def match_quaternion_signs(comparison_quat, quat):
+    dp = np.dot(comparison_quat, quat)
     sign = np.sign(dp)
 
-    if prnt:
-        print(quat_1, quat_2, dp, sign, sign*quat_2)
+    return sign * quat
 
-    return sign*quat_2
