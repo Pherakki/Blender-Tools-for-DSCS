@@ -587,23 +587,26 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
     final_scales = {bone_id: [list(data.values())[-1]] for bone_id, data in animated_scales.items()}
 
     chunks = []
-    for chunk_idx, (chunk_datum, chunksize) in enumerate(zip(chunk_data[:-1], chunksizes[:-1])):
-        r_bitvecs = [rotation_bitvector_data[bone_id][chunk_idx] for bone_id in rotation_bitvector_data]
-        l_bitvecs = [location_bitvector_data[bone_id][chunk_idx] for bone_id in location_bitvector_data]
-        s_bitvecs = [scale_bitvector_data[bone_id][chunk_idx] for bone_id in scale_bitvector_data]
-
-        assert chunksize == len(r_bitvecs[0])
-        assert chunksize == len(l_bitvecs[0])
-        assert chunksize == len(s_bitvecs[0])
-        chunks.append(ChunkHolder(*chunk_datum, r_bitvecs, l_bitvecs, s_bitvecs, chunksize))
-
-    pen_r_bitvecs = [rotation_bitvector_data[bone_id][-1] for bone_id in rotation_bitvector_data]
-    pen_l_bitvecs = [location_bitvector_data[bone_id][-1] for bone_id in location_bitvector_data]
-    pen_s_bitvecs = [scale_bitvector_data[bone_id][-1] for bone_id in scale_bitvector_data]
-
-    chunks.append(ChunkHolder.init_penultimate_chunk(*chunk_data[-1],
-                                                     pen_r_bitvecs, pen_l_bitvecs, pen_s_bitvecs,
-                                                     len(pen_r_bitvecs[0])))
+    if num_frames > 1:
+        for chunk_idx, (chunk_datum, chunksize) in enumerate(zip(chunk_data[:-1], chunksizes[:-1])):
+            r_bitvecs = [rotation_bitvector_data[bone_id][chunk_idx] for bone_id in rotation_bitvector_data]
+            l_bitvecs = [location_bitvector_data[bone_id][chunk_idx] for bone_id in location_bitvector_data]
+            s_bitvecs = [scale_bitvector_data[bone_id][chunk_idx] for bone_id in scale_bitvector_data]
+            if len(r_bitvecs):
+                assert chunksize == len(r_bitvecs[0])
+            if len(l_bitvecs):
+                assert chunksize == len(l_bitvecs[0])
+            if len(s_bitvecs):
+                assert chunksize == len(s_bitvecs[0])
+            chunks.append(ChunkHolder(*chunk_datum, r_bitvecs, l_bitvecs, s_bitvecs, chunksize))
+    
+        pen_r_bitvecs = [rotation_bitvector_data[bone_id][-1] for bone_id in rotation_bitvector_data]
+        pen_l_bitvecs = [location_bitvector_data[bone_id][-1] for bone_id in location_bitvector_data]
+        pen_s_bitvecs = [scale_bitvector_data[bone_id][-1] for bone_id in scale_bitvector_data]
+    
+        chunks.append(ChunkHolder.init_penultimate_chunk(*chunk_data[-1],
+                                                         pen_r_bitvecs, pen_l_bitvecs, pen_s_bitvecs,
+                                                         chunksizes[-1]))
     chunks.append(ChunkHolder(final_rotations, final_locations, final_scales,
                               ['1' for _ in final_rotations], ['1' for _ in final_locations], ['1' for _ in final_scales],
                               1))
