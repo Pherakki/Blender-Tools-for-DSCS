@@ -66,9 +66,8 @@ If you want to save an imported model as a .blend file, or if you want to extrac
 
 ## Future Plans
 1. Finish decoding the remaining unknown bytes
-2. Export Animations
-3. Readers for remaining filetypes: DETR, NAVI, NOTE, PHYS, SPRK
-4. An external program that can assign shaders to models
+2. Readers for remaining filetypes: DETR, NAVI, NOTE, PHYS, SPRK
+3. An external program that can assign shaders to models
 
 ## Contact
 e-mail: pherakki@gmail.com
