@@ -274,10 +274,11 @@ class AnimInterface:
             # Finally, go back and do KF chunk pointers
             readwriter.keyframe_chunks_ptrs = []
             final_chunk_size = chunk_holders[-1].total_size
-            for chunk in chunk_holders:
+            for chunk in chunk_holders[:-1]:
                 chunk_size = chunk.total_size
                 readwriter.keyframe_chunks_ptrs.append((0, chunk_size + final_chunk_size, virtual_pointer))
                 virtual_pointer += chunk_size
+            readwriter.keyframe_chunks_ptrs.append((0, 0, virtual_pointer))
 
             # Then finally dump the chunks themselves
             for chunk, kf_chunk in zip(chunk_holders, readwriter.keyframe_chunks):
