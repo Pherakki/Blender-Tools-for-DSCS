@@ -388,17 +388,45 @@ def adaptive_chunk_frames(rotation_frames, location_frames, scale_frames, num_fr
     location_costs = bytecost_per_frame(location_frames, num_frames, 12)
     scale_costs = bytecost_per_frame(scale_frames, num_frames, 12)
     frame_costs = [sum(frames) for frames in zip(rotation_costs, location_costs, scale_costs)]
+    
+    # Calculate how many bits need to get added to the bitvector per frame
+    # Do this by determining how many bones are kept track of per animation type
+    # and adding one bit per bone, if any bones are animated at all
+    include_rotation_bitvector = sum(rotation_costs) != 0
+    rotation_bitvector_price = len(rotation_frames) * include_rotation_bitvector
+    include_location_bitvector = sum(location_costs) != 0
+    location_bitvector_price = len(location_frames) * include_location_bitvector
+    include_scale_bitvector = sum(scale_costs) != 0
+    scale_bitvector_price = len(scale_frames) * include_scale_bitvector
+    
+    bitvector_frame_cost = rotation_bitvector_price + location_bitvector_price + scale_bitvector_price
+    
 
-    first_frame_price = frame_costs[0]
-    current_cost = 0
-    maximum_cost = 0xFFFF - first_frame_price  # Presumably, need to subtract off the cost of the final frame chunk: the first frame price?
+    # The rot + loc + scale gets rounded up to nearest 4
+    first_frame_price = roundup(frame_costs[0], 4)
+    # This is the cost of a chunk containing only the first-frame data. Includes a 16-byte header + round up to 16
+    additional_cost = roundup(first_frame_price + 16, 16)
+    bitvector_bitcost = 0
+    maximum_cost = 0xFFFF - additional_cost   # Presumably, need to subtract off the cost of the final frame chunk: the first frame price?
     # Skip the first frame, we already know how much that one costs
-    for frame_idx in range(1, num_frames):
-        current_cost += frame_costs[frame_idx]
-        if current_cost > maximum_cost:
+    for frame_idx in range(1, num_frames):   
+        animation_cost = sum(frame_costs[cuts[-1]+1:frame_idx+1])
+        bitvector_bitcost += bitvector_frame_cost
+        bitvector_cost = roundup(bitvector_bitcost, 8) // 8
+        
+        total_chunk_cost = roundup(roundup(16 + first_frame_price + bitvector_cost + animation_cost, 4), 16)
+        if total_chunk_cost >= maximum_cost:
+            animation_cost -= frame_costs[frame_idx]
+            bitvector_bitcost -= bitvector_frame_cost
+            bitvector_cost = roundup(bitvector_bitcost, 8) // 8
+            total_chunk_cost = roundup(roundup(16 + first_frame_price + bitvector_cost + animation_cost, 4), 16)
+            
             assert frame_idx-1 != cuts[-1], "Frame {frame_idx} too expensive to convert to DSCS frame [requires {current_cost}/{maximum_cost} available bytes]. Reduce number of animated bones in this frame to export."
             cuts.append(frame_idx-1)
-            current_cost = first_frame_price
+            # Don't count this frame, since it will be replaced by the maximum 
+            # cost as the new "frame 0" of the new chunk
+            animation_cost = 0
+            bitvector_bitcost = 0
     cuts.append(num_frames)
 
     rotation_chunks = {}
