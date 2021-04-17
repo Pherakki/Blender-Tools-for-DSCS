@@ -106,7 +106,7 @@ class AnimInterface:
 
         # Recover quaternion signs lost during compression
         for bone_idx, rotations in instance.rotations.items():
-            instance.rotations[bone_idx] = match_quat_signs_in_list(instance.rotations[bone_idx])
+            instance.rotations[bone_idx] = match_quat_signs_in_dict(instance.rotations[bone_idx])
 
         return instance
 
@@ -701,14 +701,16 @@ def cut_final_frame(data, bitvector):
     return return_data, list(return_bitvector.values())
 
 
-def match_quat_signs_in_list(quats):
+def match_quat_signs_in_dict(dictquats):
+    keys = list(dictquats.keys())
+    quats = list(dictquats.values())
     if len(quats) > 0:
         to_return = [quats[0]]
         for quat in quats[1:]:
             to_return.append(match_quaternion_signs(to_return[-1], quat))
-        return to_return
+        return {key: value for key, value in zip(keys, to_return)}
     else:
-        return quats
+        return dictquats
 
 
 def match_quaternion_signs(comparison_quat, quat):
