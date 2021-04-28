@@ -111,6 +111,46 @@ class ImportDSCSBase:
         # Rotate to the Blender coordinate convention
         parent_obj.rotation_euler = (np.pi / 2, 0, 0)
 
+    def generate_composite_pose_delta(self, filename, model_data):
+        rest_pose = [item for item in model_data.skeleton.rest_pose_delta]
+        base_animation = model_data.animations[filename]
+
+        for bone_idx, fcurve in base_animation.rotations.items():
+            rest_pose[bone_idx] = self.try_replace_rest_pose_elements(rest_pose[bone_idx], 0, fcurve, rotation=True)
+        for bone_idx, fcurve in base_animation.locations.items():
+            rest_pose[bone_idx] = self.try_replace_rest_pose_elements(rest_pose[bone_idx], 1, fcurve, location=True)
+        for bone_idx, fcurve in base_animation.scales.items():
+            rest_pose[bone_idx] = self.try_replace_rest_pose_elements(rest_pose[bone_idx], 2, fcurve)
+
+        return rest_pose
+
+    def modify_animation(self, filename, model_data):
+        rest_pose = [item for item in model_data.skeleton.rest_pose]
+        base_animation = model_data.animations[filename]
+
+        for bone_idx, rest_data in enumerate(rest_pose):
+            fcurve = base_animation.rotations[bone_idx]
+            if not len(fcurve.frames):
+                fcurve.frames.append(0)
+                fcurve.values.append(np.roll(rest_data[0], 1))
+            fcurve = base_animation.locations[bone_idx]
+            if not len(fcurve.frames):
+                fcurve.frames.append(0)
+                fcurve.values.append(rest_data[1])
+            fcurve = base_animation.scales[bone_idx]
+            if not len(fcurve.frames):
+                fcurve.frames.append(0)
+                fcurve.values.append(rest_data[2])
+
+        return rest_pose
+
+    def try_replace_rest_pose_elements(self, rest_pose, idx, fcurve, rotation=False, location=False):
+        if len(fcurve.frames):
+            assert fcurve.frames[0] == 0, "First frame was not at frame 0."
+            # rest_pose[idx] = np.roll(fcurve.values[0], -1) if rotation else fcurve.values[0]
+            rest_pose[idx] = (1., 0., 0., 0) if rotation else ((0., 0., 0.) if location else (1., 1., 1.))
+        return rest_pose
+
     def import_rest_pose_skeleton(self, parent_obj, filename, model_data, armature_name):
         model_armature = bpy.data.objects.new(armature_name, bpy.data.armatures.new(f'{filename}_armature_data'))
         bpy.context.collection.objects.link(model_armature)
