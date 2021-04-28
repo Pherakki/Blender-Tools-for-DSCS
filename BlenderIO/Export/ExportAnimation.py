@@ -1,5 +1,5 @@
 import numpy as np
-from ...Utilities.Interpolation import lerp
+from ...Utilities.Interpolation import lerp, produce_interpolation_method
 
 
 def export_animations(armature, model_data):
@@ -140,40 +140,6 @@ def get_all_required_frames(curve_data):
             res.add(int(round(key)))
         res.add(int(np.ceil(iter_keys[-1])))
     return sorted(list(res))
-
-
-def produce_interpolation_method(component_frame_idxs, framedata, default_value, interpolation_function):
-    """
-    Returns an interpolation function dependant on the number of passed frames.
-    """
-    if len(component_frame_idxs) == 0:
-        def interp_method(input_frame_idx):
-            return default_value
-    elif len(component_frame_idxs) == 1:
-        value = framedata[component_frame_idxs[0]]
-
-        def interp_method(input_frame_idx):
-            return value
-    else:
-        def interp_method(input_frame_idx):
-            smaller_elements = [idx for idx in component_frame_idxs if idx < input_frame_idx]
-            next_smallest_element_idx = max(smaller_elements) if len(smaller_elements) else component_frame_idxs[0]
-            larger_elements = [idx for idx in component_frame_idxs if idx > input_frame_idx]
-            next_largest_element_idx = min(larger_elements) if len(larger_elements) else component_frame_idxs[-1]
-
-            if next_largest_element_idx == next_smallest_element_idx:
-                t = 0  # Totally arbitrary, since the interpolation will be between two identical values
-            else:
-                t = (input_frame_idx - next_smallest_element_idx) / (next_largest_element_idx - next_smallest_element_idx)
-
-            # Should change lerp to the proper interpolation method
-            min_value = framedata[next_smallest_element_idx]
-            max_value = framedata[next_largest_element_idx]
-
-            return interpolation_function(min_value, max_value, t)
-
-    return interp_method
-
 
 def interpolate_missing_frame_elements(curve_data, default_values, interpolation_function):
     """
