@@ -80,7 +80,7 @@ class MaterialReader(BaseRW):
         self.shader_hex = None
         self.num_shader_uniforms = None
         self.num_unknown_data = None
-        self.unknown_0x16 = None
+        self.enable_shadows = None
 
         # Data variables
         self.shader_uniforms = []
@@ -111,7 +111,7 @@ class MaterialReader(BaseRW):
         rw_operator_raw('shader_hex', 16)
         rw_operator('num_shader_uniforms', 'B')  # Known
         rw_operator('num_unknown_data', 'B')  # Known
-        rw_operator('unknown_0x16', 'H')  # 1, 3, or 5... has a 1:1 correspondence with the shader hex
+        rw_operator('enable_shadows', 'H')  # 3 turns on shadows; what's the difference between 1 and 5?
 
     def rw_material_components(self, rw_operator_raw):
         rw_operator_raw("shader_uniforms", 24 * self.num_shader_uniforms)
