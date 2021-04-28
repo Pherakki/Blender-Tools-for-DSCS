@@ -21,7 +21,7 @@ def generate_files_from_intermediate_format(filepath, model_data, platform='PC')
     sk = make_skelinterface(filepath, model_data)
     make_geominterface(filepath, model_data, platform)
     for animation_name in model_data.animations:
-        make_animreader(file_folder, model_data, animation_name, sk)
+        make_animreader(file_folder, model_data, animation_name, os.path.splitext(os.path.split(filepath)[-1])[0], sk)
 
 
 def make_nameinterface(filepath, model_data):
@@ -113,7 +113,7 @@ def make_geominterface(filepath, model_data, platform):
     geomInterface.to_file(filepath + '.geom', platform)
 
 
-def make_animreader(file_folder, model_data, animation_name, sk):
+def make_animreader(file_folder, model_data, animation_name, base_name, sk):
     anim_interface = AnimInterface()
     animation = model_data.animations[animation_name]
 
@@ -132,4 +132,4 @@ def make_animreader(file_folder, model_data, animation_name, sk):
         data = {k: v for k, v in zip(fcurve.frames, fcurve.values)}
         anim_interface.scales[bone_idx] = data
 
-    anim_interface.to_file(os.path.join(file_folder, animation_name) + '.anim', sk)
+    anim_interface.to_file(os.path.join(file_folder, animation_name) + '.anim', sk, [] if animation_name == base_name else None)

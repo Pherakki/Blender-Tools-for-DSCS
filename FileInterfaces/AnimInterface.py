@@ -110,7 +110,7 @@ class AnimInterface:
 
         return instance
 
-    def to_file(self, path, sk):
+    def to_file(self, path, sk, blend_bones=None):
         try:
             max_rotations = max([list(self.rotations[bone_idx].keys())[-1] if len(self.rotations[bone_idx].keys()) else 0 for bone_idx in self.rotations])
         except:
@@ -145,7 +145,8 @@ class AnimInterface:
             static_locs, anim_locs, blend_locs = split_keyframes_by_role(self.locations)
             static_scls, anim_scls, blend_scls = split_keyframes_by_role(self.scales)
 
-            blend_bones = blend_locs
+            if blend_bones is None:
+                blend_bones = blend_locs
 
             # Sort the static bones into the correct order after adding malformed blend bones
             # Redundant?
