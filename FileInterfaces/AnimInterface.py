@@ -232,11 +232,7 @@ class AnimInterface:
 
             # Now for the really tough bit
             # It's time to figure out how to divvy up the keyframes into chunks
-            # Hardcode the chunk size to 1 + 16 for now
-            # This should now be adaptive and therefore unnecessary..!
-            frames_per_chunk = 1 + 8
-            frames_per_chunk = min(frames_per_chunk, num_frames-1)
-            chunk_holders = generate_keyframe_chunks(anim_rots, anim_locs, anim_scls, num_frames)#, frames_per_chunk)
+            chunk_holders = generate_keyframe_chunks(anim_rots, anim_locs, anim_scls, num_frames)
             readwriter.num_keyframe_chunks = len(chunk_holders)
             readwriter.prepare_read_op()  # This creates enough empty KeyFrameChunk objects for us to fill
 
@@ -383,7 +379,7 @@ def chunk_frames(frames, chunksize):
 
 def adaptive_chunk_frames(rotation_frames, location_frames, scale_frames, num_frames):
     cuts = [0]
-
+    
     # Calculate how many bytes each frame will cost to store
     rotation_costs = bytecost_per_frame(rotation_frames, num_frames, 6)
     location_costs = bytecost_per_frame(location_frames, num_frames, 12)
