@@ -22,6 +22,7 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     imported_namedata = NameInterface.from_file(filepath + '.name')
     imported_skeldata = SkelInterface.from_file(filepath + '.skel')
     imported_geomdata = GeomInterface.from_file(filepath + '.geom', platform)
+
     directory = os.path.split(filepath)
     filename = directory[-1]
     directory = os.path.join(*directory[:-1])
@@ -34,6 +35,9 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
                 afile_name, afile_ext = os.path.splitext(afile)
                 print(afile)
                 imported_animdata[afile_name] = AnimInterface.from_file(afilepath, imported_skeldata)
+
+    # Always import the base anim, because it plays a special role in skeleton construction
+    # imported_animdata[filename] = AnimInterface.from_file(filepath + '.anim', imported_skeldata)
 
     images_directory = os.path.join(*os.path.split(filepath)[:-1], 'images')
     model_data = IntermediateFormat()
@@ -125,6 +129,8 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
     model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4
     parent_bones = {p: c for p, c in imported_skeldata.parent_bones}
+
+    # Should be able to replace these with methods in 'Matrices', but some of the data must get edited in these methods...
     model_data.skeleton.rest_pose = [get_total_transform_matrix(i, parent_bones, imported_skeldata.rest_pose) for i in range(len(imported_skeldata.rest_pose))]
     for i, (inverse_matrix, (quat, loc, scl)) in enumerate(zip(imported_geomdata.inverse_bind_pose_matrices, imported_skeldata.rest_pose)):
         bone_matrix = np.zeros((4, 4))
