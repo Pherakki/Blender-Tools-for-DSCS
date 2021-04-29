@@ -65,5 +65,53 @@ def generate_transform_delta(parent_bones, rest_pose, inverse_bind_pose_matrices
     return result
 
 
-def apply_transform_to_keyframe():
-    pass
+def generate_transform_matrix(quat, location, scale, WXYZ=False):
+    translation_matrix = generate_translation_matrix(location)
+    rotation_matrix = generate_rotation_matrix(quat, WXYZ)
+    scale_matrix = generate_scale_matrix(scale)
+
+    return np.dot(translation_matrix, np.dot(rotation_matrix, scale_matrix))
+
+
+def generate_translation_matrix(location):
+    matrix = np.eye(4)
+    matrix[:3, 3] = location
+    return matrix
+
+
+def generate_rotation_matrix(quat, WXYZ=False):
+    matrix = np.eye(4)
+    matrix[:3, :3] = quat_to_matrix(quat, WXYZ)
+    return matrix
+
+
+def generate_scale_matrix(scale):
+    return np.diag([*scale, 1])
+
+
+def decompose_matrix(transform, WXYZ=False):
+    scale_x = np.sqrt(np.sum(transform[:3, 0]**2))
+    scale_y = np.sqrt(np.sum(transform[:3, 1]**2))
+    scale_z = np.sqrt(np.sum(transform[:3, 2]**2))
+
+    translation = transform[:3, 3]
+
+    rotation = transform[:3, :3]
+    rotation[:3, 0] /= scale_x
+    rotation[:3, 1] /= scale_y
+    rotation[:3, 2] /= scale_z
+    quat = rotation_matrix_to_quat(rotation, WXYZ)
+
+    return translation, quat, np.array([scale_x, scale_y, scale_z])
+
+
+def apply_transform_to_keyframe(transform, index, rotations, rotation_interpolator, locations, location_interpolator, scales, scale_interpolator):
+    quat = rotations.get(index, rotation_interpolator(index))
+    trans = locations.get(index, location_interpolator(index))
+    scale = scales.get(index, scale_interpolator(index))
+
+    transformation_matrix = generate_transform_matrix(quat, trans, scale, WXYZ=True)
+
+    total_transformation = np.dot(transform, transformation_matrix)
+
+    return decompose_matrix(total_transformation, WXYZ=True)
