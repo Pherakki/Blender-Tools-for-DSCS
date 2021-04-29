@@ -1,9 +1,10 @@
 import numpy as np
 
 
-def rotation_matrix_to_quat(matrix):
+def rotation_matrix_to_quat(matrix, WXYZ=False):
     """
     Ref: http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+    Order is XYZW by default
     """
     # Will probably be more numerically stable to just pick the largest out of each diag element + trace than checking
     # if Tr > 0
@@ -29,12 +30,12 @@ def rotation_matrix_to_quat(matrix):
         quat[j] = (matrix[j, i] + matrix[i, j]) / S
         quat[k] = (matrix[k, i] + matrix[i, k]) / S
 
-    return quat
+    return np.roll(quat, WXYZ)
 
 
-def quat_to_matrix(quat):
+def quat_to_matrix(quat, WXYZ=False):
     quat = np.array(quat)
-    x, y, z, w = quat
+    x, y, z, w = np.roll(quat, -WXYZ)
     x2, y2, z2, _ = quat**2
 
     return 2*np.array([[.5 - y2 - z2,    x*y - z*w,    x*z + y*w],
