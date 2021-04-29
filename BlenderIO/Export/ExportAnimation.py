@@ -17,30 +17,18 @@ def export_animations(armature, model_data):
                       'rotation_quaternion': [1., 0., 0., 0.],
                       'scale': [1., 1., 1.]}
     for nla_track in armature.animation_data.nla_tracks:
-        animation_data = {'location': {},
-                          'rotation_quaternion': {},
-                          'scale': {}}
         strips = nla_track.strips
         if len(strips) != 1:
             print(f"NLA track \'{nla_track.name}\' has {len(strips)} strips; must have one strip ONLY to export.")
             continue
+
+        print(nla_track.name)
         nla_strip = strips[0]
         fps = nla_strip.scale * 24
 
-        action = nla_strip.action
+        animation_data = get_nla_strip_data(nla_strip, curve_defaults)
 
-        groups = group_fcurves(action)
-        for bone_name, group in groups.items():
-            # Get whether any of the locations, rotations, and scales are animated; plus the f-curves for those
-            # that are
-            elements_used, bone_data = get_used_animation_elements(group)
-            # For each set that is animated, interpolate missing keyframes for each component of the relevant vector
-            # on each keyframe where at least one element is used
-            for curve_type, isUsed in elements_used.items():
-                if isUsed:
-                    curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type], lerp)
-                    zipped_data = zip_vector_elements(curve_data)
-                    animation_data[curve_type][bone_name] = zipped_data
+        shift_animation_to_reference_frame(reference_frames, model_data)
 
         ad = model_data.new_anim(nla_track.name)
         ad.playback_rate = fps
@@ -64,6 +52,26 @@ def export_animations(armature, model_data):
                 # Overwrite the filler fcurve
                 ad.add_scale_fcurve(bone_idx, list(data.keys()), list(data.values()))
 
+
+def get_nla_strip_data(nla_strip, curve_defaults):
+    animation_data = {'location': {},
+                      'rotation_quaternion': {},
+                      'scale': {}}
+
+    action = nla_strip.action
+    groups = group_fcurves(action)
+    for bone_name, group in groups.items():
+        # Get whether any of the locations, rotations, and scales are animated; plus the f-curves for those
+        # that are
+        elements_used, bone_data = get_used_animation_elements(group)
+        # For each set that is animated, interpolate missing keyframes for each component of the relevant vector
+        # on each keyframe where at least one element is used
+        for curve_type, isUsed in elements_used.items():
+            if isUsed:
+                curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type], lerp)
+                zipped_data = zip_vector_elements(curve_data)
+                animation_data[curve_type][bone_name] = zipped_data
+    return animation_data
 
 
 def generate_reference_frames(pose_matrices, animation_data):
