@@ -8,7 +8,7 @@ from bpy.props import BoolProperty
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
 from ...FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
-from .ExportAnimation import export_animations
+from .ExportAnimation import export_animations, get_nla_strip_data
 
 
 class ExportDSCSBase:
@@ -44,7 +44,16 @@ class ExportDSCSBase:
         self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
         self.export_textures(used_textures, model_data, export_images_folder)
         if self.export_anims:
-            export_animations(parent_obj.children[0], model_data)
+            nla_track = model_armature.animation_data.nla_tracks[filename]
+            strips = nla_track.strips
+            if len(strips) != 1:
+                assert 0, (f"NLA track \'{nla_track.name}\' has {len(strips)} strips; must have one strip ONLY to export.")
+
+            export_animations(model_armature, model_data,
+                              [np.array(bone.matrix_local) for bone in model_armature.data.bones],
+                              get_nla_strip_data(strips[0], {'location': [0., 0., 0.],
+                                                             'rotation_quaternion': [1., 0., 0., 0.],
+                                                             'scale': [1., 1., 1.]}))
 
         model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data

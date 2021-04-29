@@ -3,7 +3,7 @@ from ...Utilities.Interpolation import lerp, slerp, produce_interpolation_method
 from ...Utilities.Matrices import apply_transform_to_keyframe, generate_transform_matrix
 
 
-def export_animations(armature, model_data):
+def export_animations(armature, model_data, reference_frames, base_animation_data):
     """
     Main entry point to the animation export functionality.
 
@@ -17,6 +17,9 @@ def export_animations(armature, model_data):
     curve_defaults = {'location': [0., 0., 0.],
                       'rotation_quaternion': [1., 0., 0., 0.],
                       'scale': [1., 1., 1.]}
+
+    reference_frames = generate_reference_frames(reference_frames, base_animation_data)
+
     for nla_track in armature.animation_data.nla_tracks:
         strips = nla_track.strips
         if len(strips) != 1:
