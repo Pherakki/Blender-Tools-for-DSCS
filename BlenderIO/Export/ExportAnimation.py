@@ -1,5 +1,6 @@
 import numpy as np
-from ...Utilities.Interpolation import lerp, produce_interpolation_method
+from ...Utilities.Interpolation import lerp, slerp, produce_interpolation_method
+from ...Utilities.Matrices import apply_transform_to_keyframe, generate_transform_matrix
 
 
 def export_animations(armature, model_data):
