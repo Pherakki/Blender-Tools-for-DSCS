@@ -28,7 +28,8 @@ class ExportDSCSBase:
         validate_blender_data(parent_obj)
 
         model_data = IntermediateFormat()
-        export_folder = os.path.join(*os.path.split(filepath)[:-1])
+        export_folder, filename = os.path.split(filepath)
+
         export_images_folder = os.path.join(export_folder, 'images')
         os.makedirs(export_images_folder, exist_ok=True)
         export_shaders_folder = os.path.join(export_folder, 'shaders')
