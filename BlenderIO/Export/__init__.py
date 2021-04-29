@@ -38,7 +38,8 @@ class ExportDSCSBase:
 
         used_materials = []
         used_textures = []
-        self.export_skeleton(parent_obj, model_data)
+        model_armature = parent_obj.children[0]
+        self.export_skeleton(model_armature, model_data)
         self.export_meshes(parent_obj, model_data, used_materials)
         self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
         self.export_textures(used_textures, model_data, export_images_folder)
@@ -67,8 +68,7 @@ class ExportDSCSBase:
             raise Exception("No object selected. Ensure you have selected some part of the model you wish to export in "
                             "Object Mode before attempting to export.") from e
 
-    def export_skeleton(self, parent_obj, model_data):
-        model_armature = parent_obj.children[0]
+    def export_skeleton(self, model_armature, model_data):
         bone_name_list = [bone.name for bone in model_armature.data.bones]
         for i, bone in enumerate(model_armature.data.bones):
             name = bone.name
