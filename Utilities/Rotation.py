@@ -37,9 +37,9 @@ def quat_to_matrix(quat):
     x, y, z, w = quat
     x2, y2, z2, _ = quat**2
 
-    return 2*np.array([[.5 - y2 - z2,   x*y - z*w,   x*z + y*w],
-                       [   x*y + z*w, .5 - x2 - z2,   y*z - x*w],
-                       [   x*z - y*w,   y*z + x*w, .5 - x2 - y2]])
+    return 2*np.array([[.5 - y2 - z2,    x*y - z*w,    x*z + y*w],
+                       [   x*y + z*w, .5 - x2 - z2,    y*z - x*w],
+                       [   x*z - y*w,    y*z + x*w, .5 - x2 - y2]])
 
 
 def bone_matrix_from_rotation_location(quaternion, position):
