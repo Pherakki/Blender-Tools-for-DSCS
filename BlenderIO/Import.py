@@ -259,7 +259,7 @@ class ImportDSCSBase:
             new_material['unknown_0x00'] = IF_material.unknown_data['unknown_0x00']
             new_material['unknown_0x02'] = IF_material.unknown_data['unknown_0x02']
             new_material['shader_hex'] = IF_material.shader_hex
-            new_material['unknown_0x16'] = IF_material.unknown_data['unknown_0x16']
+            new_material['enable_shadows'] = IF_material.unknown_data['enable_shadows']
 
             for nm, value in IF_material.shader_uniforms.items():
                 new_material[nm] = value

@@ -7,7 +7,7 @@ class MaterialInterface:
         self.unknown_0x00 = None
         self.unknown_0x02 = None
         self.shader_hex = None
-        self.unknown_0x16 = None
+        self.enable_shadows = None
 
         self.shader_uniforms = {}
         self.unknown_material_components = {}
@@ -19,7 +19,7 @@ class MaterialInterface:
         interface.unknown_0x00 = materialReader.unknown_0x00
         interface.unknown_0x02 = materialReader.unknown_0x02
         interface.shader_hex = materialReader.shader_hex
-        interface.unknown_0x16 = materialReader.enable_shadows
+        interface.enable_shadows = materialReader.enable_shadows
 
         interface.shader_uniforms = materialReader.shader_uniforms
         interface.unknown_material_components = materialReader.unknown_data
@@ -30,7 +30,7 @@ class MaterialInterface:
         materialReader.unknown_0x00 = self.unknown_0x00
         materialReader.unknown_0x02 = self.unknown_0x02
         materialReader.shader_hex = self.shader_hex
-        materialReader.enable_shadows = self.unknown_0x16
+        materialReader.enable_shadows = self.enable_shadows
         # No idea if this is anything close to correct...
         # if materialReader.shader_hex[20:22] == '08':
         #     materialReader.unknown_0x16 = 5

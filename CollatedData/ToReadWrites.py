@@ -99,7 +99,7 @@ def make_geominterface(filepath, model_data, platform):
         gi_mat.unknown_0x00 = mat.unknown_data['unknown_0x00']
         gi_mat.unknown_0x02 = mat.unknown_data['unknown_0x02']
         gi_mat.shader_hex = mat.shader_hex
-        gi_mat.enable_shadows = mat.unknown_data['unknown_0x16']
+        gi_mat.enable_shadows = mat.unknown_data['enable_shadows']
 
         gi_mat.shader_uniforms = {key: shader_uniforms_from_names[key](value) for key, value in mat.shader_uniforms.items()}
         gi_mat.unknown_material_components = mat.unknown_data['unknown_material_components']
