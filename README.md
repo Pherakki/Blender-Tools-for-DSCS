@@ -42,12 +42,12 @@ If you are instead downloading a release version, skip ahead to step 3.
 
 Note: The required shaders will be copied into the output folder along with your saved data and any required textures.
 
-## Saving for later editting, or extracting textures
+## Saving for later editing, or extracting textures
 If you want to save an imported model as a .blend file, or if you want to extract the textures for external programs to use:
 1. Pack files into the blend by ensuring File > External Data > Automatically pack into .blend is checked before saving the file. **The textures are saved as temporary files so they will be deleted when you exit Blender unless you do this!**
 2. If you have saved the file as a .blend, click File > External Data > Unpack all into files to extract any textures you may want to edit outside Blender.
 
-## Installing your editted models
+## Installing your edited models
 1. Currently, only model replacement is available. Give your files the same name as those they are intended to replace (e.g. to replace the male main character in Cyber Sleuth, name your files pc001.name, pc001.skel, pc001.geom).
 2. Put the files into the DSDBP archive, which you need to extract with [DSCSTools](https://github.com/SydMontague/DSCSTools).
 3. Put any replaced textures in DSDBP/images
