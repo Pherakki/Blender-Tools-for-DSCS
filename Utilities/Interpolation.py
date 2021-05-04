@@ -17,20 +17,20 @@ def slerp(x, y, t):
 
 def interpolate_keyframe(frame_idxs, frame_values, idx, interpolation_function):
     smaller_elements = [idx for idx in frame_idxs if idx < idx]
-    next_smallest_element_idx = max(smaller_elements) if len(smaller_elements) else frame_idxs[0]
+    next_smallest_frame = max(smaller_elements) if len(smaller_elements) else frame_idxs[0]
     larger_elements = [idx for idx in frame_idxs if idx > idx]
-    next_largest_element_idx = min(larger_elements) if len(larger_elements) else frame_idxs[-1]
+    next_largest_frame = min(larger_elements) if len(larger_elements) else frame_idxs[-1]
 
-    if next_largest_element_idx == next_smallest_element_idx:
+    if next_largest_frame == next_smallest_frame:
         t = 0  # Totally arbitrary, since the interpolation will be between two identical values
     else:
-        t = (idx - next_smallest_element_idx) / (next_largest_element_idx - next_smallest_element_idx)
+        t = (idx - next_smallest_frame) / (next_largest_frame - next_smallest_frame)
 
     # Should change lerp to the proper interpolation method
-    min_value = frame_values[next_smallest_element_idx]
-    max_value = frame_values[next_largest_element_idx]
-
-    return interpolation_function(min_value, max_value, t)
+    min_value = frame_values[frame_idxs.index(next_smallest_frame)]
+    max_value = frame_values[frame_idxs.index(next_largest_frame)]
+    
+    return interpolation_function(np.array(min_value), np.array(max_value), t)
 
 
 def produce_interpolation_method(frame_idxs, frame_values, default_value, interpolation_function):
