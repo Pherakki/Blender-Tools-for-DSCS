@@ -34,8 +34,8 @@ def rotation_matrix_to_quat(matrix, WXYZ=False):
 
 
 def quat_to_matrix(quat, WXYZ=False):
-    quat = np.array(quat)
-    x, y, z, w = np.roll(quat, -WXYZ)
+    quat = np.roll(quat, -WXYZ)
+    x, y, z, w = quat
     x2, y2, z2, _ = quat**2
 
     return 2*np.array([[.5 - y2 - z2,    x*y - z*w,    x*z + y*w],
