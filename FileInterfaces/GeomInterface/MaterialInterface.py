@@ -4,8 +4,7 @@ from ...FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names
 
 class MaterialInterface:
     def __init__(self):
-        self.unknown_0x00 = None
-        self.unknown_0x02 = None
+        self.name_hash = None
         self.shader_hex = None
         self.enable_shadows = None
 
@@ -16,8 +15,7 @@ class MaterialInterface:
     def from_subfile(cls, materialReader):
         interface = cls()
 
-        interface.unknown_0x00 = materialReader.unknown_0x00
-        interface.unknown_0x02 = materialReader.unknown_0x02
+        interface.name_hash = materialReader.name_hash
         interface.shader_hex = materialReader.shader_hex
         interface.enable_shadows = materialReader.enable_shadows
 
@@ -27,8 +25,7 @@ class MaterialInterface:
         return interface
 
     def to_subfile(self, materialReader, virtual_pos):
-        materialReader.unknown_0x00 = self.unknown_0x00
-        materialReader.unknown_0x02 = self.unknown_0x02
+        materialReader.name_hash = self.name_hash
         materialReader.shader_hex = self.shader_hex
         materialReader.enable_shadows = self.enable_shadows
         # No idea if this is anything close to correct...

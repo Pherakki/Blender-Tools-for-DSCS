@@ -41,7 +41,7 @@ class SkelReader(BaseRW):
         self.rel_ptr_to_end_of_bone_hierarchy_data = None
         self.rel_ptr_to_end_of_bone_defs = None
         self.rel_ptr_to_end_of_parent_bones_chunk = None
-        self.unknown_rel_ptr_2 = None
+        self.rel_ptr_bone_name_hashes = None
         self.unknown_rel_ptr_3 = None
         self.rel_ptr_to_end_of_parent_bones = None
 
@@ -55,7 +55,7 @@ class SkelReader(BaseRW):
         self.bone_data = None
         self.parent_bones = None
         self.unknown_data_1 = None
-        self.unknown_data_2 = None
+        self.bone_name_hashes = None
         self.unknown_data_3 = None
         self.unknown_data_4 = None
 
@@ -66,7 +66,7 @@ class SkelReader(BaseRW):
         self.abs_ptr_bone_defs = None
         self.abs_ptr_parent_bones = None
         self.abs_ptr_end_of_parent_bones_chunk = None
-        self.abs_ptr_unknown_2 = None
+        self.abs_ptr_bone_name_hashes = None
         self.abs_ptr_unknown_3 = None
         self.abs_ptr_unknown_4 = None
 
@@ -85,7 +85,7 @@ class SkelReader(BaseRW):
         self.rw_parent_bones(rw_operator)
         self.rw_unknown_data_1(rw_operator)
         chunk_cleanup(self.bytestream.tell(), 16)
-        self.rw_unknown_data_2(rw_operator)
+        self.rw_bone_name_hashes(rw_operator_raw)
         self.rw_unknown_data_3(rw_operator)
         self.rw_unknown_data_4(rw_operator)
         chunk_cleanup(self.bytestream.tell() - self.remaining_bytes_after_parent_bones_chunk, 16)
@@ -108,7 +108,7 @@ class SkelReader(BaseRW):
         pb_chunk_ptr_pos = self.bytestream.tell()  # 32
         rw_operator('rel_ptr_to_end_of_parent_bones_chunk', 'I')
         unk2_pos = self.bytestream.tell()  # 36
-        rw_operator('unknown_rel_ptr_2', 'I')
+        rw_operator('rel_ptr_bone_name_hashes', 'I')
         unk3_pos = self.bytestream.tell()  # 40
         rw_operator('unknown_rel_ptr_3', 'I')
         pcp_pos = self.bytestream.tell()  # 44
@@ -127,10 +127,10 @@ class SkelReader(BaseRW):
         self.abs_ptr_bone_defs = bonedefs_pos + self.rel_ptr_to_end_of_bone_defs - (self.num_bones * 12 * 4)
         self.abs_ptr_parent_bones = pcp_pos + self.rel_ptr_to_end_of_parent_bones - self.num_bones * 2
         self.abs_ptr_end_of_parent_bones_chunk = pb_chunk_ptr_pos + self.rel_ptr_to_end_of_parent_bones_chunk
-        self.abs_ptr_unknown_2 = unk2_pos + self.unknown_rel_ptr_2 - self.num_bones * 4
+        self.abs_ptr_bone_name_hashes = unk2_pos + self.rel_ptr_bone_name_hashes - self.num_bones * 4
         self.abs_ptr_unknown_3 = unk3_pos + self.unknown_rel_ptr_3 - self.unknown_0x0C * 4
 
-        self.assert_equal("total_bytes", self.abs_ptr_unknown_2 + self.remaining_bytes_after_parent_bones_chunk)
+        self.assert_equal("total_bytes", self.abs_ptr_bone_name_hashes + self.remaining_bytes_after_parent_bones_chunk)
 
     def rw_bone_hierarchy(self, rw_operator):
         # Seems to contain the same info as the parent_bones with repeats and bugs..?
@@ -152,15 +152,10 @@ class SkelReader(BaseRW):
         #self.assert_file_pointer_now_at()
         rw_operator('unknown_data_1', 'B'*self.unknown_0x0C, force_1d=True)
 
-    def rw_unknown_data_2(self, rw_operator):
-        self.assert_file_pointer_now_at(self.abs_ptr_unknown_2)
+    def rw_bone_name_hashes(self, rw_operator_raw):
+        self.assert_file_pointer_now_at(self.abs_ptr_bone_name_hashes)
         bytes_to_read = self.num_bones * 4
-        # B, H, I, e, f all seem to give nonsensical results...
-        # Changing the endianness doesn't help
-        # Could be a float normalised in the range [-1, 1] using int16s (or equiv. for uint16)
-        rw_operator('unknown_data_2', 'HH'*self.num_bones)
-        # self.unknown_data_2 = self.decode_data_as('I', self.bytestream.read(bytes_to_read), endianness='<')
-        # self.unknown_data_2 = [elem / 2**32 for elem in self.unknown_data_2]
+        rw_operator_raw('bone_name_hashes', bytes_to_read)
 
     def rw_unknown_data_3(self, rw_operator):
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_3)
@@ -175,6 +170,7 @@ class SkelReader(BaseRW):
     def interpret_skel_data(self):
         self.bone_hierarchy_data = self.chunk_list(self.bone_hierarchy_data, 8)
         self.bone_data = self.chunk_list(self.chunk_list(self.bone_data, 4), 3)
+        self.bone_name_hashes = self.chunk_list(self.bone_name_hashes, 4)
         self.parent_bones = [(i, idx) for i, idx in enumerate(self.parent_bones)]
         # Basic error checking - make sure no bone idx exceeds the known number of bones
         if len(self.parent_bones) != 0:
@@ -192,4 +188,5 @@ class SkelReader(BaseRW):
     def reinterpret_skel_data(self):
         self.bone_hierarchy_data = self.flatten_list(self.bone_hierarchy_data)
         self.bone_data = self.flatten_list(self.flatten_list(self.bone_data))
+        self.bone_name_hashes = self.flatten_list(self.bone_name_hashes)
         self.parent_bones = [parent for child, parent in self.parent_bones]

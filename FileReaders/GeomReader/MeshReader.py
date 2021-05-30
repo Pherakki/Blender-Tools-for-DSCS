@@ -46,10 +46,7 @@ class MeshReaderBase(BaseRW):
         self.max_vertex_groups_per_vertex = None
         self.unknown_0x31 = None
         self.polygon_numeric_data_type = None
-        self.unknown_0x34 = None
-        self.unknown_0x35 = None
-        self.unknown_0x36 = None
-        self.unknown_0x37 = None
+        self.name_hash = None
         self.material_id = None
         self.num_vertices = None
 
@@ -70,12 +67,12 @@ class MeshReaderBase(BaseRW):
         self.polygon_data_type = None
 
     def read_header(self):
-        self.rw_header(self.read_buffer)
+        self.rw_header(self.read_buffer, self.read_raw)
 
     def write_header(self):
-        self.rw_header(self.write_buffer)
+        self.rw_header(self.write_buffer, self.write_raw)
 
-    def rw_header(self, rw_operator):
+    def rw_header(self, rw_operator, rw_operator_raw):
         rw_operator('vertex_data_start_ptr', 'Q')
         rw_operator('polygon_data_start_ptr', 'Q')
         rw_operator('weighted_bone_data_start_ptr', 'Q')
@@ -100,11 +97,7 @@ class MeshReaderBase(BaseRW):
         rw_operator('max_vertex_groups_per_vertex', 'B')  # takes values 0, 1, 2, 3, 4: 0 means map everything to idx 0, 1 means the idxs are in the position vector
         rw_operator('unknown_0x31', 'B')  # values 1, 4, 5: 4 means pos and normal only, diff between 1 nad 5 is what?? 1 doesn't have unk vt 2... 5 can have 0 weights, 1 cannot
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
-        # Definitely not a float... could be B, H, or e.
-        rw_operator('unknown_0x34', 'H')  # All over the place - I have no idea.
-        #rw_operator('unknown_0x35', 'B')  # All over the place - I have no idea.
-        rw_operator('unknown_0x36', 'H')  # All over the place - I have no idea.
-        #rw_operator('unknown_0x37', 'B')  # All over the place - I have no idea.
+        rw_operator_raw('name_hash', 4)
 
         rw_operator('material_id', 'I')
         rw_operator('num_vertices', 'I')

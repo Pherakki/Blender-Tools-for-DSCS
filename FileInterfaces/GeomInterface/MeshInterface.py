@@ -30,8 +30,7 @@ triangle_converters = {'Triangles': triangles_to_polys,
 class MeshInterface:
     def __init__(self):
         self.unknown_0x31 = None
-        self.unknown_0x34 = None
-        self.unknown_0x36 = None
+        self.name_hash = None
         self.unknown_0x4C = None
 
         self.vertices = []
@@ -45,8 +44,7 @@ class MeshInterface:
     def from_subfile(cls, meshReader):
         interface = cls()
         interface.unknown_0x31 = meshReader.unknown_0x31
-        interface.unknown_0x34 = meshReader.unknown_0x34
-        interface.unknown_0x36 = meshReader.unknown_0x36
+        interface.name_hash = meshReader.name_hash
         interface.unknown_0x4C = meshReader.unknown_0x4C
 
         interface.vertices = process_posweights(meshReader.vertex_data, meshReader.max_vertex_groups_per_vertex)

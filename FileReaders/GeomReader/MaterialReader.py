@@ -75,8 +75,7 @@ class MaterialReader(BaseRW):
         super().__init__(io_stream)
 
         # Header variables
-        self.unknown_0x00 = None
-        self.unknown_0x02 = None
+        self.name_hash = None
         self.shader_hex = None
         self.num_shader_uniforms = None
         self.num_unknown_data = None
@@ -104,10 +103,7 @@ class MaterialReader(BaseRW):
         self.rw_unknown_data(rw_operator_raw)
 
     def rw_header(self, rw_operator, rw_operator_raw):
-        rw_operator('unknown_0x00', 'H')
-        #rw_operator('unknown_0x01', 'B')
-        rw_operator('unknown_0x02', 'H')
-        #rw_operator('unknown_0x03', 'B')
+        rw_operator_raw('name_hash', 4)
         rw_operator_raw('shader_hex', 16)
         rw_operator('num_shader_uniforms', 'B')  # Known
         rw_operator('num_unknown_data', 'B')  # Known

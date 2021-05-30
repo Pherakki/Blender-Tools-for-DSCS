@@ -8,7 +8,7 @@ class SkelInterface:
         self.rest_pose = []
         self.parent_bones = []
         self.unknown_data_1 = []
-        self.unknown_data_2 = []
+        self.bone_name_hashes = []
         self.unknown_data_3 = []
         self.unknown_data_4 = []
 
@@ -31,7 +31,7 @@ class SkelInterface:
         new_interface.rest_pose = readwriter.bone_data
         new_interface.parent_bones = readwriter.parent_bones
         new_interface.unknown_data_1 = readwriter.unknown_data_1
-        new_interface.unknown_data_2 = readwriter.unknown_data_2
+        new_interface.bone_name_hashes = readwriter.bone_name_hashes
         new_interface.unknown_data_3 = readwriter.unknown_data_3
         new_interface.unknown_data_4 = readwriter.unknown_data_4
 
@@ -54,7 +54,7 @@ class SkelInterface:
             readwriter.bone_data = self.rest_pose
             readwriter.parent_bones = self.parent_bones
             readwriter.unknown_data_1 = self.unknown_data_1
-            readwriter.unknown_data_2 = self.unknown_data_2
+            readwriter.bone_name_hashes = self.bone_name_hashes
             readwriter.unknown_data_3 = self.unknown_data_3
             readwriter.unknown_data_4 = self.unknown_data_4
 
