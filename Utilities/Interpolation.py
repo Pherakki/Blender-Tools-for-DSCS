@@ -29,7 +29,7 @@ def interpolate_keyframe(frame_idxs, frame_values, idx, interpolation_function):
     # Should change lerp to the proper interpolation method
     min_value = frame_values[frame_idxs.index(next_smallest_frame)]
     max_value = frame_values[frame_idxs.index(next_largest_frame)]
-    
+
     return interpolation_function(np.array(min_value), np.array(max_value), t)
 
 
