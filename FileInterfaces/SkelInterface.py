@@ -66,8 +66,8 @@ class SkelInterface:
 
             readwriter.rel_ptr_to_end_of_parent_bones_chunk = readwriter.rel_ptr_to_end_of_parent_bones + readwriter.unknown_0x0C + 12
             readwriter.rel_ptr_to_end_of_parent_bones_chunk += (16 - ((abs_end_of_parent_bones_chunk) % 16)) % 16
-            readwriter.unknown_rel_ptr_2 = readwriter.rel_ptr_to_end_of_parent_bones_chunk + readwriter.num_bones * 4 - 4
-            readwriter.unknown_rel_ptr_3 = readwriter.unknown_rel_ptr_2 + readwriter.unknown_0x0C * 4 - 4
+            readwriter.rel_ptr_bone_name_hashes = readwriter.rel_ptr_to_end_of_parent_bones_chunk + readwriter.num_bones * 4 - 4
+            readwriter.unknown_rel_ptr_3 = readwriter.rel_ptr_bone_name_hashes + readwriter.unknown_0x0C * 4 - 4
 
             bytes_after_parent_bones_chunk = (readwriter.unknown_rel_ptr_3 + 40) - (
                         readwriter.rel_ptr_to_end_of_parent_bones_chunk + 32) + len(readwriter.unknown_data_4)
