@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import os
 import shutil
-from bpy.props import BoolProperty
+from bpy.props import BoolProperty, EnumProperty
 from bpy_extras.io_utils import ImportHelper
 from bpy_extras.image_utils import load_image
 from bpy_extras.object_utils import object_data_add
@@ -66,22 +66,12 @@ class ImportDSCSBase:
         name="Import Animations",
         description="Enable/disable to import/not import animations.",
         default=True)
-    use_alt_skel: BoolProperty(
-        name="Use Rest Pose",
-        description="Enable to use the rest pose without deforming meshes from the bind pose.",
-        default=False)
-    move_to_alt_skel: BoolProperty(
-        name="Use Rest Pose instead of Bind Pose",
-        description="Enable/disable to switch which skeleton is imported.",
-        default=False)
-    import_pose_mesh: BoolProperty(
-        name="Import Rest Pose Skeleton",
-        description="Import the rest pose as a second armature.",
-        default=False)
-    do_import_boundboxes: BoolProperty(
-        name="Import Bounding Boxes [DEBUG]",
-        description="Import bounding boxes (for debugging the skeletons).",
-        default=False)
+    skeleton_mode: EnumProperty(
+        name="Skeleton Type",
+        description="Which skeleton to import. 'Bind Pose' is currently the only one which works with animations.",
+        items=[("Bind Pose", "Bind Pose", "Use the Bind Pose stored in the Geom file.", "", 0),
+               ("Rest Pose", "Rest Pose", "Deform the Bind {ose to the Rest Pose stored in the Skel file.", "", 1),
+               ("Composite Pose", "Composite Pose", "Combines Geom, Skel, and Anim data into what the game seems to use as a base pose for the animations.", "", 2)])
 
     def import_file(self, context, filepath, platform):
         bpy.ops.object.select_all(action='DESELECT')
@@ -90,23 +80,27 @@ class ImportDSCSBase:
         parent_obj = bpy.data.objects.new(filename, None)
 
         bpy.context.collection.objects.link(parent_obj)
-        armature_name = f'{filename}_armature'
-        if self.use_alt_skel:
-            self.import_rest_pose_skeleton(parent_obj, filename, model_data, armature_name)
-        else:
-            self.import_skeleton(parent_obj, filename, model_data, armature_name)
-        if self.import_pose_mesh:
-            self.import_rest_pose_skeleton(parent_obj, filename, model_data, armature_name+"_2")
-        if self.do_import_boundboxes:
-            use_arm_name = armature_name
-            if self.import_pose_mesh:
-                use_arm_name += "_2"
-            self.import_boundboxes(model_data, filename, use_arm_name)
+        # Would be nice to just get these directly from the enum...
+        for pose_name in ["Bind Pose", "Rest Pose", "Composite Pose"]:
+            self.import_skeleton(parent_obj, pose_name, model_data)
+
+        armature_name = self.skeleton_mode
+
         self.import_materials(model_data)
         self.import_meshes(parent_obj, filename, model_data, armature_name)
-        if self.move_to_alt_skel:
-            set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
-        self.import_animations(armature_name, model_data)
+        # if self.skeleton_mode == "Bind Pose":
+        #     self.modify_animation(filename, model_data)
+        # elif self.skeleton_mode == "Rest Pose":
+        #     armature_name = f'Rest Pose'
+        #     set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
+        # elif self.skeleton_mode == "Composite":
+        #     armature_name = f'Composite Pose'
+        #     delta = self.generate_composite_pose_delta(filename, model_data)
+        #     set_new_rest_pose(armature_name, model_data.skeleton.bone_names, delta)
+        # else:
+        #     assert 0, f"Bad input skeleton mode: {self.skeleton_mode}"
+        #
+        # self.import_animations(armature_name, model_data)
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj
@@ -115,9 +109,8 @@ class ImportDSCSBase:
         parent_obj.rotation_euler = (np.pi / 2, 0, 0)
 
     def generate_composite_pose_delta(self, filename, model_data):
-        rest_pose = [item for item in model_data.skeleton.rest_pose_delta]
+        rest_pose = [copy.deepcopy(item) for item in model_data.skeleton.rest_pose_delta]
         base_animation = model_data.animations[filename]
-
         for bone_idx, fcurve in base_animation.rotations.items():
             rest_pose[bone_idx] = self.try_replace_rest_pose_elements(rest_pose[bone_idx], 0, fcurve, rotation=True)
         for bone_idx, fcurve in base_animation.locations.items():
