@@ -1,5 +1,6 @@
 import numpy as np
 from ...Utilities.Interpolation import lerp, produce_interpolation_method
+from ...Utilities.SkeletalAnimation import generate_reference_frames, shift_animation_to_reference_frame
 
 
 def export_animations(armature, model_data, reference_pose, base_animation_data):

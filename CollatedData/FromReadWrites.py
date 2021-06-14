@@ -5,7 +5,8 @@ from ..FileInterfaces.AnimInterface import AnimInterface
 from .IntermediateFormat import IntermediateFormat
 from ..Utilities.Rotation import bone_matrix_from_rotation_location, quat_to_matrix, rotation_matrix_to_quat
 
-import itertools
+from ..Utilities.StringHashing import dscs_name_hash
+
 import os
 import numpy as np
 

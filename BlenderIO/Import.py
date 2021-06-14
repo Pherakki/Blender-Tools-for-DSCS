@@ -9,6 +9,8 @@ from bpy_extras.object_utils import object_data_add
 from mathutils import Vector, Matrix
 from ..CollatedData.FromReadWrites import generate_intermediate_format_from_files
 from ..FileReaders.GeomReader.ShaderUniforms import shader_textures
+from ..Utilities.Matrices import generate_transform_matrix, decompose_matrix, calculate_bone_matrix_relative_to_parent, get_total_transform_matrix
+from ..Utilities.SkeletalAnimation import shift_animation_to_reference_frame
 
 
 def set_new_rest_pose(armature_name, bone_names, rest_pose_delta):

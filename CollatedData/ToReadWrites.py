@@ -10,6 +10,7 @@ from ..FileInterfaces.AnimInterface import AnimInterface
 
 from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names
 from ..Utilities.Rotation import rotation_matrix_to_quat
+from ..Utilities.StringHashing import dscs_name_hash
 
 import os
 import numpy as np
