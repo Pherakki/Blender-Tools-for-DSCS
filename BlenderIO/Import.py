@@ -120,6 +120,43 @@ class ImportDSCSBase:
 
         return rest_pose
 
+    def generate_animation_shifts(self, rest_pose, inverse_bind_pose, animation_pose):
+        # Can vectorise this with tensordot if the inputs are numpy arrays rather than lists of numpy arrays?
+        retval = []
+        for bone_rest_pose, bone_inverse_bind_pose, bone_animation_pose in zip(rest_pose, inverse_bind_pose, animation_pose):
+            # Probably need to put the inverse bind pose & rest pose in here as well as the animation diff
+            # retval.append(np.dot((bone_inverse_bind_pose), bone_rest_pose))
+            retval.append(bone_rest_pose)
+        return retval
+
+    def generate_animation_data(self, filename, model_data):
+        rest_pose = [item for item in model_data.skeleton.rest_pose_delta]
+        base_animation = model_data.animations[filename]
+
+        result = {'rotation_quaternion': {},
+                  'location': {},
+                  'scale': {}}
+
+        for bone_idx, rest_data in enumerate(rest_pose):
+            fcurve = base_animation.rotations[bone_idx]
+            result['rotation_quaternion'][bone_idx] = {k: v for k, v in zip(fcurve.frames, fcurve.values)} if len(fcurve.frames) else {0: np.roll(rest_data[0], 1)}
+            fcurve = base_animation.locations[bone_idx]
+            result['location'][bone_idx] = {k: v for k, v in zip(fcurve.frames, fcurve.values)} if len(fcurve.frames) else {0: rest_data[1][:3]}
+            fcurve = base_animation.scales[bone_idx]
+            result['scale'][bone_idx] = {k: v for k, v in zip(fcurve.frames, fcurve.values)} if len(fcurve.frames) else {0: rest_data[2][:3]}
+
+        return result
+
+    def set_shifted_base_animation(self, filename, model_data, shifted_animation_data):
+        del model_data.animations[filename]
+        new_anim = model_data.new_anim(filename)
+        for bone_idx, rotation_data in shifted_animation_data['rotation_quaternion'].items():
+            new_anim.add_rotation_fcurve(bone_idx, list(rotation_data.keys()), list(rotation_data.values()))
+        for bone_idx, location_data in shifted_animation_data['location'].items():
+            new_anim.add_location_fcurve(bone_idx, list(location_data.keys()), list(location_data.values()))
+        for bone_idx, scale_data in shifted_animation_data['scale'].items():
+            new_anim.add_scale_fcurve(bone_idx, list(scale_data.keys()), list(scale_data.values()))
+
     def modify_animation(self, filename, model_data):
         # Needs to be rest pose delta?
         rest_pose = [item for item in model_data.skeleton.rest_pose_delta]
