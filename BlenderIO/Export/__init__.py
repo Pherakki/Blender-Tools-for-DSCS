@@ -236,7 +236,7 @@ class ExportDSCSBase:
             material.name = bmat.name
             material.shader_hex = bmat.get('shader_hex',
                                            '088100c1_00880111_00000000_00058000')  # maybe use 00000000_00000000_00000000_00000000 instead
-            material.unknown_data['enable_shadows'] = bmat.get('enable_shadows', 1)
+            material.enable_shadows = bmat.get('enable_shadows', 1)
 
             if 'shaders_folder' in bmat:
                 for shader_filename in os.listdir(bmat['shaders_folder']):
