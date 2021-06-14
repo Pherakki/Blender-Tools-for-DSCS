@@ -24,6 +24,9 @@ def shift_animation_to_reference_frame(reference_frames, animation_data):
     locations = animation_data['location']
     scales = animation_data['scale']
 
+    retval = {'rotation_quaternion': {},
+              'location': {},
+              'scale': {}}
     for bone_idx, reference_frame in enumerate(reference_frames):
         rotation_data = rotations.get(bone_idx, {})
         location_data = locations.get(bone_idx, {})
@@ -51,3 +54,9 @@ def shift_animation_to_reference_frame(reference_frames, animation_data):
                 location_data[frame] = t
             if frame in scale_data:
                 scale_data[frame] = s
+
+        # Check if you actually need to return this
+        retval['rotation_quaternion'][bone_idx] = rotation_data
+        retval['location'][bone_idx] = location_data
+        retval['scale'][bone_idx] = scale_data
+    return retval
