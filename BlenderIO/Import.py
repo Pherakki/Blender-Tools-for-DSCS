@@ -257,8 +257,6 @@ class ImportDSCSBase:
         for i, IF_material in enumerate(model_data.materials):
             new_material = bpy.data.materials.new(name=IF_material.name)
             # Unknown data
-            new_material['unknown_0x00'] = IF_material.unknown_data['unknown_0x00']
-            new_material['unknown_0x02'] = IF_material.unknown_data['unknown_0x02']
             new_material['shader_hex'] = IF_material.shader_hex
             new_material['enable_shadows'] = IF_material.enable_shadows
 
