@@ -1,4 +1,5 @@
 import bpy
+import copy
 import numpy as np
 import os
 import shutil
