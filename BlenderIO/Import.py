@@ -121,7 +121,8 @@ class ImportDSCSBase:
         return rest_pose
 
     def modify_animation(self, filename, model_data):
-        rest_pose = [item for item in model_data.skeleton.rest_pose]
+        # Needs to be rest pose delta?
+        rest_pose = [item for item in model_data.skeleton.rest_pose_delta]
         base_animation = model_data.animations[filename]
 
         for bone_idx, rest_data in enumerate(rest_pose):
@@ -140,12 +141,12 @@ class ImportDSCSBase:
 
         return rest_pose
 
-    def try_replace_rest_pose_elements(self, rest_pose, idx, fcurve, rotation=False, location=False):
+    def try_replace_rest_pose_elements(self, transform_elements, idx, fcurve, rotation=False, location=False):
         if len(fcurve.frames):
             assert fcurve.frames[0] == 0, "First frame was not at frame 0."
             # rest_pose[idx] = np.roll(fcurve.values[0], -1) if rotation else fcurve.values[0]
-            rest_pose[idx] = (1., 0., 0., 0) if rotation else ((0., 0., 0.) if location else (1., 1., 1.))
-        return rest_pose
+            transform_elements[idx] = (1., 0., 0., 0) if rotation else ((0., 0., 0.) if location else (1., 1., 1.))
+        return transform_elements
 
     # Merge this with import_skeleton
     def import_rest_pose_skeleton(self, parent_obj, armature_name, model_data):
@@ -404,7 +405,6 @@ class ImportDSCSBase:
             bpy.data.objects[armature_name].select_set(False)
 
     def import_meshes(self, parent_obj, filename, model_data, armature_name):
-
         for i, IF_mesh in enumerate(model_data.meshes):
             # This function should be the best way to remove duplicate vertices (?) but doesn't pick up overlapping polygons with opposite normals
             # verts, faces, map_of_loops_to_model_vertices, map_of_model_verts_to_verts = self.build_loops_and_verts(IF_mesh.vertices, IF_mesh.polygons)
