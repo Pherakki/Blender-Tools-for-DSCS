@@ -153,8 +153,9 @@ class ImportDSCSBase:
             rest_pose[idx] = (1., 0., 0., 0) if rotation else ((0., 0., 0.) if location else (1., 1., 1.))
         return rest_pose
 
-    def import_rest_pose_skeleton(self, parent_obj, filename, model_data, armature_name):
-        model_armature = bpy.data.objects.new(armature_name, bpy.data.armatures.new(f'{filename}_armature_data'))
+    # Merge this with import_skeleton
+    def import_rest_pose_skeleton(self, parent_obj, armature_name, model_data):
+        model_armature = bpy.data.objects.new(armature_name, bpy.data.armatures.new(armature_name))
         bpy.context.collection.objects.link(model_armature)
         model_armature.parent = parent_obj
 
@@ -172,12 +173,6 @@ class ImportDSCSBase:
                 continue
 
             bone_matrix = bone_matrices[i]
-            #pos = bone_matrix[:, 3][:3]
-
-            #####
-
-            #child_pos = pos
-
             bone = model_armature.data.edit_bones.new(child_name)
 
             list_of_bones[child_name] = bone
@@ -185,17 +180,14 @@ class ImportDSCSBase:
             bone.tail = np.array([0., 0.2, 0.])  # Make this scale with the model size in the future, for convenience
             bone.transform(Matrix(bone_matrix.tolist()))
 
-            #bone.head = np.array([0., 0., 0.]) + child_pos
-            #bone.tail = np.array(bone.tail) + child_pos
-
             if parent != -1:
                 bone.parent = list_of_bones[model_data.skeleton.bone_names[parent]]
 
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.view_layer.objects.active = parent_obj
 
-    def import_skeleton(self, parent_obj, filename, model_data, armature_name):
-        model_armature = bpy.data.objects.new(armature_name, bpy.data.armatures.new(f'{filename}_armature_data'))
+    def import_skeleton(self, parent_obj, armature_name, model_data):
+        model_armature = bpy.data.objects.new(armature_name, bpy.data.armatures.new(armature_name))
         bpy.context.collection.objects.link(model_armature)
         model_armature.parent = parent_obj
 
@@ -212,34 +204,13 @@ class ImportDSCSBase:
             if child_name in list_of_bones:
                 continue
 
-            bm = bone_matrices[child]
-            # This should just be the inverse though?!
-            pos = bm[:3, 3]
-            pos *= -1  # For some reason, need to multiply the positions by -1?
-
-            rotation = bm[:3, :3]
-            pos = np.dot(rotation.T, pos)  # And then rotate them?!
-
-            bone_matrix = np.zeros((4, 4))
-            bone_matrix[3, :3] = pos
-            bone_matrix[:3, :3] = rotation.T
-            bone_matrix[3, 3] = 1
-
-            #bone_matrix = np.linalg.inv(bm)
-
-            #####
-
-            child_pos = pos
-
+            bone_matrix = np.linalg.inv(bone_matrices[child])
             bone = model_armature.data.edit_bones.new(child_name)
 
             list_of_bones[child_name] = bone
             bone.head = np.array([0., 0., 0.])
             bone.tail = np.array([0., 0.2, 0.])  # Make this scale with the model size in the future, for convenience
             bone.transform(Matrix(bone_matrix.tolist()))
-
-            bone.head = np.array([0., 0., 0.]) + child_pos
-            bone.tail = np.array(bone.tail) + child_pos
 
             if parent != -1:
                 bone.parent = list_of_bones[model_data.skeleton.bone_names[parent]]
