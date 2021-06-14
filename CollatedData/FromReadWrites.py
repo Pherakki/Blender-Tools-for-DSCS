@@ -44,7 +44,7 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     model_data = IntermediateFormat()
     add_meshes(model_data, imported_geomdata)
     add_textures(model_data, imported_geomdata, images_directory)
-    add_materials(model_data, imported_namedata, imported_geomdata, filename)
+    add_materials(model_data, imported_namedata, imported_geomdata)
     add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata)
     add_anims(model_data, imported_animdata)
 
@@ -77,8 +77,7 @@ def add_meshes(model_data, imported_geomdata):
 
         # Add unknown data
         current_IF_mesh.unknown_data['unknown_0x31'] = mesh.unknown_0x31
-        current_IF_mesh.unknown_data['unknown_0x34'] = mesh.unknown_0x34
-        current_IF_mesh.unknown_data['unknown_0x36'] = mesh.unknown_0x36
+        current_IF_mesh.name_hash = mesh.name_hash
         current_IF_mesh.unknown_data['unknown_0x4C'] = mesh.unknown_0x4C
 
         model_data.meshes[-1] = current_IF_mesh
@@ -91,18 +90,13 @@ def add_meshes(model_data, imported_geomdata):
     model_data.unknown_data['unknown_footer_data'] = imported_geomdata.unknown_footer_data
 
 
-def add_materials(model_data, imported_namedata, imported_geomdata, filename):
-    #assert len(imported_namedata.material_names) == len(imported_geomdata.material_data), \
-    #    f"Mismatch between material names and unique material data. {len(imported_namedata.material_names)} {len(imported_geomdata.material_data)}"
-    model_data.unknown_data['material names'] = imported_namedata.material_names
+def add_materials(model_data, imported_namedata, imported_geomdata):
+    material_names = imported_namedata.material_names
+    material_name_hashes = [dscs_name_hash(name) for name in material_names]
     for i, material in enumerate(imported_geomdata.material_data):
         model_data.new_material()
-        # I can't figure out how to match up the material names to the materials yet when there are fewer names than materials
-        model_data.materials[-1].name = filename + "_mat_{:03d}".format(i)  # str(i)  # model_data.unknown_data['material names'][i]
 
-        # Add unknown data
-        model_data.materials[-1].unknown_data['unknown_0x00'] = material.unknown_0x00
-        model_data.materials[-1].unknown_data['unknown_0x02'] = material.unknown_0x02
+        model_data.materials[-1].name = material_names[material_name_hashes.index(material.name_hash.hex())]
         model_data.materials[-1].shader_hex = material.shader_hex
         model_data.materials[-1].unknown_data['enable_shadows'] = material.enable_shadows
 
@@ -126,7 +120,6 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     # Put the unknown data into the skeleton
     model_data.skeleton.unknown_data['unknown_0x0C'] = imported_skeldata.unknown_0x0C
     model_data.skeleton.unknown_data['unknown_data_1'] = imported_skeldata.unknown_data_1
-    model_data.skeleton.unknown_data['unknown_data_2'] = imported_skeldata.unknown_data_2
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
     model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4
     parent_bones = {p: c for p, c in imported_skeldata.parent_bones}

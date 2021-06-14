@@ -86,8 +86,7 @@ class MeshInterface:
         meshReader.max_vertex_groups_per_vertex = 0 if len(meshReader.weighted_bone_idxs) == 1 else meshReader.max_vertex_groups_per_vertex
         meshReader.unknown_0x31 = self.unknown_0x31
         meshReader.polygon_numeric_data_type = 4  # Can only write to triangles atm
-        meshReader.unknown_0x34 = self.unknown_0x34
-        meshReader.unknown_0x36 = self.unknown_0x36
+        meshReader.name_hash = self.name_hash
         meshReader.material_id = self.material_id
         meshReader.num_vertices = len(meshReader.vertex_data)
 

@@ -247,7 +247,6 @@ class ImportDSCSBase:
         # Add the unknown data
         model_armature['unknown_0x0C'] = model_data.skeleton.unknown_data['unknown_0x0C']
         model_armature['unknown_data_1'] = model_data.skeleton.unknown_data['unknown_data_1']
-        model_armature['unknown_data_2'] = model_data.skeleton.unknown_data['unknown_data_2']
         model_armature['unknown_data_3'] = model_data.skeleton.unknown_data['unknown_data_3']
         model_armature['unknown_data_4'] = model_data.skeleton.unknown_data['unknown_data_4']
 
@@ -508,8 +507,7 @@ class ImportDSCSBase:
 
             # Add unknown data
             mesh_object['unknown_0x31'] = IF_mesh.unknown_data['unknown_0x31']
-            mesh_object['unknown_0x34'] = IF_mesh.unknown_data['unknown_0x34']
-            mesh_object['unknown_0x36'] = IF_mesh.unknown_data['unknown_0x36']
+            mesh_object['name_hash'] = IF_mesh.name_hash
             mesh_object['unknown_0x4C'] = IF_mesh.unknown_data['unknown_0x4C']
 
             bpy.data.objects[meshobj_name].select_set(True)

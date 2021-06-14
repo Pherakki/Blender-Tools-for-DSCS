@@ -55,7 +55,6 @@ class ExportDSCSBase:
                                                              'rotation_quaternion': [1., 0., 0., 0.],
                                                              'scale': [1., 1., 1.]}))
 
-        model_data.unknown_data['material names'] = [material.name for material in model_data.materials]
         # Top-level unknown data
         model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
         model_data.unknown_data['unknown_cam_data_2'] = parent_obj.get('unknown_cam_data_2', [])
@@ -91,7 +90,6 @@ class ExportDSCSBase:
         # Get the unknown data
         model_data.skeleton.unknown_data['unknown_0x0C'] = model_armature.get('unknown_0x0C', 0)
         model_data.skeleton.unknown_data['unknown_data_1'] = model_armature.get('unknown_data_1', [])
-        model_data.skeleton.unknown_data['unknown_data_2'] = model_armature.get('unknown_data_2', [0, 0]*len(bone_name_list))
         model_data.skeleton.unknown_data['unknown_data_3'] = model_armature.get('unknown_data_3', [])
         model_data.skeleton.unknown_data['unknown_data_4'] = model_armature.get('unknown_data_4', [])
 
@@ -123,8 +121,7 @@ class ExportDSCSBase:
                 md.material_id = mat_names.index(matname)
 
             md.unknown_data['unknown_0x31'] = mesh_obj.get('unknown_0x31', 1)
-            md.unknown_data['unknown_0x34'] = mesh_obj.get('unknown_0x34', 0)
-            md.unknown_data['unknown_0x36'] = mesh_obj.get('unknown_0x36', 0)
+            md.name_hash = mesh_obj.get('name_hash', '00000000')
             md.unknown_data['unknown_0x4C'] = mesh_obj.get('unknown_0x4C', 0)
 
     def generate_link_loops(self, mesh):
@@ -237,8 +234,6 @@ class ExportDSCSBase:
             material = model_data.new_material()
             node_tree = bmat.node_tree
             material.name = bmat.name
-            material.unknown_data['unknown_0x00'] = bmat.get('unknown_0x00', 0)
-            material.unknown_data['unknown_0x02'] = bmat.get('unknown_0x02', 0)
             material.shader_hex = bmat.get('shader_hex',
                                            '088100c1_00880111_00000000_00058000')  # maybe use 00000000_00000000_00000000_00000000 instead
             material.unknown_data['enable_shadows'] = bmat.get('enable_shadows', 1)

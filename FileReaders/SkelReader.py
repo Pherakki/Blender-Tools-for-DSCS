@@ -188,5 +188,5 @@ class SkelReader(BaseRW):
     def reinterpret_skel_data(self):
         self.bone_hierarchy_data = self.flatten_list(self.bone_hierarchy_data)
         self.bone_data = self.flatten_list(self.flatten_list(self.bone_data))
-        self.bone_name_hashes = self.flatten_list(self.bone_name_hashes)
+        self.bone_name_hashes = b''.join(self.bone_name_hashes)
         self.parent_bones = [parent for child, parent in self.parent_bones]

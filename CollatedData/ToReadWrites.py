@@ -43,7 +43,7 @@ def make_skelinterface(filepath, model_data):
                                for i in range(len(parent_bones))]
 
     skelInterface.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']
-    skelInterface.unknown_data_2 = model_data.skeleton.unknown_data['unknown_data_2']
+    skelInterface.bone_name_hashes = [dscs_name_hash(bone_name) for bone_name in model_data.skeleton.bone_names]
     skelInterface.unknown_data_3 = model_data.skeleton.unknown_data['unknown_data_3']
     skelInterface.unknown_data_4 = model_data.skeleton.unknown_data['unknown_data_4']
 
@@ -79,8 +79,7 @@ def make_geominterface(filepath, model_data, platform):
     for mesh in model_data.meshes:
         gi_mesh = geomInterface.add_mesh()
         gi_mesh.unknown_0x31 = mesh.unknown_data['unknown_0x31']
-        gi_mesh.unknown_0x34 = mesh.unknown_data['unknown_0x34']
-        gi_mesh.unknown_0x36 = mesh.unknown_data['unknown_0x36']
+        gi_mesh.name_hash = mesh.name_hash
         gi_mesh.unknown_0x4C = mesh.unknown_data['unknown_0x4C']
 
         for uv_type in ['UV', 'UV2', 'UV3']:
@@ -97,8 +96,7 @@ def make_geominterface(filepath, model_data, platform):
     geomInterface.material_data = []
     for mat in model_data.materials:
         gi_mat = geomInterface.add_material()
-        gi_mat.unknown_0x00 = mat.unknown_data['unknown_0x00']
-        gi_mat.unknown_0x02 = mat.unknown_data['unknown_0x02']
+        gi_mat.name_hash = dscs_name_hash(mat.name)
         gi_mat.shader_hex = mat.shader_hex
         gi_mat.enable_shadows = mat.unknown_data['enable_shadows']
 

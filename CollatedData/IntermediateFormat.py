@@ -40,6 +40,7 @@ class IntermediateFormat:
         
 class MeshData:
     def __init__(self):
+        self.name_hash = None
         self.vertices = []
         self.vertex_groups = []
         self.polygons = []
