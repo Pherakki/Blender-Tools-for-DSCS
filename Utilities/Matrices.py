@@ -17,7 +17,7 @@ def get_total_transform(idx, parent_bones, bone_data):
         return rot, loc
 
 
-def get_total_transform_matrix(idx, parent_bones, bone_data):
+def get_total_transform_matrix(idx, parent_bones, bone_data, WXYZ=False):
     if idx == -1:
         bone_matrix = np.eye(4)
         return bone_matrix
@@ -25,9 +25,7 @@ def get_total_transform_matrix(idx, parent_bones, bone_data):
         parent_idx = parent_bones[idx]
         parent_bone_matrix = get_total_transform_matrix(parent_idx, parent_bones, bone_data)
 
-        diff_bone_matrix = np.zeros((4, 4))
-        diff_bone_matrix[:3, :3] = quat_to_matrix(bone_data[idx][0])
-        diff_bone_matrix[:, 3] = np.array(bone_data[idx][1])
+        diff_bone_matrix = generate_transform_matrix(*bone_data[idx], WXYZ)
 
         return np.dot(parent_bone_matrix, diff_bone_matrix)
 
@@ -66,9 +64,9 @@ def generate_transform_delta(parent_bones, rest_pose, inverse_bind_pose_matrices
 
 
 def generate_transform_matrix(quat, location, scale, WXYZ=False):
-    translation_matrix = generate_translation_matrix(location)
+    translation_matrix = generate_translation_matrix(location[:3])
     rotation_matrix = generate_rotation_matrix(quat, WXYZ)
-    scale_matrix = generate_scale_matrix(scale)
+    scale_matrix = generate_scale_matrix(scale[:3])
 
     return np.dot(translation_matrix, np.dot(rotation_matrix, scale_matrix))
 
@@ -111,7 +109,5 @@ def apply_transform_to_keyframe(transform, index, rotations, rotation_interpolat
     scale = scales.get(index, scale_interpolator(index))
 
     transformation_matrix = generate_transform_matrix(quat, trans, scale, WXYZ=True)
-
     total_transformation = np.dot(transform, transformation_matrix)
-
     return decompose_matrix(total_transformation, WXYZ=True)
