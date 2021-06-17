@@ -1,5 +1,4 @@
 import numpy as np
-from ...Utilities.Interpolation import lerp, produce_interpolation_method
 from ...Utilities.SkeletalAnimation import generate_reference_frames, shift_animation_to_reference_frame
 
 
@@ -18,7 +17,7 @@ def export_animations(armature, model_data, reference_pose, base_animation_data)
                       'rotation_quaternion': [1., 0., 0., 0.],
                       'scale': [1., 1., 1.]}
 
-    # reference_frames = generate_reference_frames(reference_pose, base_animation_data)
+    reference_frames = generate_reference_frames(reference_pose, base_animation_data)
 
     for nla_track in armature.animation_data.nla_tracks:
         strips = nla_track.strips
@@ -32,7 +31,7 @@ def export_animations(armature, model_data, reference_pose, base_animation_data)
 
         animation_data = get_nla_strip_data(nla_strip, curve_defaults)
 
-        # shift_animation_to_reference_frame(reference_frames, animation_data)
+        shift_animation_to_reference_frame(reference_frames, animation_data)
 
         ad = model_data.new_anim(nla_track.name)
         ad.playback_rate = fps
