@@ -30,7 +30,7 @@ def get_total_transform_matrix(idx, parent_bones, bone_data, WXYZ=False):
         return np.dot(parent_bone_matrix, diff_bone_matrix)
 
 
-def calculate_bone_matrix_relative_to_parent(idx, parent_bones, inv_bind_pose_matrices):
+def calculate_bone_matrix_relative_to_parent_inverted(idx, parent_bones, inv_bind_pose_matrices):
     par = parent_bones[idx]
     if par == -1:
         pbm = np.eye(4)
@@ -47,6 +47,19 @@ def calculate_bone_matrix_relative_to_parent(idx, parent_bones, inv_bind_pose_ma
     return diff
 
 
+def calculate_bone_matrix_relative_to_parent(idx, parent_bones, bone_matrices):
+    par = parent_bones[idx]
+    if par == -1:
+        pbm = np.eye(4)
+    else:
+        pbm = bone_matrices[par]
+    bm = bone_matrices[idx]
+
+    diff = np.dot(np.linalg.inv(pbm), bm)
+
+    return diff
+
+
 def generate_transform_delta(parent_bones, rest_pose, inverse_bind_pose_matrices):
     result = []
     for i, (inverse_matrix, (quat, loc, scl)) in enumerate(zip(inverse_bind_pose_matrices, rest_pose)):
@@ -55,7 +68,7 @@ def generate_transform_delta(parent_bones, rest_pose, inverse_bind_pose_matrices
         bone_matrix[:3, 3] = loc[:3]
         bone_matrix[3, 3] = 1
 
-        bm = calculate_bone_matrix_relative_to_parent(i, parent_bones, inverse_bind_pose_matrices)
+        bm = calculate_bone_matrix_relative_to_parent_inverted(i, parent_bones, inverse_bind_pose_matrices)
         diff = np.dot(np.linalg.inv(bm), bone_matrix)
         diff_quat = rotation_matrix_to_quat(diff[:3, :3])
         diff_pos = diff[:3, 3]

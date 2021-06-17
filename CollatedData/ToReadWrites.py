@@ -37,10 +37,7 @@ def make_skelinterface(filepath, model_data):
     skelInterface = SkelInterface()
     skelInterface.unknown_0x0C = model_data.skeleton.unknown_data['unknown_0x0C']
     skelInterface.parent_bones = model_data.skeleton.bone_relations
-    # Add support for deltas and handle scale on import later
-    parent_bones = {c: p for c, p in model_data.skeleton.bone_relations}
-    skelInterface.rest_pose = [calculate_bone_relative_to_parent(i, parent_bones, model_data.skeleton.inverse_bind_pose_matrices)
-                               for i in range(len(parent_bones))]
+    skelInterface.rest_pose = model_data.skeleton.rest_pose
 
     skelInterface.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']
     skelInterface.bone_name_hashes = [dscs_name_hash(bone_name) for bone_name in model_data.skeleton.bone_names]
@@ -50,26 +47,6 @@ def make_skelinterface(filepath, model_data):
     skelInterface.to_file(filepath + ".skel")
 
     return skelInterface
-
-
-def calculate_bone_relative_to_parent(idx, parent_bones, inv_bind_pose_matrices):
-    par = parent_bones[idx]
-    if par == -1:
-        pbm = np.eye(4)
-    else:
-        pbm = inv_bind_pose_matrices[par]
-    bm = inv_bind_pose_matrices[idx]
-
-    # Remember that bm is the inverse of the bone matrix, and pbm is the inverse of the parent's bone matrix,
-    # so what we're really doing here is multiplying the inverse parent matrix by the ordinary child matrix.
-    # This leaves us with just the transform of the child relative to the parent, since all the parent's contribution
-    # to the child's transform has been taken off
-    diff = np.dot(pbm, np.linalg.inv(bm))
-
-    pos = diff[:, 3]
-    rot = rotation_matrix_to_quat(diff[:3, :3])
-
-    return rot, pos, np.ones(4)
 
 
 def make_geominterface(filepath, model_data, platform):
