@@ -716,3 +716,9 @@ def match_quaternion_signs(comparison_quat, quat):
 
     return sign * quat
 
+    # diff = comparison_quat - quat
+    # sum_ = comparison_quat + quat
+    # if np.dot(diff, diff) < np.dot(sum_, sum_):
+    #     return -quat
+    # else:
+    #     return quat

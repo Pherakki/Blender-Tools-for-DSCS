@@ -255,6 +255,7 @@ class AnimReader(BaseRW):
         # 4 bytes assigned to each idx in unknown_bone_idxs_4
         # Probably texture UVs
         """
+        # unknown 0x1C - number of materials?
         self.assert_file_pointer_now_at(self.abs_ptr_static_unknown_4)
         rw_operator('unknown_data_4', 'f'*self.unknown_0x1C, force_1d=True)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
@@ -542,7 +543,6 @@ def serialise_quaternion(quat):
     components = np.roll(quat, -1)
     abs_components = np.abs(components)
     abs_largest_component = np.amax(abs_components)
-
     largest_index = np.where(abs_components == abs_largest_component)[0][0]
     largest_component = components[largest_index]
     largest_component_sign = np.sign(largest_component)
