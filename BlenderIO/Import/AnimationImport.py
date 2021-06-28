@@ -6,7 +6,6 @@ def import_animations(armature_name, model_data):
     bpy.context.view_layer.objects.active = model_armature
     bpy.ops.object.mode_set(mode="POSE")
 
-    model_armature.animation_data_create()
     for animation_name, animation_data in list(model_data.animations.items())[::-1]:
         action = bpy.data.actions.new(animation_name)
 
