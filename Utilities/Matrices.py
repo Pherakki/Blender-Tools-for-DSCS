@@ -24,7 +24,6 @@ def get_total_transform_matrix(idx, parent_bones, bone_data, WXYZ=False):
     else:
         parent_idx = parent_bones[idx]
         parent_bone_matrix = get_total_transform_matrix(parent_idx, parent_bones, bone_data)
-
         diff_bone_matrix = generate_transform_matrix(*bone_data[idx], WXYZ)
 
         return np.dot(parent_bone_matrix, diff_bone_matrix)
