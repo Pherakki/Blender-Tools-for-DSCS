@@ -87,7 +87,7 @@ class SkelReader(BaseRW):
         chunk_cleanup(self.bytestream.tell(), 16)
         self.rw_bone_name_hashes(rw_operator_raw)
         self.rw_unknown_data_3(rw_operator)
-        self.rw_unknown_data_4(rw_operator)
+        self.rw_unknown_data_4(rw_operator_raw)
         chunk_cleanup(self.bytestream.tell() - self.remaining_bytes_after_parent_bones_chunk, 16)
 
     def rw_header(self, rw_operator, rw_operator_ascii):
@@ -161,17 +161,19 @@ class SkelReader(BaseRW):
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_3)
         #bytes_to_read = self.unknown_0x0C * 4
         # Looks like uint32s, no idea what these are for though.
-        rw_operator('unknown_data_3', 'I'*self.unknown_0x0C)
+        rw_operator('unknown_data_3', 'I'*self.unknown_0x0C, force_1d=True)
 
-    def rw_unknown_data_4(self, rw_operator):
+    def rw_unknown_data_4(self, rw_operator_raw):
         # ???
-        rw_operator('unknown_data_4', 'HH'*self.unknown_0x0C)
+        rw_operator_raw('unknown_data_4', 4*self.unknown_0x0C)
 
     def interpret_skel_data(self):
         self.bone_hierarchy_data = self.chunk_list(self.bone_hierarchy_data, 8)
         self.bone_data = self.chunk_list(self.chunk_list(self.bone_data, 4), 3)
         self.bone_name_hashes = self.chunk_list(self.bone_name_hashes, 4)
         self.parent_bones = [(i, idx) for i, idx in enumerate(self.parent_bones)]
+        self.unknown_data_4 = self.chunk_list(self.unknown_data_4, 4)
+        self.unknown_data_4 = [item.hex() for item in self.unknown_data_4]
         # Basic error checking - make sure no bone idx exceeds the known number of bones
         if len(self.parent_bones) != 0:
             max_idx = max([subitem for item in self.parent_bones for subitem in item])
@@ -190,3 +192,5 @@ class SkelReader(BaseRW):
         self.bone_data = self.flatten_list(self.flatten_list(self.bone_data))
         self.bone_name_hashes = b''.join(self.bone_name_hashes)
         self.parent_bones = [parent for child, parent in self.parent_bones]
+        self.unknown_data_4 = [bytes.fromhex(item) for item in self.unknown_data_4]
+        self.unknown_data_4 = b''.join(self.unknown_data_4)
