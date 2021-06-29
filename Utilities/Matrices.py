@@ -115,11 +115,14 @@ def decompose_matrix(transform, WXYZ=False):
     return translation, quat, np.array([scale_x, scale_y, scale_z])
 
 
-def apply_transform_to_keyframe(transform, index, rotations, rotation_interpolator, locations, location_interpolator, scales, scale_interpolator):
+def apply_transform_to_keyframe(transform, index, rotations, rotation_interpolator, locations, location_interpolator, scales, scale_interpolator, flipped_order=False):
     quat = rotations.get(index, rotation_interpolator(index))
     trans = locations.get(index, location_interpolator(index))
     scale = scales.get(index, scale_interpolator(index))
 
     transformation_matrix = generate_transform_matrix(quat, trans, scale, WXYZ=True)
-    total_transformation = np.dot(transform, transformation_matrix)
+    if flipped_order:
+        total_transformation = np.dot(transformation_matrix, transform)
+    else:
+        total_transformation = np.dot(transform, transformation_matrix)
     return decompose_matrix(total_transformation, WXYZ=True)
