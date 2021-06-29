@@ -77,8 +77,8 @@ def import_rest_pose_to_poselib(parent_obj, armature_name, model_data):
 
     # Set the rest pose on the armature
     model_armature.pose_library = rest_pose_action
-    model_armature.pose_library.pose_markers.active_index = 0
     bpy.ops.poselib.action_sanitize()
+    model_armature.pose_library.pose_markers.active_index = 0
     bpy.ops.poselib.apply_pose(0)
 
     bpy.ops.object.mode_set(mode='OBJECT')
