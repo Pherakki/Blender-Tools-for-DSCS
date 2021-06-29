@@ -19,14 +19,11 @@ def generate_reference_frames(pose_matrices, animation_data):
     return result
 
 
-
-
-def get_nla_strip_data(nla_strip, curve_defaults):
+def get_action_data(action, curve_defaults):
     animation_data = {'location': {},
                       'rotation_quaternion': {},
                       'scale': {}}
 
-    action = nla_strip.action
     groups = group_fcurves(action)
     for bone_name, group in groups.items():
         # Get whether any of the locations, rotations, and scales are animated; plus the f-curves for those
