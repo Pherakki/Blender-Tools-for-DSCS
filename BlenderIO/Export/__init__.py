@@ -9,6 +9,7 @@ from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
 from ...FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
 # from .ExportAnimation import export_animations, get_nla_strip_data
+from ..DSCSBlenderUtils import find_selected_model
 
 from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, generate_transform_delta, decompose_matrix
 from ...Utilities.Reposing import set_new_rest_pose
@@ -26,7 +27,7 @@ class ExportDSCSBase:
 
     def export_file(self, context, filepath, platform, copy_shaders=True):
         # Grab the parent object
-        parent_obj = self.find_model_to_export()
+        parent_obj = find_selected_model()
         assert parent_obj.mode == 'OBJECT', f"Current mode is {parent_obj.mode}; ensure that Object Mode is selected before attempting to export."
         assert parent_obj.type == 'EMPTY', f"Top-level object \"{parent_obj.name}\" is not an empty axis object."
         validate_blender_data(parent_obj)
@@ -68,20 +69,6 @@ class ExportDSCSBase:
         model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
 
         generate_files_from_intermediate_format(filepath, model_data, platform)
-
-    def find_model_to_export(self):
-        try:
-            parent_obj = bpy.context.selected_objects[0]
-
-            sel_obj = None
-            while parent_obj is not None:
-                sel_obj = parent_obj
-                parent_obj = sel_obj.parent
-            parent_obj = sel_obj
-            return parent_obj
-        except Exception as e:
-            raise Exception("No object selected. Ensure you have selected some part of the model you wish to export in "
-                            "Object Mode before attempting to export.") from e
 
     def find_armatures(self, parent_object):
         bind_pose = None
