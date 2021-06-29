@@ -87,7 +87,6 @@ def shift_animation_by_transforms(transforms, animation_data):
         all_frames.update(set(scale_data.keys()))
         all_frames = sorted(list(all_frames))
 
-        print(transform)
         for frame in all_frames:
             t, r, s = apply_transform_to_keyframe(generate_transform_matrix(*transform), frame, rotation_data, rotation_interpolator,
                                                   location_data, location_interpolator, scale_data, scale_interpolator)
@@ -98,7 +97,6 @@ def shift_animation_by_transforms(transforms, animation_data):
             if frame in scale_data:
                 scale_data[frame] = s
 
-        # Check if you actually need to return this
         retval['rotation_quaternion'][bone_idx] = rotation_data
         retval['location'][bone_idx] = location_data
         retval['scale'][bone_idx] = scale_data
