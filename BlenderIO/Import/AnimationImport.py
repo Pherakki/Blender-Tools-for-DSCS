@@ -3,6 +3,7 @@ import bpy
 
 def import_animations(armature_name, model_data):
     model_armature = bpy.data.objects[armature_name]
+    model_armature.animation_data_create()
     bpy.context.view_layer.objects.active = model_armature
     bpy.ops.object.mode_set(mode="POSE")
 
