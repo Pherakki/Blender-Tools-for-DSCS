@@ -31,7 +31,7 @@ class MeshInterface:
     def __init__(self):
         self.unknown_0x31 = None
         self.name_hash = None
-        self.unknown_0x4C = None
+        self.bounding_sphere_radius = None
 
         self.vertices = []
         self.vertex_group_bone_idxs = []
@@ -45,7 +45,7 @@ class MeshInterface:
         interface = cls()
         interface.unknown_0x31 = meshReader.unknown_0x31
         interface.name_hash = meshReader.name_hash
-        interface.unknown_0x4C = meshReader.unknown_0x4C
+        interface.bounding_sphere_radius = meshReader.bounding_sphere_radius
 
         interface.vertices = process_posweights(meshReader.vertex_data, meshReader.max_vertex_groups_per_vertex)
         interface.vertex_group_bone_idxs = meshReader.weighted_bone_idxs
@@ -93,7 +93,7 @@ class MeshInterface:
         meshReader.num_polygon_idxs = len(meshReader.polygon_data)
         meshReader.padding_0x44 = 0
         meshReader.padding_0x48 = 0
-        meshReader.unknown_0x4C = self.unknown_0x4C
+        meshReader.bounding_sphere_radius = self.bounding_sphere_radius
 
         vertices = np.array([v['Position'] for v in self.vertices])
         minvs = np.min(vertices, axis=0)
