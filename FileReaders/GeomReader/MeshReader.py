@@ -53,7 +53,7 @@ class MeshReaderBase(BaseRW):
         self.num_polygon_idxs = None
         self.padding_0x44 = None
         self.padding_0x48 = None
-        self.unknown_0x4C = None
+        self.bounding_sphere_radius = None
         self.mesh_centre = None
         self.bounding_box_lengths = None
 
@@ -83,19 +83,12 @@ class MeshReaderBase(BaseRW):
         rw_operator('num_weighted_bone_idxs', 'H')  # Lists a set of bones near the mesh
         rw_operator('num_vertex_components', 'H')
         rw_operator('bytes_per_vertex', 'H')
-        rw_operator('always_5123', 'H')  # Always 5123?!
+        rw_operator('always_5123', 'H')  # Matches GL_UNSIGNED_SHORT value
         self.assert_equal('always_5123', self.header_breaker)
         # PS4: self.assert_equal('always_5123', 0)
 
-        # pc002:
-        # Unknown0x34, Unknown0x36 the same for meshes 0-6: these are individual body parts with a single material each
-        # They are also the same for meshes 7-8: these seem to be 'outline' meshes.
-        # 0x30, 0x31 look like switches of some variety...
-        # Same with unknown_0x34
-        # Setting unknown_0x31 to 4 makes pc002 mesh disappear, setting to 5 seems to remap the bone weights.
-        # Might describe how to build the polygons?
         rw_operator('max_vertex_groups_per_vertex', 'B')  # takes values 0, 1, 2, 3, 4: 0 means map everything to idx 0, 1 means the idxs are in the position vector
-        rw_operator('unknown_0x31', 'B')  # values 1, 4, 5: 4 means pos and normal only, diff between 1 nad 5 is what?? 1 doesn't have unk vt 2... 5 can have 0 weights, 1 cannot
+        rw_operator('unknown_0x31', 'B')  # Mesh flags: 0 - isRendered, 1 - isWireframe, 2 - skinning indices are consecutive
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
         rw_operator_raw('name_hash', 4)
 
@@ -107,7 +100,7 @@ class MeshReaderBase(BaseRW):
         self.assert_is_zero('padding_0x44')
         rw_operator('padding_0x48', 'I')
         self.assert_is_zero('padding_0x48')
-        rw_operator('unknown_0x4C', 'f')  # May be related to the two below?!
+        rw_operator('bounding_sphere_radius', 'f')
         rw_operator('mesh_centre', 'fff')
         rw_operator('bounding_box_lengths', 'fff')
 
