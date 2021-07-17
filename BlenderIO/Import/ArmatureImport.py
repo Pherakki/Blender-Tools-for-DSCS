@@ -43,8 +43,6 @@ def import_skeleton(parent_obj, armature_name, model_data):
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.context.view_layer.objects.active = parent_obj
 
-    import_rest_pose_to_poselib(parent_obj, armature_name, model_data)
-
 
 def import_rest_pose_to_poselib(parent_obj, armature_name, model_data):
     model_armature = bpy.data.objects[armature_name]
@@ -54,7 +52,7 @@ def import_rest_pose_to_poselib(parent_obj, armature_name, model_data):
     bpy.ops.object.mode_set(mode='POSE')
 
     model_armature.animation_data_create()
-    model_name = armature_name[:-9] # Cut off the letters "_armature"
+    model_name = armature_name[:-9]  # Cut off the letters "_armature"
     rest_pose_action = bpy.data.actions.new(model_name + "_restpose")
 
     for j, (bone_name, rpd) in enumerate(zip(model_data.skeleton.bone_names, rest_pose_delta)):
@@ -66,7 +64,7 @@ def import_rest_pose_to_poselib(parent_obj, armature_name, model_data):
             fcs = []
             for i, component in enumerate(translation_element):
                 fc = rest_pose_action.fcurves.new(f'pose.bones["{bone_name}"].{string_element}', index=i)
-                fc.keyframe_points.insert(0, component)
+                fc.keyframe_points.insert(1, component)
                 fc.group = actiongroup
                 fc.lock = True
                 fcs.append(fc)
@@ -76,10 +74,14 @@ def import_rest_pose_to_poselib(parent_obj, armature_name, model_data):
                 fc.lock = False
 
     # Set the rest pose on the armature
+    set_rest_pose_on_object(rest_pose_action, model_armature)
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.context.view_layer.objects.active = parent_obj
+
+
+def set_rest_pose_on_object(rest_pose_action, model_armature):
     model_armature.pose_library = rest_pose_action
     bpy.ops.poselib.action_sanitize()
     model_armature.pose_library.pose_markers.active_index = 0
     bpy.ops.poselib.apply_pose(0)
-
-    bpy.ops.object.mode_set(mode='OBJECT')
-    bpy.context.view_layer.objects.active = parent_obj
