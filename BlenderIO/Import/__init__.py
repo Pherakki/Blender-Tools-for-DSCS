@@ -11,6 +11,7 @@ from ...Utilities.ExportedAnimationReposingFunctions import shift_animation_data
 from .ArmatureImport import import_skeleton
 from .MaterialImport import import_materials
 from .MeshImport import import_meshes
+from ...Utilities.Reposing import set_new_rest_pose
 
 
 class ImportDSCSBase:
@@ -24,20 +25,22 @@ class ImportDSCSBase:
                                              options={'HIDDEN'},
                                          )
 
-    import_anims: BoolProperty(
-        name="Import Animations",
-        description="Enable/disable to import/not import animations.",
-        default=True)
-    skeleton_mode: EnumProperty(
-        name="Skeleton Type",
-        description="Which skeleton to import. 'Bind Pose' is currently the only one which works with animations.",
-        items=[("Bind Pose", "Bind Pose", "Use the Bind Pose stored in the Geom file.", "", 0),
-               ("Rest Pose", "Rest Pose", "Deform the Bind {ose to the Rest Pose stored in the Skel file.", "", 1),
-               ("Composite Pose", "Composite Pose", "Combines Geom, Skel, and Anim data into what the game seems to use as a base pose for the animations.", "", 2)])
+    platform: EnumProperty(
+        name="Platform",
+        description="Select which platform the model is for.",
+        items=[("PC", "PC", "Imports a DSCS Complete Edition PC model", "", 0),
+               ("PS4", "PS4 (WIP)", "Imports a DSCS pr DSHM PS4 model. Not fully tested", "", 1)])
+
+    import_mode: EnumProperty(
+        name="Import Mode",
+        description="Which mode to import in.",
+        items=[("Modelling", "Modelling", "Imports the model in the Bind Pose with its base animation only", "", 0),
+               ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
+               ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display corectly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
 
     def import_file(self, context, filepath, platform):
         bpy.ops.object.select_all(action='DESELECT')
-        model_data = generate_intermediate_format_from_files(filepath, platform, self.import_anims)
+        model_data = generate_intermediate_format_from_files(filepath, self.platform, True)
         filename = os.path.split(filepath)[-1]
         armature_name = filename + "_armature"
         parent_obj = bpy.data.objects.new(filename, None)
@@ -48,6 +51,10 @@ class ImportDSCSBase:
         import_meshes(parent_obj, filename, model_data, armature_name)
         add_rest_pose_to_base_anim(filename, model_data)
         import_animations(armature_name, model_data)
+
+        print(self.import_mode)
+        if self.import_mode == "Animation":
+            set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj
