@@ -292,30 +292,23 @@ class GeomReaderPS4(GeomReader):
         return MeshReaderPS4
 
 
-class UnknownCamData1Reader(BaseRW):
+class LightSource(BaseRW):
     def __init__(self, io_stream):
         super().__init__(io_stream)
 
-        self.unknown_0x00 = None
-        self.unknown_0x02 = None
-        self.unknown_0x04 = None
-        self.unknown_0x06 = None
-        self.unknown_0x08 = None
-        self.unknown_0x0A = None
-        self.unknown_0x0C = None
-        self.unknown_0x0E = None
-
-        self.unknown_0x10 = None
-        self.unknown_0x14 = None
-        self.unknown_0x18 = None
-        self.unknown_0x1C = None
+        self.bone_name_hash = None
+        self.mode = None
+        self.light_id = None
+        self.intensity = None
+        self.unknown_fog_param = None
+        self.red = None
+        self.blue = None
+        self.green = None
+        self.alpha = None
 
         self.unknown_0x20 = None
-        self.unknown_0x22 = None
         self.unknown_0x24 = None
-        self.unknown_0x26 = None
         self.unknown_0x28 = None
-        self.unknown_0x2A = None
 
         self.padding_0x2C = None
         self.padding_0x30 = None
@@ -329,55 +322,40 @@ class UnknownCamData1Reader(BaseRW):
 
     def rw_header(self, rw_operator):
         # First eight bytes seem to serve as some kind of ID - there are 7 combinations.
-        rw_operator('unknown_0x00', 'h')
-        rw_operator('unknown_0x02', 'h')
-        rw_operator('unknown_0x04', 'h')
-        rw_operator('unknown_0x06', 'h')
+        rw_operator('bone_name_hash', 'I')
+        rw_operator('mode', 'H')  # 0 = DIRECTIONAL, 2 = AMBIENT, 3 = POINT, 4 = UNKNOWN: Fog?
+        rw_operator('light_id', 'H')
+
+        rw_operator('intensity', 'f')
+        rw_operator('unknown_fog_param', 'f')  # Fog height?
+
+        rw_operator('red', 'f')
+        rw_operator('blue', 'f')
+        rw_operator('green', 'f')
+        rw_operator('alpha', 'f')
 
         # Not sure.
-        rw_operator('unknown_0x08', 'h')
-        rw_operator('unknown_0x0A', 'e')
-        rw_operator('unknown_0x0C', 'h')
-        rw_operator('unknown_0x0E', 'e')
-
-        # For light sources, these are RGBA
-        rw_operator('unknown_0x10', 'f')
-        rw_operator('unknown_0x14', 'f')
-        rw_operator('unknown_0x18', 'f')
-        rw_operator('unknown_0x1C', 'f')
-
-        # Not sure.
-        rw_operator('unknown_0x20', 'H')
-        rw_operator('unknown_0x22', 'H')
-        rw_operator('unknown_0x24', 'H')
-        rw_operator('unknown_0x26', 'H')
-        rw_operator('unknown_0x28', 'H')
-        rw_operator('unknown_0x2A', 'H')
+        rw_operator('unknown_0x20', 'i')
+        rw_operator('unknown_0x24', 'i')
+        rw_operator('unknown_0x28', 'i')
 
         rw_operator('padding_0x2C', 'I')
         rw_operator('padding_0x30', 'Q')
         rw_operator('padding_0x38', 'Q')
 
 
-class UnknownCamData2Reader(BaseRW):
+class CameraData(BaseRW):
     def __init__(self, io_stream):
         super().__init__(io_stream)
 
-        self.unknown_0x00 = None
-        self.unknown_0x02 = None
-        self.unknown_0x04 = None
-        self.unknown_0x06 = None
-        self.unknown_0x08 = None
-        self.unknown_0x0A = None
-        self.unknown_0x0C = None
-        self.unknown_0x0E = None
+        self.bone_name_hash = None
+        self.fov = None
+        self.maybe_aspect_ratio = None
+        self.zNear = None
 
-        self.unknown_0x10 = None
-        self.unknown_0x12 = None
-        self.unknown_0x14 = None
-        self.unknown_0x16 = None
-        self.unknown_0x18 = None
-        self.padding_0x1A = None
+        self.zFar = None
+        self.orthographic_scale = None
+        self.projection = None
         self.padding_0x1C = None
 
         self.padding_0x20 = None
@@ -390,24 +368,16 @@ class UnknownCamData2Reader(BaseRW):
         self.rw_header(self.write_buffer)
 
     def rw_header(self, rw_operator):
-        # These first two are very importart - will cause CTD if not set correctly
-        rw_operator('unknown_0x00', 'H')
-        rw_operator('unknown_0x02', 'H')
+        rw_operator('bone_name_hash', 'H')
 
         # Some parameters...
-        rw_operator('unknown_0x04', 'H')
-        rw_operator('unknown_0x06', 'e')  # approx. 2 - 3
-        rw_operator('unknown_0x08', 'H')
-        rw_operator('unknown_0x0A', 'e')  # approx. 2
-        rw_operator('unknown_0x0C', 'H')
-        rw_operator('unknown_0x0E', 'e')  # approx. 1
+        rw_operator('fov', 'f')
+        rw_operator('maybe_aspect_ratio', 'f')
+        rw_operator('zNear', 'f')
 
-        rw_operator('unknown_0x10', 'h')
-        rw_operator('unknown_0x12', 'e')  # approx. 4 - 7
-        rw_operator('unknown_0x14', 'h')
-        rw_operator('unknown_0x16', 'e')  # approx. 2 - 3
-        rw_operator('unknown_0x18', 'h')  # 0 or 1
-        rw_operator('padding_0x1A', 'H')
+        rw_operator('zFar', 'f')
+        rw_operator('orthographic_scale', 'f')
+        rw_operator('projection', 'I')  # 0 = Perspective, 1 = Ortho
         rw_operator('padding_0x1C', 'I')
 
         rw_operator('padding_0x20', 'Q')
