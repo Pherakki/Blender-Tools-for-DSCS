@@ -4,10 +4,8 @@ import numpy as np
 import os
 from bpy.props import BoolProperty, EnumProperty
 from bpy_extras.io_utils import ImportHelper
-from mathutils import Vector, Matrix
 from ...CollatedData.FromReadWrites import generate_intermediate_format_from_files
 from .AnimationImport import import_animations
-from ...Utilities.ExportedAnimationReposingFunctions import shift_animation_data
 from .ArmatureImport import import_skeleton
 from .MaterialImport import import_materials
 from .MeshImport import import_meshes
