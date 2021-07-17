@@ -15,20 +15,6 @@ bl_info = {
         }
 
 
-class DSCSBlToolPanel(bpy.types.Panel):
-    bl_label = "Posing"
-    bl_category = "DSCS"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-
-    def draw(self, context):
-        layout = self.layout
-        # Figure out how to add buttons...
-        layout.button(text="Reset Pose to Rest Pose")
-        layout.button(text="Set Current Pose as Rest Pose")
-        layout.button(text="Align Animations with Rest Pose")
-
-
 def menu_func_import(self, context):
     self.layout.operator(ImportDSCSPC.bl_idname, text="DSCS Model [PC] (.name)")
     self.layout.operator(ImportDSCSPS4.bl_idname, text="DSCS Model [PS4] (.name)")
@@ -46,7 +32,6 @@ def register():
     bpy.utils.register_class(ExportDSCSPC)
     bpy.utils.register_class(ExportDSCSPS4)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
-    bpy.utils.register_class(DSCSBlToolPanel)
 
 
 def unregister():
@@ -56,7 +41,6 @@ def unregister():
     bpy.utils.unregister_class(ExportDSCSPC)
     bpy.utils.unregister_class(ExportDSCSPS4)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
-    bpy.utils.unregister_class(DSCSBlToolPanel)
 
 # if __name__ == "__main__":
 #     register()
