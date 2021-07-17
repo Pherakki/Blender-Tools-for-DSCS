@@ -26,6 +26,7 @@ def menu_func_export(self, context):
 
 
 def register():
+    blender_version = bpy.app.version_string  # Can use this string to switch version-dependent Blender API codes
     bpy.utils.register_class(ImportDSCSPC)
     bpy.utils.register_class(ImportDSCSPS4)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
