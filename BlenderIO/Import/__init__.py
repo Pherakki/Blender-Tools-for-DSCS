@@ -46,7 +46,7 @@ class ImportDSCSBase:
         import_skeleton(parent_obj, armature_name, model_data)
         import_materials(model_data)
         import_meshes(parent_obj, filename, model_data, armature_name)
-        #shift_animation_data(filename, model_data)
+        add_rest_pose_to_base_anim(filename, model_data)
         import_animations(armature_name, model_data)
 
         bpy.ops.object.mode_set(mode="OBJECT")
