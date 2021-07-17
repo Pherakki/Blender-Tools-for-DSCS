@@ -50,3 +50,42 @@ def produce_interpolation_method(frame_idxs, frame_values, default_value, interp
             return interpolate_keyframe(frame_idxs, frame_values, input_frame_idx, interpolation_function)
 
     return interp_method
+
+
+# Surely these can be unified with the above...
+def interpolate_keyframe_dict(frames, idx, interpolation_function):
+    frame_idxs = list(frames.keys())
+    smaller_elements = [idx for idx in frame_idxs if idx < idx]
+    next_smallest_frame = max(smaller_elements) if len(smaller_elements) else frame_idxs[0]
+    larger_elements = [idx for idx in frame_idxs if idx > idx]
+    next_largest_frame = min(larger_elements) if len(larger_elements) else frame_idxs[-1]
+
+    if next_largest_frame == next_smallest_frame:
+        t = 0  # Totally arbitrary, since the interpolation will be between two identical values
+    else:
+        t = (idx - next_smallest_frame) / (next_largest_frame - next_smallest_frame)
+
+    # Should change lerp to the proper interpolation method
+    min_value = frames[next_smallest_frame]
+    max_value = frames[next_largest_frame]
+
+    return interpolation_function(np.array(min_value), np.array(max_value), t)
+
+
+def produce_interpolation_method_dict(frames, default_value, interpolation_function):
+    """
+    Returns an interpolation function dependant on the number of passed frames.
+    """
+    if len(frames) == 0:
+        def interp_method(input_frame_idx):
+            return default_value
+    elif len(frames) == 1:
+        value = list(frames.values())[0]
+
+        def interp_method(input_frame_idx):
+            return value
+    else:
+        def interp_method(input_frame_idx):
+            return interpolate_keyframe_dict(frames, input_frame_idx, interpolation_function)
+
+    return interp_method
