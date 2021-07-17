@@ -139,28 +139,6 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
         model_data.skeleton.rest_pose_delta.append([diff_quat, diff_pos, scl[:3]])
 
 
-        # bone_matrix = np.zeros((4, 4))
-        # bone_matrix[:3, :3] = quat_to_matrix(quat)
-        # bone_matrix[:3, 3] = loc[:3]
-        # bone_matrix[3, 3] = 1
-        #
-        # bm = get_total_transform(parent_bones[i], parent_bones, imported_skeldata.rest_pose)
-        # diff = np.dot(bm, bone_matrix)
-        # diff_quat = rotation_matrix_to_quat(diff[:3, :3])
-        # diff_pos = diff[:3, 3]
-        # model_data.skeleton.rest_pose_delta.append([diff_quat, diff_pos, scl[:3]])
-
-        # rot_matrix, pos = get_total_transform(i, parent_bones, imported_skeldata.rest_pose)
-        # bone_matrix = np.zeros((4, 4))
-        # bone_matrix[:3, :3] = rot_matrix
-        # bone_matrix[:3, 3] = pos
-        # bone_matrix[3, 3] = 1
-        # bone_matrix = np.dot(inverse_matrix, bone_matrix)
-        # quat = rotation_matrix_to_quat(bone_matrix[:3, :3])
-        # pos = bone_matrix[:3, 3]
-        # model_data.skeleton.rest_pose_delta.append([quat, pos, scl[:3]])
-
-
 def calculate_bone_matrix_relative_to_parent(idx, parent_bones, inv_bind_pose_matrices):
     par = parent_bones[idx]
     if par == -1:
