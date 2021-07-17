@@ -64,6 +64,20 @@ class ImportDSCSBase:
         return {'FINISHED'}
 
 
+def add_rest_pose_to_base_anim(filename, model_data):
+    base_animation = model_data.animations[filename]
+    for bone_idx, (quat, loc, scl) in enumerate(model_data.skeleton.rest_pose_delta):
+        if not len(base_animation.rotations[bone_idx].frames):
+            base_animation.rotations[bone_idx].frames.append(0)
+            base_animation.rotations[bone_idx].values.append(np.roll(quat, 1))  # XYZW -> WXYZ convention
+        if not len(base_animation.locations[bone_idx].frames):
+            base_animation.locations[bone_idx].frames.append(0)
+            base_animation.locations[bone_idx].values.append(loc[:3])  # Cut off affine coord
+        if not len(base_animation.scales[bone_idx].frames):
+            base_animation.scales[bone_idx].frames.append(0)
+            base_animation.scales[bone_idx].values.append(scl[:3])  # Cut off affine coord
+
+
 class ImportDSCSPC(ImportDSCSBase, bpy.types.Operator, ImportHelper):
     bl_idname = 'import_file.import_dscs_pc'
 
