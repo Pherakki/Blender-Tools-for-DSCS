@@ -120,6 +120,10 @@ def apply_transform_to_keyframe(transform, index, rotations, rotation_interpolat
     trans = locations.get(index, location_interpolator(index))
     scale = scales.get(index, scale_interpolator(index))
 
+    if np.any(np.isnan(quat)) or np.any(np.isnan(trans)) or np.any(np.isnan(scale)):
+        print("Interpolated values:", quat, trans, scale)
+        assert 0
+
     transformation_matrix = generate_transform_matrix(quat, trans, scale, WXYZ=True)
     if flipped_order:
         total_transformation = np.dot(transformation_matrix, transform)
