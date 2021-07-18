@@ -11,7 +11,6 @@ def slerp(x, y, t):
         return x
     term_1 = x * np.sin((1-t)*omega)
     term_2 = y * np.sin(t*omega)
-
     return (term_1 + term_2) / np.sin(omega)
 
 
