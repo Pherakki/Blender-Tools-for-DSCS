@@ -9,18 +9,22 @@ from ..FileInterfaces.GeomInterface import GeomInterface
 from ..FileInterfaces.AnimInterface import AnimInterface
 
 from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names
-from ..Utilities.Rotation import rotation_matrix_to_quat
 from ..Utilities.StringHashing import dscs_name_hash
 
 import os
-import numpy as np
 
 
-def generate_files_from_intermediate_format(filepath, model_data, platform='PC'):
+def generate_files_from_intermediate_format(filepath, model_data, platform='PC', animation_only=False):
     file_folder = os.path.join(*os.path.split(filepath)[:-1])
-    make_nameinterface(filepath, model_data)
-    sk = make_skelinterface(filepath, model_data)
-    make_geominterface(filepath, model_data, platform)
+
+    if not animation_only:
+        make_nameinterface(filepath, model_data)
+        sk = make_skelinterface(filepath, model_data)
+        make_geominterface(filepath, model_data, platform)
+    else:
+        sk = make_skelinterface(filepath + "_temp", model_data)
+        os.remove(filepath + "_temp.skel")
+
     for animation_name in model_data.animations:
         make_animreader(file_folder, model_data, animation_name, os.path.splitext(os.path.split(filepath)[-1])[0], sk)
 
