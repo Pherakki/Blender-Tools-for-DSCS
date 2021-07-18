@@ -3,7 +3,7 @@ import numpy as np
 import os
 import shutil
 from bpy_extras.io_utils import ExportHelper
-from bpy.props import BoolProperty
+from bpy.props import EnumProperty
 
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
@@ -20,10 +20,18 @@ class ExportDSCSBase:
     bl_options = {'REGISTER'}
     filename_ext = ".name"
 
-    export_anims: BoolProperty(
-        name="Export Animations",
-        description="Enable/disable to export/not export animations.",
-        default=True)
+    platform: EnumProperty(
+        name="Platform",
+        description="Select which platform the model is for.",
+        items=[("PC", "PC", "Exports a DSCS Complete Edition PC model", "", 0),
+               ("PS4", "PS4 (WIP)", "Exports a DSCS pr DSHM PS4 model. Not fully tested", "", 1)])
+
+    export_mode: EnumProperty(
+        name="Export Mode",
+        description="Which mode to export in.",
+        items=[("Modelling", "Modelling", "Exports the model with its base animation only", "", 0),
+               ("Animation", "Animation", "Exports overlay animations only", "", 1),
+               ("QA", "QA", "Exports the model and all animations", "", 2)])
 
     def export_file(self, context, filepath, platform, copy_shaders=False):
         # Grab the parent object
@@ -35,20 +43,23 @@ class ExportDSCSBase:
         model_data = IntermediateFormat()
         export_folder, filename = os.path.split(filepath)
 
-        export_images_folder = os.path.join(export_folder, 'images')
-        os.makedirs(export_images_folder, exist_ok=True)
-        export_shaders_folder = os.path.join(export_folder, 'shaders')
-        if copy_shaders:
-            os.makedirs(export_shaders_folder, exist_ok=True)
-
-        used_materials = []
-        used_textures = []
         armature = self.find_armatures(parent_obj)
         base_anim = armature.animation_data.nla_tracks[parent_obj.name]
-        self.export_skeleton(armature, base_anim.strips[0].action, model_data)
-        self.export_meshes(parent_obj, model_data, used_materials)
-        self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
-        self.export_textures(used_textures, model_data, export_images_folder)
+        if self.export_mode == "Modelling" or self.export_mode == "QA":
+            export_images_folder = os.path.join(export_folder, 'images')
+            os.makedirs(export_images_folder, exist_ok=True)
+
+            # Top-level unknown data
+            model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
+            model_data.unknown_data['unknown_cam_data_2'] = parent_obj.get('unknown_cam_data_2', [])
+            model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
+
+            used_materials = []
+            used_textures = []
+            self.export_skeleton(armature, base_anim.strips[0].action, model_data)
+            self.export_meshes(parent_obj, model_data, used_materials)
+            self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
+            self.export_textures(used_textures, model_data, export_images_folder)
 
         # The first frame of the base animation becomes the rest pose
         # Strip out any transforms in the base animation that are only for the first frame: DSCS will get this from
@@ -59,23 +70,18 @@ class ExportDSCSBase:
                           required_transforms={},
                           out_transforms=transforms_not_in_base)
 
-        if self.export_anims:
+        if self.export_mode == "Animation" or self.export_mode == "QA":
             overlay_anims = [track for track in armature.animation_data.nla_tracks if track.name != parent_obj.name]
             export_animations(overlay_anims, model_data,
                               strip_single_frame_transforms=False,
                               required_transforms={})
 
-        # Top-level unknown data
-        model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
-        model_data.unknown_data['unknown_cam_data_2'] = parent_obj.get('unknown_cam_data_2', [])
-        model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
+        # print("!!!!!!!")
+        # print(os.getcwd())
+        # print(__file__, os.path.dirname(__file__))
+        # print("!!!!!!!")
 
-        print("!!!!!!!")
-        print(os.getcwd())
-        print(__file__, os.path.dirname(__file__))
-        print("!!!!!!!")
-
-        generate_files_from_intermediate_format(filepath, model_data, platform)
+        generate_files_from_intermediate_format(filepath, model_data, self.platform, animation_only=self.export_mode=="Animation")
 
     def find_armatures(self, parent_object):
         armatures = [item for item in parent_object.children if item.type == "ARMATURE"]
