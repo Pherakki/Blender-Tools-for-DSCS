@@ -12,7 +12,8 @@ from .MeshImport import import_meshes
 from ...Utilities.Reposing import set_new_rest_pose
 
 
-class ImportDSCSBase:
+class ImportDSCS(bpy.types.Operator, ImportHelper):
+    bl_idname = 'import_file.import_dscs'
     bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
     bl_options = {'REGISTER', 'UNDO'}
     # This will actually work with any file extension since the code just looks for the right ones...
@@ -36,7 +37,7 @@ class ImportDSCSBase:
                ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
                ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display corectly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
 
-    def import_file(self, context, filepath, platform):
+    def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
         model_data = generate_intermediate_format_from_files(filepath, self.platform,
                                                              any([self.import_mode == mode for mode in ["Animation", "QA"]]))
@@ -64,11 +65,11 @@ class ImportDSCSBase:
         # Rotate to the Blender coordinate convention
         parent_obj.rotation_euler = (np.pi / 2, 0, 0)
 
-    def execute_func(self, context, filepath, platform):
-        filepath, file_extension = os.path.splitext(filepath)
+    def execute(self, context):
+        filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in
                     ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
-        self.import_file(context, filepath, platform)
+        self.import_file(context, filepath)
 
         return {'FINISHED'}
 
@@ -85,17 +86,3 @@ def add_rest_pose_to_base_anim(filename, model_data):
         if not len(base_animation.scales[bone_idx].frames):
             base_animation.scales[bone_idx].frames.append(0)
             base_animation.scales[bone_idx].values.append(scl[:3])  # Cut off affine coord
-
-
-class ImportDSCSPC(ImportDSCSBase, bpy.types.Operator, ImportHelper):
-    bl_idname = 'import_file.import_dscs_pc'
-
-    def execute(self, context):
-        return super().execute_func(context, self.filepath, 'PC')
-
-
-class ImportDSCSPS4(ImportDSCSBase, bpy.types.Operator, ImportHelper):
-    bl_idname = 'import_file.import_dscs_ps4'
-
-    def execute(self, context):
-        return super().execute_func(context, self.filepath, 'PS4')

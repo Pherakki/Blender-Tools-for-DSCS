@@ -15,7 +15,8 @@ from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, gene
 from ...Utilities.ActionDataRetrieval import get_action_data
 
 
-class ExportDSCSBase:
+class ExportDSCSBase(bpy.types.Operator, ExportHelper):
+    bl_idname = 'export_file.export_dscs'
     bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
     bl_options = {'REGISTER'}
     filename_ext = ".name"
@@ -33,7 +34,7 @@ class ExportDSCSBase:
                ("Animation", "Animation", "Exports overlay animations only", "", 1),
                ("QA", "QA", "Exports the model and all animations", "", 2)])
 
-    def export_file(self, context, filepath, platform, copy_shaders=False):
+    def export_file(self, context, filepath):
         # Grab the parent object
         parent_obj = find_selected_model()
         assert parent_obj.mode == 'OBJECT', f"Current mode is {parent_obj.mode}; ensure that Object Mode is selected before attempting to export."
@@ -333,11 +334,11 @@ class ExportDSCSBase:
                     print(texture_path, "not found.")
                     continue
 
-    def execute_func(self, context, filepath, platform):
-        filepath, file_extension = os.path.splitext(filepath)
+    def execute_func(self, context):
+        filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in
                     ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
-        self.export_file(context, filepath, platform)
+        self.export_file(context, filepath)
 
         return {'FINISHED'}
 
@@ -371,20 +372,6 @@ def extract_rest_pose_from_base_animation(bone_names, parent_bones, base_animati
             rloc, rquat, rscale = decompose_matrix(rpm, WXYZ=False)
             rest_pose.append([rquat, [*rloc, 1.], [*rscale, 1.]])
     return rest_pose
-
-
-class ExportDSCSPC(ExportDSCSBase, bpy.types.Operator, ExportHelper):
-    bl_idname = 'export_file.export_dscs_pc'
-
-    def execute(self, context):
-        return super().execute_func(context, self.filepath, 'PC')
-
-
-class ExportDSCSPS4(ExportDSCSBase, bpy.types.Operator, ExportHelper):
-    bl_idname = 'export_file.export_dscs_ps4'
-
-    def execute(self, context):
-        return super().execute_func(context, self.filepath, 'PS4')
 
 
 def get_bone_id(mesh_obj, bone_names, grp):

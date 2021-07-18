@@ -1,6 +1,6 @@
 import bpy
-from .BlenderIO.Import import ImportDSCSPC, ImportDSCSPS4
-from .BlenderIO.Export import ExportDSCSPC, ExportDSCSPS4
+from .BlenderIO.Import import ImportDSCS
+from .BlenderIO.Export import ExportDSCS
 
 
 bl_info = {
@@ -16,31 +16,25 @@ bl_info = {
 
 
 def menu_func_import(self, context):
-    self.layout.operator(ImportDSCSPC.bl_idname, text="DSCS Model [PC] (.name)")
-    self.layout.operator(ImportDSCSPS4.bl_idname, text="DSCS Model [PS4] (.name)")
+    self.layout.operator(ImportDSCS.bl_idname, text="DSCS Model (.name)")
 
 
 def menu_func_export(self, context):
-    self.layout.operator(ExportDSCSPC.bl_idname, text="DSCS Model [PC] (.name)")
-    self.layout.operator(ExportDSCSPS4.bl_idname, text="DSCS Model [PS4] (.name)")
+    self.layout.operator(ExportDSCS.bl_idname, text="DSCS Model (.name)")
 
 
 def register():
     blender_version = bpy.app.version_string  # Can use this string to switch version-dependent Blender API codes
-    bpy.utils.register_class(ImportDSCSPC)
-    bpy.utils.register_class(ImportDSCSPS4)
+    bpy.utils.register_class(ImportDSCS)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-    bpy.utils.register_class(ExportDSCSPC)
-    bpy.utils.register_class(ExportDSCSPS4)
+    bpy.utils.register_class(ExportDSCS)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 
 def unregister():
-    bpy.utils.unregister_class(ImportDSCSPC)
-    bpy.utils.unregister_class(ImportDSCSPS4)
+    bpy.utils.unregister_class(ImportDSCS)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    bpy.utils.unregister_class(ExportDSCSPC)
-    bpy.utils.unregister_class(ExportDSCSPS4)
+    bpy.utils.unregister_class(ExportDSCS)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
 # if __name__ == "__main__":
