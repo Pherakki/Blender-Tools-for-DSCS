@@ -70,4 +70,7 @@ def import_animations(armature_name, model_data):
         track.mute = True
         nla_strip = track.strips.new(action.name, action.frame_range[0], action)
         nla_strip.scale = 24 / animation_data.playback_rate
+        nla_strip.blend_type = "COMBINE"
         model_armature.animation_data.action = None
+
+    bpy.ops.object.mode_set(mode="OBJECT")
