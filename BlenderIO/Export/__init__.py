@@ -8,11 +8,11 @@ from bpy.props import BoolProperty
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
 from ...FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
-# from .ExportAnimation import export_animations, get_nla_strip_data
+from .ExportAnimation import export_animations
 from ..DSCSBlenderUtils import find_selected_model
 
-from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, generate_transform_delta, decompose_matrix
-from ...Utilities.Reposing import set_new_rest_pose
+from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, generate_transform_delta, decompose_matrix, generate_transform_matrix
+from ...Utilities.ActionDataRetrieval import get_action_data
 
 
 class ExportDSCSBase:
@@ -25,7 +25,7 @@ class ExportDSCSBase:
         description="Enable/disable to export/not export animations.",
         default=True)
 
-    def export_file(self, context, filepath, platform, copy_shaders=True):
+    def export_file(self, context, filepath, platform, copy_shaders=False):
         # Grab the parent object
         parent_obj = find_selected_model()
         assert parent_obj.mode == 'OBJECT', f"Current mode is {parent_obj.mode}; ensure that Object Mode is selected before attempting to export."
@@ -43,15 +43,13 @@ class ExportDSCSBase:
 
         used_materials = []
         used_textures = []
-        bind_pose_armature, rest_pose_armature, composite_pose_armature, model_armature = self.find_armatures(parent_obj)
-        self.export_skeleton(bind_pose_armature, rest_pose_armature, model_data)
-        self.transform_back_to_bind_pose(bind_pose_armature, model_armature, model_data)
+        armature = self.find_armatures(parent_obj)
+        self.export_skeleton(armature, bpy.data.actions[parent_obj.name], model_data)
         self.export_meshes(parent_obj, model_data, used_materials)
-        self.transform_back_to_original_pose(bind_pose_armature, model_armature, model_data)
         self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
         self.export_textures(used_textures, model_data, export_images_folder)
         if self.export_anims:
-            nla_track = model_armature.animation_data.nla_tracks[filename]
+            nla_track = armature.animation_data.nla_tracks[filename]
             strips = nla_track.strips
             if len(strips) != 1:
                 assert 0, (f"NLA track \'{nla_track.name}\' has {len(strips)} strips; must have one strip ONLY to export.")
@@ -59,9 +57,9 @@ class ExportDSCSBase:
             # Need to check if this method of exporting is correct
             # export_animations(model_armature, model_data,
             #                   [np.array(bone.matrix_local) for bone in model_armature.data.bones],
-            #                   get_nla_strip_data(strips[0], {'location': [0., 0., 0.],
-            #                                                  'rotation_quaternion': [1., 0., 0., 0.],
-            #                                                  'scale': [1., 1., 1.]}))
+            #                   get_action_data(strips[0].action, {'location': [0., 0., 0.],
+            #                                                      'rotation_quaternion': [1., 0., 0., 0.],
+            #                                                      'scale': [1., 1., 1.]}))
 
         # Top-level unknown data
         model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
@@ -71,40 +69,24 @@ class ExportDSCSBase:
         generate_files_from_intermediate_format(filepath, model_data, platform)
 
     def find_armatures(self, parent_object):
-        bind_pose = None
-        rest_pose = None
-        composite_pose = None
-        model_armature = None
-
         armatures = [item for item in parent_object.children if item.type == "ARMATURE"]
         if len(armatures) == 1:
-            bind_pose = armatures[0]
-            rest_pose = armatures[0]
-            composite_pose = armatures[0]
-            model_armature = armatures[0]
+            armature = armatures[0]
         elif len(armatures) > 1:
-            for armature in armatures:
-                if armature.name == 'Bind Pose':
-                    bind_pose = armature
-                elif armature.name == 'Rest Pose':
-                    rest_pose = armature
-                elif armature.name == 'Composite Pose':
-                    composite_pose = armature
-
-                if any([child.type == "MESH" for child in armature.children]):
-                    model_armature = armature
-            if bind_pose is None:
-                assert 0, f"No armature called 'Bind Pose' found under the axis object \'{parent_object.name}\'"
-            if rest_pose is None:
-                assert 0, f"No armature called 'Rest Pose' found under the axis object \'{parent_object.name}\'"
+            print("!!! WARNING !!!")
+            print("! More than one armature detected under the object \'{parent_object.name}\':")
+            print("!", ", ".join([arm.name for arm in armatures]))
+            print(f"! Using {armatures[0].name}")
+            print("!!! WARNING !!!")
+            armature = armatures[0]
         else:
             assert 0, f"No armature objects found under the axis object \'{parent_object.name}\'."
 
-        return bind_pose, rest_pose, composite_pose, model_armature
+        return armature
 
-    def export_skeleton(self, bind_pose_armature, rest_pose_armature, model_data):
-        bone_name_list = [bone.name for bone in bind_pose_armature.data.bones]
-        for i, bone in enumerate(bind_pose_armature.data.bones):
+    def export_skeleton(self, armature, base_animation, model_data):
+        bone_name_list = [bone.name for bone in armature.data.bones]
+        for i, bone in enumerate(armature.data.bones):
             name = bone.name
             parent_bone = bone.parent
             parent_id = bone_name_list.index(parent_bone.name) if parent_bone is not None else -1
@@ -114,33 +96,14 @@ class ExportDSCSBase:
             model_data.skeleton.inverse_bind_pose_matrices.append(np.linalg.inv(np.array(bone.matrix_local)))
 
         parent_bones = {c: p for c, p in model_data.skeleton.bone_relations}
-        model_data.skeleton.rest_pose = [
-            calculate_bone_matrix_relative_to_parent(i, parent_bones, [np.array(bone.matrix_local) for bone in rest_pose_armature.data.bones])
-            for i in range(len(parent_bones))
-        ]
+        model_data.skeleton.rest_pose = extract_rest_pose_from_base_animation(model_data.skeleton.bone_names, parent_bones, base_animation,
+                                                                              [np.array(bone.matrix_local) for bone in armature.data.bones])
+
         # Get the unknown data
-        model_data.skeleton.unknown_data['unknown_0x0C'] = rest_pose_armature.get('unknown_0x0C', 0)
-        model_data.skeleton.unknown_data['unknown_data_1'] = rest_pose_armature.get('unknown_data_1', [])
-        model_data.skeleton.unknown_data['unknown_data_3'] = rest_pose_armature.get('unknown_data_3', [])
-        model_data.skeleton.unknown_data['unknown_data_4'] = rest_pose_armature.get('unknown_data_4', [])
-
-    def transform_back_to_bind_pose(self, bind_pose_armature, model_armature, model_data):
-        parent_bones = {c: p for c, p in model_data.skeleton.bone_relations}
-        bp = [decompose_matrix(np.linalg.inv(np.array(bone.matrix_local))) for bone in bind_pose_armature.data.bones]
-        bp = [[q, p, s] for p, q, s in bp]
-        transform = generate_transform_delta(parent_bones,
-                                             bp,
-                                             [np.array(bone.matrix_local) for bone in model_armature.data.bones])
-        set_new_rest_pose(model_armature.name, model_data.skeleton.bone_names, transform)
-
-    def transform_back_to_original_pose(self, bind_pose_armature, model_armature, model_data):
-        parent_bones = {c: p for c, p in model_data.skeleton.bone_relations}
-        bp = [decompose_matrix(np.array(bone.matrix_local)) for bone in model_armature.data.bones]
-        bp = [[q, p, s] for p, q, s in bp]
-        transform = generate_transform_delta(parent_bones,
-                                             bp,
-                                             [np.linalg.inv(np.array(bone.matrix_local)) for bone in bind_pose_armature.data.bones])
-        set_new_rest_pose(model_armature.name, model_data.skeleton.bone_names, transform)
+        model_data.skeleton.unknown_data['unknown_0x0C'] = armature.get('unknown_0x0C', 0)
+        model_data.skeleton.unknown_data['unknown_data_1'] = armature.get('unknown_data_1', [])
+        model_data.skeleton.unknown_data['unknown_data_3'] = armature.get('unknown_data_3', [])
+        model_data.skeleton.unknown_data['unknown_data_4'] = armature.get('unknown_data_4', [])
 
     def export_meshes(self, parent_obj, model_data, used_materials):
         mat_names = []
@@ -325,7 +288,7 @@ class ExportDSCSBase:
                     tex_idx = tex_names.index(texname)
                 else:
                     tex_idx = len(used_textures)
-                material.shader_uniforms['ToonTextureID'] = [tex_idx, 0, 0]
+                # material.shader_uniforms['ToonTextureID'] = [tex_idx, 0, 0]
                 used_textures.append(DummyTexture(texname))
             if 'DiffuseColour' not in node_names:
                 material.shader_uniforms['DiffuseColour'] = [1., 1., 1., 1.]
