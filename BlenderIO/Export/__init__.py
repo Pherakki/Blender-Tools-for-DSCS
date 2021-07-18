@@ -364,6 +364,37 @@ class ExportDSCSBase:
         return {'FINISHED'}
 
 
+def extract_rest_pose_from_base_animation(bone_names, parent_bones, base_animation, bind_pose_matrices):
+    curve_defaults = {'rotation_quaternion': [1., 0., 0., 0.],
+                      'location': [0., 0., 0.],
+                      'scale': [1., 1., 1.]}
+    base_animation_data, _ = get_action_data(base_animation,
+                                             curve_defaults)
+
+    rest_pose = []
+    for i, bone_name in enumerate(bone_names):
+        if bone_name in base_animation_data:
+            bone_data = base_animation_data[bone_name]
+
+            # Gets the bone data for the first frame of an action, or the curve default if no frames are present
+            def get_subdata(curve_type):
+                return list(bone_data[curve_type].values())[0] \
+                       if len(bone_data[curve_type]) \
+                       else curve_defaults[curve_type]
+
+            quat = get_subdata('rotation_quaternion')
+            loc = get_subdata('location')
+            scale = get_subdata('scale')
+
+            transform_matrix = generate_transform_matrix(quat, loc, scale, WXYZ=True)
+            bm = calculate_bone_matrix_relative_to_parent(i, parent_bones, bind_pose_matrices)
+            # Shift from local space to model-space
+            rpm = np.dot(bm, transform_matrix)
+            rloc, rquat, rscale = decompose_matrix(rpm, WXYZ=False)
+            rest_pose.append([rquat, [*rloc, 1.], [*rscale, 1.]])
+    return rest_pose
+
+
 class ExportDSCSPC(ExportDSCSBase, bpy.types.Operator, ExportHelper):
     bl_idname = 'export_file.export_dscs_pc'
 
