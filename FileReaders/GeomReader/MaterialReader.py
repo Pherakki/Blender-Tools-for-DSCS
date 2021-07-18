@@ -116,6 +116,9 @@ class MaterialReader(BaseRW):
         rw_operator_raw("unknown_data", 24 * self.num_unknown_data)
 
     def interpret_material(self):
+        self.name_hash: bytes
+        self.name_hash = self.name_hash.hex()
+
         self.shader_hex: bytes
         shader_hex_pt_1 = self.shader_hex[0:4][::-1].hex()
         shader_hex_pt_2 = self.shader_hex[4:8][::-1].hex()
@@ -128,6 +131,9 @@ class MaterialReader(BaseRW):
         self.shader_uniforms = {elem[0]: elem[1] for elem in self.shader_uniforms}
 
     def reinterpret_material(self):
+        self.name_hash: str
+        self.name_hash = bytes.fromhex(self.name_hash)
+
         self.shader_hex: str
         hex_parts = self.shader_hex.split('_')
         shader_hex_pt_1 = bytes.fromhex(hex_parts[0])[::-1]

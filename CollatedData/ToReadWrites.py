@@ -28,7 +28,7 @@ def generate_files_from_intermediate_format(filepath, model_data, platform='PC')
 def make_nameinterface(filepath, model_data):
     nameInterface = NameInterface()
     nameInterface.bone_names = model_data.skeleton.bone_names
-    nameInterface.material_names = model_data.unknown_data['material names']
+    nameInterface.material_names = [mat.name for mat in model_data.materials]
 
     nameInterface.to_file(filepath + ".name")
 
@@ -40,7 +40,7 @@ def make_skelinterface(filepath, model_data):
     skelInterface.rest_pose = model_data.skeleton.rest_pose
 
     skelInterface.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']
-    skelInterface.bone_name_hashes = [dscs_name_hash(bone_name) for bone_name in model_data.skeleton.bone_names]
+    skelInterface.bone_name_hashes = [bytes.fromhex(dscs_name_hash(bone_name)) for bone_name in model_data.skeleton.bone_names]
     skelInterface.unknown_data_3 = model_data.skeleton.unknown_data['unknown_data_3']
     skelInterface.unknown_data_4 = model_data.skeleton.unknown_data['unknown_data_4']
 

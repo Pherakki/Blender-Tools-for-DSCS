@@ -96,7 +96,7 @@ def add_materials(model_data, imported_namedata, imported_geomdata):
     for i, material in enumerate(imported_geomdata.material_data):
         model_data.new_material()
 
-        model_data.materials[-1].name = material_names[material_name_hashes.index(material.name_hash.hex())]
+        model_data.materials[-1].name = material_names[material_name_hashes.index(material.name_hash)]
         model_data.materials[-1].shader_hex = material.shader_hex
         model_data.materials[-1].enable_shadows = material.enable_shadows
 
