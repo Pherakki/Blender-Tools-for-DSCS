@@ -38,7 +38,8 @@ class ImportDSCSBase:
 
     def import_file(self, context, filepath, platform):
         bpy.ops.object.select_all(action='DESELECT')
-        model_data = generate_intermediate_format_from_files(filepath, self.platform, True)
+        model_data = generate_intermediate_format_from_files(filepath, self.platform,
+                                                             any([self.import_mode == mode for mode in ["Animation", "QA"]]))
         filename = os.path.split(filepath)[-1]
         armature_name = filename + "_armature"
         parent_obj = bpy.data.objects.new(filename, None)
