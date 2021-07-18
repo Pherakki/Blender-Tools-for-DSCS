@@ -28,17 +28,6 @@ class MaterialInterface:
         materialReader.name_hash = self.name_hash
         materialReader.shader_hex = self.shader_hex
         materialReader.enable_shadows = self.enable_shadows
-        # No idea if this is anything close to correct...
-        # if materialReader.shader_hex[20:22] == '08':
-        #     materialReader.unknown_0x16 = 5
-        # elif materialReader.shader_hex[11:13] == '08' or materialReader.shader_hex[11:13] == '88':
-        #     materialReader.unknown_0x16 = 3
-        # else:
-        #     materialReader.unknown_0x16 = 1
-
-        #for key in self.get_required_shader_uniforms():
-        #    if key not in self.shader_uniforms.keys():
-        #        raise MissingShaderUniformError(f"Material is missing the shader uniform \'{key}\'.")
 
         materialReader.shader_uniforms = self.shader_uniforms
         virtual_pos += 24*len(self.shader_uniforms)
