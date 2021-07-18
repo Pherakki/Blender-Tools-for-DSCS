@@ -124,7 +124,7 @@ class AnimInterface:
         except:
             max_scales = 0
 
-        num_frames = max([max_rotations, max_locations, max_scales])
+        num_frames = int(max([max_rotations, max_locations, max_scales]))
         num_frames += 1  # This is because the frames start from index 0
         num_bones = self.num_bones
 
@@ -366,7 +366,7 @@ def populate_frames(num_frames, animation_data):
     for bone_id, keyframes in animation_data.items():
         frame_data[bone_id] = [None] * num_frames
         for frame_id, frame_value in keyframes.items():
-            frame_data[bone_id][frame_id] = frame_value
+            frame_data[bone_id][int(frame_id)] = frame_value
     return frame_data
 
 
