@@ -19,11 +19,8 @@ def generate_files_from_intermediate_format(filepath, model_data, platform='PC',
 
     if not animation_only:
         make_nameinterface(filepath, model_data)
-        sk = make_skelinterface(filepath, model_data)
         make_geominterface(filepath, model_data, platform)
-    else:
-        sk = make_skelinterface(filepath + "_temp", model_data)
-        os.remove(filepath + "_temp.skel")
+    sk = make_skelinterface(filepath, model_data, not animation_only)
 
     for animation_name in model_data.animations:
         make_animreader(file_folder, model_data, animation_name, os.path.splitext(os.path.split(filepath)[-1])[0], sk)
@@ -37,7 +34,7 @@ def make_nameinterface(filepath, model_data):
     nameInterface.to_file(filepath + ".name")
 
 
-def make_skelinterface(filepath, model_data):
+def make_skelinterface(filepath, model_data, export=True):
     skelInterface = SkelInterface()
     skelInterface.unknown_0x0C = model_data.skeleton.unknown_data['unknown_0x0C']
     skelInterface.parent_bones = model_data.skeleton.bone_relations
@@ -48,7 +45,8 @@ def make_skelinterface(filepath, model_data):
     skelInterface.unknown_data_3 = model_data.skeleton.unknown_data['unknown_data_3']
     skelInterface.unknown_data_4 = model_data.skeleton.unknown_data['unknown_data_4']
 
-    skelInterface.to_file(filepath + ".skel")
+    if export:
+        skelInterface.to_file(filepath + ".skel")
 
     return skelInterface
 
