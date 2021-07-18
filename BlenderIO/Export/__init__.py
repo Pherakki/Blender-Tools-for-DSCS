@@ -44,27 +44,36 @@ class ExportDSCSBase:
         used_materials = []
         used_textures = []
         armature = self.find_armatures(parent_obj)
-        self.export_skeleton(armature, bpy.data.actions[parent_obj.name], model_data)
+        base_anim = armature.animation_data.nla_tracks[parent_obj.name]
+        self.export_skeleton(armature, base_anim.strips[0].action, model_data)
         self.export_meshes(parent_obj, model_data, used_materials)
         self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
         self.export_textures(used_textures, model_data, export_images_folder)
-        if self.export_anims:
-            nla_track = armature.animation_data.nla_tracks[filename]
-            strips = nla_track.strips
-            if len(strips) != 1:
-                assert 0, (f"NLA track \'{nla_track.name}\' has {len(strips)} strips; must have one strip ONLY to export.")
 
-            # Need to check if this method of exporting is correct
-            # export_animations(model_armature, model_data,
-            #                   [np.array(bone.matrix_local) for bone in model_armature.data.bones],
-            #                   get_action_data(strips[0].action, {'location': [0., 0., 0.],
-            #                                                      'rotation_quaternion': [1., 0., 0., 0.],
-            #                                                      'scale': [1., 1., 1.]}))
+        # The first frame of the base animation becomes the rest pose
+        # Strip out any transforms in the base animation that are only for the first frame: DSCS will get this from
+        # the rest pose, allowing us to make the animation files smaller
+        transforms_not_in_base = {'location': [], 'rotation_quaternion': [], 'scale': []}
+        export_animations([base_anim], model_data,
+                          strip_single_frame_transforms=True,
+                          required_transforms={},
+                          out_transforms=transforms_not_in_base)
+
+        if self.export_anims:
+            overlay_anims = [track for track in armature.animation_data.nla_tracks if track.name != parent_obj.name]
+            export_animations(overlay_anims, model_data,
+                              strip_single_frame_transforms=False,
+                              required_transforms={})
 
         # Top-level unknown data
         model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
         model_data.unknown_data['unknown_cam_data_2'] = parent_obj.get('unknown_cam_data_2', [])
         model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
+
+        print("!!!!!!!")
+        print(os.getcwd())
+        print(__file__, os.path.dirname(__file__))
+        print("!!!!!!!")
 
         generate_files_from_intermediate_format(filepath, model_data, platform)
 
@@ -288,7 +297,7 @@ class ExportDSCSBase:
                     tex_idx = tex_names.index(texname)
                 else:
                     tex_idx = len(used_textures)
-                # material.shader_uniforms['ToonTextureID'] = [tex_idx, 0, 0]
+                material.shader_uniforms['ToonTextureID'] = [tex_idx, 0, 0]
                 used_textures.append(DummyTexture(texname))
             if 'DiffuseColour' not in node_names:
                 material.shader_uniforms['DiffuseColour'] = [1., 1., 1., 1.]

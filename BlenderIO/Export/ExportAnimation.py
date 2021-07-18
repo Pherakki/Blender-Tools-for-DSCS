@@ -1,8 +1,10 @@
 import numpy as np
-from ...Utilities.SkeletalAnimation import generate_reference_frames, shift_animation_to_reference_frame
+from ...Utilities.ActionDataRetrieval import get_action_data
+
+# armature.animation_data.nla_tracks
 
 
-def export_animations(armature, model_data, reference_pose, base_animation_data):
+def export_animations(nla_tracks, model_data, strip_single_frame_transforms, required_transforms, out_transforms=None):
     """
     Main entry point to the animation export functionality.
 
@@ -16,42 +18,48 @@ def export_animations(armature, model_data, reference_pose, base_animation_data)
     curve_defaults = {'location': [0., 0., 0.],
                       'rotation_quaternion': [1., 0., 0., 0.],
                       'scale': [1., 1., 1.]}
+    if required_transforms is None:
+        required_transforms = {}
+    if out_transforms is None:
+        out_transforms = {'location': [],
+                          'rotation_quaternion': [],
+                          'scale': []}
 
-    reference_frames = generate_reference_frames(reference_pose, base_animation_data)
-
-    for nla_track in armature.animation_data.nla_tracks:
+    for nla_track in nla_tracks:
         strips = nla_track.strips
         if len(strips) != 1:
             print(f"NLA track \'{nla_track.name}\' has {len(strips)} strips; must have one strip ONLY to export.")
             continue
 
-        print(nla_track.name)
         nla_strip = strips[0]
         fps = nla_strip.scale * 24
 
-        animation_data = get_nla_strip_data(nla_strip, curve_defaults)
-
-        shift_animation_to_reference_frame(reference_frames, animation_data)
+        animation_data, _ = get_action_data(nla_strip.action, curve_defaults)
 
         ad = model_data.new_anim(nla_track.name)
         ad.playback_rate = fps
-        for bone_idx in range(len(model_data.skeleton.bone_names)):
-            ad.add_rotation_fcurve(bone_idx, [], [])
-            ad.add_location_fcurve(bone_idx, [], [])
-            ad.add_scale_fcurve(bone_idx, [], [])
-        for bone_name, data in animation_data['rotation_quaternion'].items():
-            if bone_name in model_data.skeleton.bone_names:
-                bone_idx = model_data.skeleton.bone_names.index(bone_name)
-                # Overwrite the filler fcurve
-                ad.add_rotation_fcurve(bone_idx, list(data.keys()), list(data.values()))
-        for bone_name, data in animation_data['location'].items():
-            if bone_name in model_data.skeleton.bone_names:
-                bone_idx = model_data.skeleton.bone_names.index(bone_name)
-                # Overwrite the filler fcurve
-                ad.add_location_fcurve(bone_idx, list(data.keys()), list(data.values()))
-        for bone_name, data in animation_data['scale'].items():
-            if bone_name in model_data.skeleton.bone_names:
-                bone_idx = model_data.skeleton.bone_names.index(bone_name)
-                # Overwrite the filler fcurve
-                ad.add_scale_fcurve(bone_idx, list(data.keys()), list(data.values()))
 
+        required_rotations = required_transforms.get('rotation_quaternion', [])
+        required_locations = required_transforms.get('location', [])
+        required_scales = required_transforms.get('scale', [])
+        for bone_idx, bone_name in enumerate(model_data.skeleton.bone_names):
+            data = animation_data.get(bone_name, {})
+
+            subdata = fetch_subdata(data, bone_name, strip_single_frame_transforms, required_rotations, curve_defaults, out_transforms, 'rotation_quaternion')
+            ad.add_rotation_fcurve(bone_idx, list(subdata.keys()), list(subdata.values()))
+
+            subdata = fetch_subdata(data, bone_name, strip_single_frame_transforms, required_locations, curve_defaults, out_transforms, 'location')
+            ad.add_location_fcurve(bone_idx, list(subdata.keys()), list(subdata.values()))
+
+            subdata = fetch_subdata(data, bone_name, strip_single_frame_transforms, required_scales, curve_defaults, out_transforms, 'scale')
+            ad.add_scale_fcurve(bone_idx, list(subdata.keys()), list(subdata.values()))
+
+
+def fetch_subdata(data, bone_name, strip_single_frame_transforms, required_subtransforms, curve_defaults, out_transforms, fetch_string):
+    subdata = data.get(fetch_string, {})
+    if not len(subdata) and bone_name in required_subtransforms:
+        subdata[fetch_string] = curve_defaults[fetch_string]
+    elif len(subdata) == 1 and strip_single_frame_transforms:
+        subdata = {}
+        out_transforms[fetch_string].append(bone_name)
+    return subdata
