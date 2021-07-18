@@ -54,6 +54,9 @@ class ImportDSCSBase:
         print(self.import_mode)
         if self.import_mode == "Animation":
             set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
+        else:
+            # Unmute the base animation on the armature
+            parent_obj.children[0].animation_data.nla_tracks[parent_obj.name].mute = False
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj
