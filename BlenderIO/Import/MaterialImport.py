@@ -133,10 +133,8 @@ def import_material_texture_nodes(nodes, model_data, mat_shader_uniforms):
 
 def set_texture_node_image(node, texture_idx, IF_texture, import_memory):
     tex_filename = os.path.split(IF_texture.filepath)[-1]
-    tempdir = bpy.app.tempdir
-    dds_loc = os.path.join(tempdir, tex_filename)
+    dds_loc = IF_texture.filepath
     if texture_idx not in import_memory:
         import_memory[texture_idx] = tex_filename
-        shutil.copy2(IF_texture.filepath, dds_loc)
         bpy.data.images.load(dds_loc)
     node.image = bpy.data.images[tex_filename]
