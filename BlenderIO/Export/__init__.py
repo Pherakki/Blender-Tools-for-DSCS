@@ -15,7 +15,7 @@ from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, gene
 from ...Utilities.ActionDataRetrieval import get_action_data
 
 
-class ExportDSCSBase(bpy.types.Operator, ExportHelper):
+class ExportDSCS(bpy.types.Operator, ExportHelper):
     bl_idname = 'export_file.export_dscs'
     bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
     bl_options = {'REGISTER'}
@@ -334,7 +334,7 @@ class ExportDSCSBase(bpy.types.Operator, ExportHelper):
                     print(texture_path, "not found.")
                     continue
 
-    def execute_func(self, context):
+    def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in
                     ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
