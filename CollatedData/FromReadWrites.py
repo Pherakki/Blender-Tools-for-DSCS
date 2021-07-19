@@ -76,12 +76,8 @@ def add_meshes(model_data, imported_geomdata):
         # Add unknown data
         current_IF_mesh.unknown_data['unknown_0x31'] = mesh.unknown_0x31
         current_IF_mesh.name_hash = mesh.name_hash
-        current_IF_mesh.unknown_data['unknown_0x4C'] = mesh.bounding_sphere_radius
 
         model_data.meshes[-1] = current_IF_mesh
-
-        current_IF_mesh.unknown_data['bb'] = mesh.unknown_data['bb']
-        current_IF_mesh.unknown_data['bbc'] = mesh.unknown_data['bbc']
 
     model_data.unknown_data['unknown_cam_data_1'] = imported_geomdata.unknown_cam_data_1
     model_data.unknown_data['unknown_cam_data_2'] = imported_geomdata.unknown_cam_data_2

@@ -68,7 +68,6 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         # Add unknown data
         mesh_object['unknown_0x31'] = IF_mesh.unknown_data['unknown_0x31']
         mesh_object['name_hash'] = IF_mesh.name_hash
-        mesh_object['unknown_0x4C'] = IF_mesh.unknown_data['unknown_0x4C']
 
         bpy.data.objects[meshobj_name].select_set(True)
         bpy.data.objects[armature_name].select_set(True)

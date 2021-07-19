@@ -59,7 +59,6 @@ def make_geominterface(filepath, model_data, platform):
         gi_mesh = geomInterface.add_mesh()
         gi_mesh.unknown_0x31 = mesh.unknown_data['unknown_0x31']
         gi_mesh.name_hash = mesh.name_hash
-        gi_mesh.bounding_sphere_radius = mesh.unknown_data['unknown_0x4C']
 
         for uv_type in ['UV', 'UV2', 'UV3']:
             if uv_type in mesh.vertices[0]:

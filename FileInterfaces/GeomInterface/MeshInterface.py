@@ -98,6 +98,9 @@ class MeshInterface:
         vertices = np.array([v['Position'] for v in self.vertices])
         minvs = np.min(vertices, axis=0)
         maxvs = np.max(vertices, axis=0)
+        maxrad = np.max(np.sum(vertices**2, axis=1))
+        assert np.sum(vertices**2, axis=1).shape == (len(vertices),), f"{vertices.shape}, {np.sum(vertices**2, axis=1).shape}"  # Check that I got the summation axis right
+        meshReader.bounding_sphere_radius = maxrad**.5
         assert len(maxvs) == 3
 
         meshReader.mesh_centre = (maxvs + minvs) / 2
