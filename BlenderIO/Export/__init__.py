@@ -59,7 +59,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             used_textures = []
             self.export_skeleton(armature, base_anim.strips[0].action, model_data)
             self.export_meshes(parent_obj, model_data, used_materials)
-            self.export_materials(model_data, used_materials, used_textures, export_shaders_folder)
+            self.export_materials(model_data, used_materials, used_textures)
             self.export_textures(used_textures, model_data, export_images_folder)
 
         # The first frame of the base animation becomes the rest pose
@@ -256,7 +256,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
         return exported_vertices, faces, vgroup_verts, vgroup_wgts
 
-    def export_materials(self, model_data, used_materials, used_textures, export_shaders_folder):
+    def export_materials(self, model_data, used_materials, used_textures):
         tex_names = []
         for bmat in used_materials:
             material = model_data.new_material()
@@ -265,15 +265,6 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             material.shader_hex = bmat.get('shader_hex',
                                            '088100c1_00880111_00000000_00058000')  # maybe use 00000000_00000000_00000000_00000000 instead
             material.enable_shadows = bmat.get('enable_shadows', 1)
-
-            if 'shaders_folder' in bmat:
-                for shader_filename in os.listdir(bmat['shaders_folder']):
-                    if shader_filename[:35] == material.shader_hex:
-                        try:
-                            shutil.copy2(os.path.join(bmat['shaders_folder'], shader_filename),
-                                         os.path.join(export_shaders_folder, shader_filename))
-                        except shutil.SameFileError:
-                            continue
 
             # Export Textures
             node_names = [node.name for node in node_tree.nodes]
