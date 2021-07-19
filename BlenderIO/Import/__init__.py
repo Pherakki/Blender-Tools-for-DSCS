@@ -35,7 +35,7 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
         description="Which mode to import in.",
         items=[("Modelling", "Modelling", "Imports the model in the Bind Pose with its base animation only", "", 0),
                ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
-               ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display corectly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
+               ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display correctly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
 
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
