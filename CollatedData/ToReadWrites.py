@@ -82,8 +82,8 @@ def make_geominterface(filepath, model_data, platform):
         gi_mat.unknown_material_components = mat.unknown_data['unknown_material_components']
 
     geomInterface.texture_data = [td.name for td in model_data.textures]
-    geomInterface.unknown_cam_data_1 = model_data.unknown_data['unknown_cam_data_1']
-    geomInterface.unknown_cam_data_2 = model_data.unknown_data['unknown_cam_data_2']
+    geomInterface.light_sources = model_data.unknown_data['unknown_cam_data_1']
+    geomInterface.cameras = model_data.unknown_data['unknown_cam_data_2']
     geomInterface.inverse_bind_pose_matrices = model_data.skeleton.inverse_bind_pose_matrices
     geomInterface.unknown_footer_data = model_data.unknown_data['unknown_footer_data']
 

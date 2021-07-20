@@ -45,6 +45,8 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     add_materials(model_data, imported_namedata, imported_geomdata)
     add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata)
     add_anims(model_data, imported_animdata)
+    model_data.light_sources = imported_geomdata.light_sources
+    model_data.cameras = imported_geomdata.cameras
 
     return model_data
 
@@ -79,8 +81,6 @@ def add_meshes(model_data, imported_geomdata):
 
         model_data.meshes[-1] = current_IF_mesh
 
-    model_data.unknown_data['unknown_cam_data_1'] = imported_geomdata.unknown_cam_data_1
-    model_data.unknown_data['unknown_cam_data_2'] = imported_geomdata.unknown_cam_data_2
     model_data.unknown_data['unknown_footer_data'] = imported_geomdata.unknown_footer_data
 
 

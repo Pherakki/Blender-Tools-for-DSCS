@@ -1,6 +1,8 @@
 from ...FileReaders.GeomReader import GeomReader
 from .MeshInterface import MeshInterface
 from .MaterialInterface import MaterialInterface
+from .LightSourceInterface import LightSourceInterface
+from .CameraInterface import CameraInterface
 import numpy as np
 
 
@@ -9,8 +11,8 @@ class GeomInterface:
         self.meshes = []
         self.material_data = []
         self.texture_data = []
-        self.unknown_cam_data_1 = []
-        self.unknown_cam_data_2 = []
+        self.light_sources = []
+        self.cameras = []
         self.inverse_bind_pose_matrices = []
         self.unknown_footer_data = []
 
@@ -34,8 +36,8 @@ class GeomInterface:
         new_interface.meshes = [MeshInterface.from_subfile(mesh) for mesh in readwriter.meshes]
         new_interface.material_data = [MaterialInterface.from_subfile(mat) for mat in readwriter.material_data]
         new_interface.texture_data = readwriter.texture_data
-        new_interface.unknown_cam_data_1 = readwriter.unknown_cam_data_1
-        new_interface.unknown_cam_data_2 = readwriter.unknown_cam_data_2
+        new_interface.light_sources = [LightSourceInterface.from_subfile(light) for light in readwriter.light_sources]
+        new_interface.cameras = [CameraInterface.from_subfile(cam) for cam in readwriter.cameras]
         new_interface.inverse_bind_pose_matrices = readwriter.inverse_bind_pose_matrices
         new_interface.unknown_footer_data = readwriter.unknown_footer_data
 
@@ -48,8 +50,8 @@ class GeomInterface:
             geomReader.filetype = 100
             geomReader.num_meshes = len(self.meshes)
             geomReader.num_materials = len(self.material_data)
-            geomReader.num_unknown_cam_data_1 = len(self.unknown_cam_data_1)
-            geomReader.num_unknown_cam_data_2 = len(self.unknown_cam_data_2)
+            geomReader.num_light_sources = len(self.light_sources)
+            geomReader.num_cameras = len(self.cameras)
             geomReader.num_bones = len(self.inverse_bind_pose_matrices)
 
             geomReader.num_bytes_in_texture_names_section = 32 * len(self.texture_data)
@@ -90,17 +92,15 @@ class GeomInterface:
                 geomReader.texture_data.append(texture)
                 virtual_pos += 32
 
-            # Dump unknown cam data 1
-            geomReader.unknown_cam_data_1_start_ptr = virtual_pos if len(self.unknown_cam_data_1) > 0 else 0
-            for elem in self.unknown_cam_data_1:
-                geomReader.unknown_cam_data_1.append(elem)
-                virtual_pos += 64
+            # Dump lights
+            geomReader.light_sources_ptr = virtual_pos if len(self.light_sources) > 0 else 0
+            for lightSource, lightSourceReader in zip(self.light_sources, geomReader.light_sources):
+                virtual_pos = lightSource.to_subfile(lightSourceReader, virtual_pos)
 
-            # Dump unknown cam data 2
-            geomReader.unknown_cam_data_2_start_ptr = virtual_pos if len(self.unknown_cam_data_2) > 0 else 0
-            for elem in self.unknown_cam_data_2:
-                geomReader.unknown_cam_data_2.append(elem)
-                virtual_pos += 48
+            # Dump cameras
+            geomReader.cameras_ptr = virtual_pos if len(self.cameras) > 0 else 0
+            for camera, cameraReader in zip(self.cameras, geomReader.cameras):
+                virtual_pos = camera.to_subfile(cameraReader, virtual_pos)
 
             # Ragged chunk fixing
             virtual_pos += (16 - (virtual_pos % 16)) % 16
@@ -115,3 +115,5 @@ class GeomInterface:
             geomReader.unknown_footer_data = self.unknown_footer_data
             geomReader.footer_data_start_offset = virtual_pos if len(geomReader.unknown_footer_data) else 0
             geomReader.write()
+
+

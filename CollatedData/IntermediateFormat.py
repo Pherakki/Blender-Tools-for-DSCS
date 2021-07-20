@@ -16,6 +16,9 @@ class IntermediateFormat:
         self.textures = []
         self.animations = {}
         self.unknown_data = {}
+        self.light_sources = []
+        self.cameras = []
+
         
     def new_mesh(self):
         md = MeshData()

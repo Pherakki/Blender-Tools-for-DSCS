@@ -37,8 +37,8 @@ class GeomReader(BaseRW):
         self.filetype = None
         self.num_meshes = None
         self.num_materials = None
-        self.num_unknown_cam_data_1 = None
-        self.num_unknown_cam_data_2 = None
+        self.num_light_sources = None
+        self.num_cameras = None
         self.num_bones = None
 
         self.num_bytes_in_texture_names_section = None
@@ -49,8 +49,8 @@ class GeomReader(BaseRW):
         self.meshes_start_ptr = None
         self.materials_start_ptr = None
 
-        self.unknown_cam_data_1_start_ptr = None
-        self.unknown_cam_data_2_start_ptr = None
+        self.light_sources_ptr = None
+        self.cameras_ptr = None
 
         self.bone_matrices_start_ptr = None
         self.padding_0x58 = None
@@ -61,8 +61,8 @@ class GeomReader(BaseRW):
         self.meshes = []
         self.material_data = []
         self.texture_data = []
-        self.unknown_cam_data_1 = []
-        self.unknown_cam_data_2 = []
+        self.light_sources = []
+        self.cameras = []
         self.inverse_bind_pose_matrices = []
         self.unknown_footer_data = []
 
@@ -88,8 +88,8 @@ class GeomReader(BaseRW):
         self.rw_meshes(rw_operator, rw_method_name)
         self.rw_material_data(rw_method_name)
         self.rw_texture_names(rw_operator_raw)
-        self.rw_unknown_cam_data_1(rw_method_name, rw_operator)
-        self.rw_unknown_cam_data_2(rw_method_name, rw_operator)
+        self.rw_light_sources(rw_method_name, rw_operator)
+        self.rw_cameras(rw_method_name, rw_operator)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
         self.rw_bone_data(rw_operator)
         self.rw_footer_data(rw_operator_raw)
@@ -109,8 +109,8 @@ class GeomReader(BaseRW):
         self.assert_equal('filetype', 100)
         rw_operator('num_meshes', 'H')
         rw_operator('num_materials', 'H')
-        rw_operator('num_unknown_cam_data_1', 'H')  # 0, 1, 2, 3, 4 ,5
-        rw_operator('num_unknown_cam_data_2', 'H')  # 0, 1, 2, 3, 4, 9
+        rw_operator('num_light_sources', 'H')  # 0, 1, 2, 3, 4 ,5
+        rw_operator('num_cameras', 'H')  # 0, 1, 2, 3, 4, 9
         rw_operator('num_bones', 'I')
 
         rw_operator('num_bytes_in_texture_names_section', 'I')
@@ -121,8 +121,8 @@ class GeomReader(BaseRW):
 
         rw_operator('meshes_start_ptr', 'Q')
         rw_operator('materials_start_ptr', 'Q')
-        rw_operator('unknown_cam_data_1_start_ptr', 'Q')
-        rw_operator('unknown_cam_data_2_start_ptr', 'Q')
+        rw_operator('light_sources_ptr', 'Q')
+        rw_operator('cameras_ptr', 'Q')
 
         rw_operator('bone_matrices_start_ptr', 'Q')
         rw_operator('padding_0x58', 'Q')
@@ -175,37 +175,21 @@ class GeomReader(BaseRW):
 
         rw_operator_raw('texture_data', self.num_bytes_in_texture_names_section)
 
-    def rw_unknown_cam_data_1(self, rw_method_name, rw_operator):
-        if self.is_ndef(self.unknown_cam_data_1_start_ptr, 'num_unknown_cam_data_1'):
+    def rw_light_sources(self, rw_method_name, rw_operator):
+        if self.is_ndef(self.light_sources_ptr, 'num_light_sources'):
             return
-        self.assert_file_pointer_now_at(self.unknown_cam_data_1_start_ptr)
+        self.assert_file_pointer_now_at(self.light_sources_ptr)
 
-        # hhhh ID?
-        # hehe <- some section
-        # ffff <- another section
-        # HHHHHH <- a third section
-        rw_operator('unknown_cam_data_1', 'hhhhheheffffHHHHHHIQQ'*self.num_unknown_cam_data_1)
-        # clearly some structural alignment between (14, 15) and (16, 17)
-        # 15 looks like a count, as does 17... everything past this is 0
-        # 64 bytes per unknown_cam_data_1
+        for lightSrcReader in self.light_sources:
+            getattr(lightSrcReader, rw_method_name)()
 
-        # Support proper readers when you know more about the format
-        #for unk_cam_data_1_reader in self.unknown_cam_data_1:
-        #    getattr(unk_cam_data_1_reader, rw_method_name)()
-
-    def rw_unknown_cam_data_2(self, rw_method_name, rw_operator):
-        if self.is_ndef(self.unknown_cam_data_2_start_ptr, 'num_unknown_cam_data_2'):
+    def rw_cameras(self, rw_method_name, rw_operator):
+        if self.is_ndef(self.cameras_ptr, 'num_cameras'):
             return
-        self.assert_file_pointer_now_at(self.unknown_cam_data_2_start_ptr)
+        self.assert_file_pointer_now_at(self.cameras_ptr)
 
-        rw_operator('unknown_cam_data_2', 'HHHeHeHehehehHIQQ'*self.num_unknown_cam_data_2)
-        #    # 12 is 0 or 1, everything after is 0
-        #    self.unknown_cam_data_2.append(data)
-        # 48 bytes per unknown_cam_data_2
-
-        # Support proper readers when you know more about the format
-        #for unk_cam_data_2_reader in self.unknown_cam_data_2:
-        #    getattr(unk_cam_data_2_reader, rw_method_name)()
+        for camReader in self.cameras:
+            getattr(camReader, rw_method_name)()
 
     def rw_bone_data(self, rw_operator):
         if self.is_ndef(self.bone_matrices_start_ptr, 'num_bones'):
@@ -229,15 +213,12 @@ class GeomReader(BaseRW):
         self.meshes = [self.new_meshreader()(self.bytestream) for _ in range(self.num_meshes)]
         self.material_data = [MaterialReader(self.bytestream) for _ in range(self.num_materials)]
 
-        # Support this when you know more about the format
-        #self.unknown_cam_data_1 = [UnknownCamData1Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_1)]
-        #self.unknown_cam_data_2 = [UnknownCamData2Reader(self.bytestream) for _ in range(self.num_unknown_cam_data_2)]
+        self.light_sources = [LightSource(self.bytestream) for _ in range(self.num_light_sources)]
+        self.cameras = [CameraData(self.bytestream) for _ in range(self.num_cameras)]
 
     def interpret_geom_data(self):
         texture_data = self.chunk_list(self.texture_data, 32)
         self.texture_data = [datum.rstrip(self.pad_byte).decode('ascii') for datum in texture_data]
-        self.unknown_cam_data_1 = self.chunk_list(self.unknown_cam_data_1, 21)
-        self.unknown_cam_data_2 = self.chunk_list(self.unknown_cam_data_2, 17)
 
         self.inverse_bind_pose_matrices = self.chunk_list(self.inverse_bind_pose_matrices, 12)
         # Can probably vectorise this loop away, but is it worth it?
@@ -257,8 +238,6 @@ class GeomReader(BaseRW):
         texture_data = [texture_name.encode('ascii') + self.pad_byte * (32 - len(texture_name))
                         for texture_name in self.texture_data]
         self.texture_data = b''.join(texture_data)
-        self.unknown_cam_data_1 = self.flatten_list(self.unknown_cam_data_1)
-        self.unknown_cam_data_2 = self.flatten_list(self.unknown_cam_data_2)
 
         for i, data in enumerate(self.inverse_bind_pose_matrices):
 
@@ -321,10 +300,9 @@ class LightSource(BaseRW):
         self.rw_header(self.write_buffer)
 
     def rw_header(self, rw_operator):
-        # First eight bytes seem to serve as some kind of ID - there are 7 combinations.
         rw_operator('bone_name_hash', 'I')
         rw_operator('mode', 'H')  # 0 = DIRECTIONAL, 2 = AMBIENT, 3 = POINT, 4 = UNKNOWN: Fog?
-        rw_operator('light_id', 'H')
+        rw_operator('light_id', 'H')  # Runs from 0 - 4
 
         rw_operator('intensity', 'f')
         rw_operator('unknown_fog_param', 'f')  # Fog height?
@@ -368,7 +346,7 @@ class CameraData(BaseRW):
         self.rw_header(self.write_buffer)
 
     def rw_header(self, rw_operator):
-        rw_operator('bone_name_hash', 'H')
+        rw_operator('bone_name_hash', 'I')
 
         # Some parameters...
         rw_operator('fov', 'f')
