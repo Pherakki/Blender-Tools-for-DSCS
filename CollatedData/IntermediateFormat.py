@@ -19,6 +19,8 @@ class IntermediateFormat:
         self.light_sources = []
         self.cameras = []
 
+        self.material_name_hashes = {}
+        self.bone_name_hashes = {}
         
     def new_mesh(self):
         md = MeshData()
