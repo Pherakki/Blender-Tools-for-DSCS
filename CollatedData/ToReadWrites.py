@@ -81,6 +81,17 @@ def make_geominterface(filepath, model_data, platform):
         gi_mat.shader_uniforms = {key: shader_uniforms_from_names[key](value) for key, value in mat.shader_uniforms.items()}
         gi_mat.unknown_material_components = mat.unknown_data['unknown_material_components']
 
+    for cam in model_data.cameras:
+        gi_camera = geomInterface.add_camera()
+        # Might need to reverse this
+        gi_camera.bone_name_hash = dscs_name_hash(cam.bone_name)
+        gi_camera.fov = cam.fov
+        gi_camera.maybe_aspect_ratio = cam.maybe_aspect_ratio
+        gi_camera.zNear = cam.zNar
+        gi_camera.zFar = cam.zFar
+        gi_camera.orthographic_scale = gi_camera.orthographic_scale
+        gi_camera.projection = cam.projection
+
     geomInterface.texture_data = [td.name for td in model_data.textures]
     geomInterface.light_sources = model_data.unknown_data['unknown_cam_data_1']
     geomInterface.cameras = model_data.unknown_data['unknown_cam_data_2']
