@@ -42,6 +42,11 @@ class IntermediateFormat:
         self.animations[key] = ad
         return ad
 
+    def new_camera(self):
+        camera = Camera()
+        self.cameras.append(camera)
+        return camera
+
         
 class MeshData:
     def __init__(self):
@@ -114,6 +119,18 @@ class Skeleton:
         self.bone_relations = []
 
         self.unknown_data = {}
+
+
+class Camera:
+    def __init__(self):
+        self.bone_name = None
+        self.fov = 0
+        self.maybe_aspect_ratio = 16 / 9
+        self.zNear = None
+
+        self.zFar = None
+        self.orthographic_scale = 0
+        self.projection = None
 
 
 class Animation:
