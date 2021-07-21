@@ -84,7 +84,8 @@ def make_geominterface(filepath, model_data, platform):
     for cam in model_data.cameras:
         gi_camera = geomInterface.add_camera()
         # Might need to reverse this
-        gi_camera.bone_name_hash = dscs_name_hash(cam.bone_name)
+        target_bone_hash = dscs_name_hash(cam.bone_name)
+        gi_camera.bone_name_hash = target_bone_hash[6:8] + target_bone_hash[4:6] + target_bone_hash[2:4] + target_bone_hash[0:2]
         gi_camera.fov = cam.fov
         gi_camera.maybe_aspect_ratio = cam.maybe_aspect_ratio
         gi_camera.zNear = cam.zNar
