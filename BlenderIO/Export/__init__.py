@@ -150,7 +150,6 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
             md.unknown_data['unknown_0x31'] = mesh_obj.get('unknown_0x31', 1)
             md.name_hash = mesh_obj.get('name_hash', '00000000')
-            md.unknown_data['unknown_0x4C'] = mesh_obj.get('unknown_0x4C', 0)
 
     def generate_link_loops(self, mesh):
         link_loops = {}
