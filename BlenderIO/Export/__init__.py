@@ -102,7 +102,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
         return armature
 
-    def find_cameras(selfself, parent_object):
+    def find_cameras(self, parent_object):
         return [item for item in parent_object.children if item.type == "CAMERA"]
 
     def find_lights(self, parent_object):
