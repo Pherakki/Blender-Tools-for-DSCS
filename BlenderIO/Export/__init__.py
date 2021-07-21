@@ -62,6 +62,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             self.export_materials(model_data, used_materials, used_textures)
             self.export_textures(used_textures, model_data, export_images_folder)
             self.export_cameras(self.find_cameras(parent_obj), model_data)
+            self.export_lights(self.find_lights(parent_obj), model_data)
 
         # The first frame of the base animation becomes the rest pose
         # Strip out any transforms in the base animation that are only for the first frame: DSCS will get this from
@@ -103,6 +104,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
     def find_cameras(selfself, parent_object):
         return [item for item in parent_object.children if item.type == "CAMERA"]
+
+    def find_lights(self, parent_object):
+        return [item for item in parent_object.children if item.type == "LIGHT"]
 
     def export_skeleton(self, armature, base_animation, model_data):
         bone_name_list = [bone.name for bone in armature.data.bones]
@@ -349,6 +353,29 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                 cam.projection = 1
                 cam.orthographic_scale = camera.ortho_scale
 
+    def export_lights(self, lights, model_data):
+        for light in lights:
+            lgt = model_data.new_light()
+            childof_constraints = [constr for constr in light.constraints if constr.type == "CHILD_OF"]
+            assert len(childof_constraints) == 1, f"Light \'{light.name}\' must have ONE \'CHILD OF\' constraint."
+            constr = childof_constraints[0]
+
+            lgt.bone_name = constr.subtarget
+            assert type(lgt.bone_name) == str, "[DEBUG] Not a string"
+
+            fogparam = light.get("Unknown_Fog_Param")
+            if fogparam is not None:
+                lgt.mode = 4
+            elif light.type == "SUN":
+                lgt.mode = 0
+            elif light.type == "AREA":
+                lgt.mode = 2
+            elif light.mode == "POINT":
+                lgt.mode = 3
+
+            lgt.intensity = light.energy
+            lgt.red, lgt.green, lgt.blue = list(light.color)
+            lgt.alpha = light.get("Alpha", 1.)
 
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)

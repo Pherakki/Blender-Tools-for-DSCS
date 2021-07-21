@@ -47,6 +47,11 @@ class IntermediateFormat:
         self.cameras.append(camera)
         return camera
 
+    def new_light(self):
+        light = LightSource()
+        self.light_sources.append(light)
+        return light
+
         
 class MeshData:
     def __init__(self):
@@ -131,6 +136,18 @@ class Camera:
         self.zFar = None
         self.orthographic_scale = 0
         self.projection = None
+
+
+class LightSource:
+    def __init__(self):
+        self.bone_name = None
+        self.mode = None
+        self.intensity = None
+        self.unknown_fog_param = None
+        self.red = None
+        self.green = None
+        self.blue = None
+        self.alpha = None
 
 
 class Animation:

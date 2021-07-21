@@ -48,6 +48,7 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     add_materials(model_data, imported_namedata, imported_geomdata)
     add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata)
     add_anims(model_data, imported_animdata)
+    add_lights(model_data, imported_geomdata.light_sources)
     model_data.light_sources = imported_geomdata.light_sources
     model_data.cameras = imported_geomdata.cameras
 
@@ -171,6 +172,23 @@ def add_anims(model_data, imported_animdata):
             ad.add_rotation_fcurve(bone_idx, rotation_fcurves_frames[bone_idx], rotation_fcurves_values[bone_idx])
             ad.add_location_fcurve(bone_idx, location_fcurves_frames[bone_idx], location_fcurves_values[bone_idx])
             ad.add_scale_fcurve(bone_idx, scale_fcurves_frames[bone_idx], scale_fcurves_values[bone_idx])
+
+
+def add_lights(model_data, imported_lightdata):
+    for light in imported_lightdata:
+        model_light = model_data.new_light()
+        target_bone_hash = hex(light.bone_name_hash)[2:]
+        target_bone_hash = (8-len(target_bone_hash))*'0' + target_bone_hash
+        target_bone_hash = target_bone_hash[6:8] + target_bone_hash[4:6] + target_bone_hash[2:4] + target_bone_hash[0:2]
+
+        model_light.bone_name = model_data.bone_name_hashes[target_bone_hash]
+        model_light.mode = light.mode
+        model_light.intensity = light.intensity
+        model_light.unknown_fog_param = light.unknown_fog_param
+        model_light.red = light.red
+        model_light.green = light.green
+        model_light.blue = light.blue
+        model_light.alpha = light.alpha
 
 
 def chunks(lst, n):

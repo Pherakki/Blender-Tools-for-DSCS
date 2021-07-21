@@ -92,6 +92,21 @@ def make_geominterface(filepath, model_data, platform):
         gi_camera.orthographic_scale = gi_camera.orthographic_scale
         gi_camera.projection = cam.projection
 
+    for i, light in enumerate(model_data.light_sources):
+        gi_light = geomInterface.add_light_source()
+        # Might need to reverse this
+        target_bone_hash = dscs_name_hash(light.bone_name)
+        gi_light.bone_name_hash = target_bone_hash[6:8] + target_bone_hash[4:6] + target_bone_hash[2:4] + target_bone_hash[0:2]
+        gi_light.mode = light.mode
+        gi_light.light_id = i
+        gi_light.intensity = light.intensity
+        gi_light.unknown_fog_param = light.unknown_fog_param
+
+        gi_light.red = light.red
+        gi_light.green = light.green
+        gi_light.blue = light.blue
+        gi_light.alpha = light.alpha
+
     geomInterface.texture_data = [td.name for td in model_data.textures]
     geomInterface.light_sources = model_data.unknown_data['unknown_cam_data_1']
     geomInterface.cameras = model_data.unknown_data['unknown_cam_data_2']

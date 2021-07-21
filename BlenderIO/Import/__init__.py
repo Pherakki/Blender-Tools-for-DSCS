@@ -10,6 +10,7 @@ from .ArmatureImport import import_skeleton
 from .MaterialImport import import_materials
 from .MeshImport import import_meshes
 from .CameraImport import import_cameras
+from .LightImport import import_lights
 from ...Utilities.Reposing import set_new_rest_pose
 
 
@@ -51,6 +52,7 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
         import_materials(model_data)
         import_meshes(parent_obj, filename, model_data, armature_name)
         import_cameras(parent_obj, model_data)
+        import_lights(parent_obj, model_data)
         add_rest_pose_to_base_anim(filename, model_data)
         import_animations(armature_name, model_data)
 
