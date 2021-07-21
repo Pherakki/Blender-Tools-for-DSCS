@@ -26,6 +26,16 @@ class GeomInterface:
         self.material_data.append(interface)
         return interface
 
+    def add_camera(self):
+        interface = CameraInterface()
+        self.cameras.append(interface)
+        return interface
+
+    def add_light_source(self):
+        interface = LightSourceInterface()
+        self.light_sources.append(interface)
+        return interface
+
     @classmethod
     def from_file(cls, path, platform):
         with open(path, 'rb') as F:
