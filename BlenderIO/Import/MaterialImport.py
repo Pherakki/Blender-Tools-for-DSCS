@@ -115,9 +115,37 @@ def import_materials(model_data):
         if final_diffuse_node is not None:
             connect(final_diffuse_node.outputs['BSDF'], output_node.inputs['Surface'])
 
-        new_material.use_backface_culling = (166 not in IF_material.unknown_data['unknown_material_components'])
-        new_material.blend_method = 'CLIP'
-        new_material.alpha_threshold = 0.7
+        new_material.use_backface_culling = True
+        for key, gl_option_data in IF_material.unknown_data["unknown_material_components"].items():
+            if key == 160:  # glAlphaFunc
+                input_alpha_threshold = gl_option_data[1]
+                gl_enum = gl_option_data[0]
+                if gl_enum == 0x200:  # GL_NEVER
+                    new_material.alpha_threshold = 1.
+                elif gl_enum == 0x201:  # GL_LESS
+                    new_material.alpha_threshold = 1 - input_alpha_threshold
+                elif gl_enum == 0x202:  # GL_EQUAL
+                    print("WARNING! GL_EQUAL IS UNSUPPORTED!")
+                    new_material.alpha_threshold = 0.
+                elif gl_enum == 0x203:  # GL_LEQUAL
+                    new_material.alpha_threshold = 1 - input_alpha_threshold
+                elif gl_enum == 0x204:  # GL_GREATER (always used by DSCS models)
+                    new_material.alpha_threshold = input_alpha_threshold
+                elif gl_enum == 0x205:  # GL_NOTEQUAL
+                    print("WARNING! GL_NOTEQUAL IS UNSUPPORTED!")
+                    new_material.alpha_threshold = 0.
+                elif gl_enum == 0x206:  # GL_GEQUAL
+                    new_material.alpha_threshold = input_alpha_threshold
+                elif gl_enum == 0x207:  # GL_ALWAYS
+                    new_material.alpha_threshold = 0.
+                else:
+                    assert 0, f"Unknown GL_ENUM \'{hex(gl_enum)}\' encounted in glAlphaTest."
+            elif key == 161:  # glEnable(GL_ALPHA_TEST)
+                new_material.blend_method = 'CLIP'
+            elif key == 166:  # glEnable(GL_CULL_FACE)
+                is_active = gl_option_data[0]  # 1 calls glEnable, 0 calls glDisable
+                # This option is always set to 0
+                new_material.use_backface_culling = is_active
 
 
 def import_material_texture_nodes(nodes, model_data, mat_shader_uniforms):
