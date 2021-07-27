@@ -79,11 +79,6 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                               strip_single_frame_transforms=False,
                               required_transforms={})
 
-        # print("!!!!!!!")
-        # print(os.getcwd())
-        # print(__file__, os.path.dirname(__file__))
-        # print("!!!!!!!")
-
         generate_files_from_intermediate_format(filepath, model_data, self.platform, animation_only=self.export_mode=="Animation")
 
     def find_armatures(self, parent_object):
@@ -297,7 +292,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                     used_textures.append(node_tree.nodes[nm].image)
 
             if 'ToonTextureID' not in node_names and 'DiffuseTextureID' in node_names:
-                texname = 'pc001ah01s'
+                texname = 'placeholder_toon'
                 if texname in tex_names:
                     tex_idx = tex_names.index(texname)
                 else:
@@ -312,9 +307,14 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                 if bmat.get(key) is not None:
                     material.shader_uniforms[key] = bmat.get(key)
             material.unknown_data['unknown_material_components'] = {}
-            for key in ['160', '161', '162', '163', '164', '166', '167', '168', '169', '172']:
+            for key in ['160', '161', '162', '163', '164', '165', '166', '167', '168', '169', '170', '171', '172', '173', '174', '175', '176']:
                 if bmat.get(key) is not None:
                     material.unknown_data['unknown_material_components'][int(key)] = bmat.get(key)
+            if material.use_backface_culling and 166 in material.unknown_data['unknown_material_components']:
+                del material.unknown_data['unknown_material_components'][166]
+            if material.blend_method == 'CLIP':
+                material.unknown_data['unknown_material_components'][161] = [1, 0]
+                material.unknown_data['unknown_material_components'][160] = [516., material.alpha_threshold]
 
     def export_textures(self, used_textures, model_data, export_images_folder):
         used_texture_names = [tex.name for tex in used_textures]
@@ -427,7 +427,7 @@ def get_bone_id(mesh_obj, bone_names, grp):
 class DummyTexture:
     def __init__(self, name):
         self.name = name
-        self.filepath = None
+        self.filepath = os.path.join(*(os.path.split(__file__)[:-3]), 'Resources', name + ".img")
 
 
 def get_all_nonempty_vertex_groups(mesh_obj):
