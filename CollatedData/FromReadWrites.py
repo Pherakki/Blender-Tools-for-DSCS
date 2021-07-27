@@ -49,7 +49,6 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geomdata)
     add_anims(model_data, imported_animdata)
     add_lights(model_data, imported_geomdata.light_sources)
-    model_data.light_sources = imported_geomdata.light_sources
     model_data.cameras = imported_geomdata.cameras
 
     return model_data
@@ -180,8 +179,9 @@ def add_lights(model_data, imported_lightdata):
         target_bone_hash = hex(light.bone_name_hash)[2:]
         target_bone_hash = (8-len(target_bone_hash))*'0' + target_bone_hash
         target_bone_hash = target_bone_hash[6:8] + target_bone_hash[4:6] + target_bone_hash[2:4] + target_bone_hash[0:2]
-
-        model_light.bone_name = model_data.bone_name_hashes[target_bone_hash]
+        # print(model_data.bone_name_hashes)
+        # print(model_data.material_name_hashes)
+        model_light.bone_name = target_bone_hash  # model_data.bone_name_hashes[target_bone_hash]
         model_light.mode = light.mode
         model_light.intensity = light.intensity
         model_light.unknown_fog_param = light.unknown_fog_param
