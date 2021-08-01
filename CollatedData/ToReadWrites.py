@@ -81,6 +81,7 @@ def make_geominterface(filepath, model_data, platform):
         gi_mat.shader_uniforms = {key: shader_uniforms_from_names[key](value) for key, value in mat.shader_uniforms.items()}
         gi_mat.unknown_material_components = mat.unknown_data['unknown_material_components']
 
+    geomInterface.camera = []
     for cam in model_data.cameras:
         gi_camera = geomInterface.add_camera()
         # Might need to reverse this
@@ -93,11 +94,12 @@ def make_geominterface(filepath, model_data, platform):
         gi_camera.orthographic_scale = gi_camera.orthographic_scale
         gi_camera.projection = cam.projection
 
+    geomInterface.light_sources = []
     for i, light in enumerate(model_data.light_sources):
         gi_light = geomInterface.add_light_source()
-        # Might need to reverse this
         target_bone_hash = dscs_name_hash(light.bone_name)
-        gi_light.bone_name_hash = target_bone_hash[6:8] + target_bone_hash[4:6] + target_bone_hash[2:4] + target_bone_hash[0:2]
+        target_bone_hash = target_bone_hash[6:8] + target_bone_hash[4:6] + target_bone_hash[2:4] + target_bone_hash[0:2]
+        gi_light.bone_name_hash = int(target_bone_hash, 16)
         gi_light.mode = light.mode
         gi_light.light_id = i
         gi_light.intensity = light.intensity
@@ -109,8 +111,6 @@ def make_geominterface(filepath, model_data, platform):
         gi_light.alpha = light.alpha
 
     geomInterface.texture_data = [td.name for td in model_data.textures]
-    geomInterface.light_sources = model_data.unknown_data['unknown_cam_data_1']
-    geomInterface.cameras = model_data.unknown_data['unknown_cam_data_2']
     geomInterface.inverse_bind_pose_matrices = model_data.skeleton.inverse_bind_pose_matrices
     geomInterface.unknown_footer_data = model_data.unknown_data['unknown_footer_data']
 
