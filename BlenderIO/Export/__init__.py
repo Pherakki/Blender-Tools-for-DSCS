@@ -13,6 +13,7 @@ from ..DSCSBlenderUtils import find_selected_model
 
 from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, generate_transform_delta, decompose_matrix, generate_transform_matrix
 from ...Utilities.ActionDataRetrieval import get_action_data
+from ...Utilities.StringHashing import dscs_name_hash
 
 
 class ExportDSCS(bpy.types.Operator, ExportHelper):
@@ -132,7 +133,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
             link_loops = self.generate_link_loops(mesh)
             face_link_loops = self.generate_face_link_loops(mesh)
-            export_verts, export_faces, vgroup_verts, vgroup_wgts = self.split_verts_by_uv(mesh_obj, link_loops, face_link_loops, model_data)
+            export_verts, export_faces, vgroup_verts, vgroup_wgts = self.split_verts_by_loop_data(mesh_obj, link_loops, face_link_loops, model_data)
 
             md.vertices = export_verts
             for j, face in enumerate(export_faces):
@@ -152,7 +153,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                 md.material_id = mat_names.index(matname)
 
             md.unknown_data['unknown_0x31'] = mesh_obj.get('unknown_0x31', 1)
-            md.name_hash = mesh_obj.get('name_hash', '00000000')
+            md.name_hash = mesh_obj.get('name_hash', dscs_name_hash(parent_obj.name))
 
     def generate_link_loops(self, mesh):
         link_loops = {}
@@ -169,15 +170,13 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                 face_link_loops[loop_idx] = face.index
         return face_link_loops
 
-    def split_verts_by_uv(self, mesh_obj, link_loops, face_link_loops, model_data):
+    def split_verts_by_loop_data(self, mesh_obj, link_loops, face_link_loops, model_data):
         mesh = mesh_obj.data
         has_uvs = len(mesh.uv_layers) > 0
         can_export_tangents = has_uvs and mesh.uv_layers.get('UVMap') is not None
 
-        # Disable buggy tangent export for now...
-        can_export_tangents = False
         if can_export_tangents:
-            mesh.calc_tangents(mesh.uv_layers['UVMap'])
+            mesh.calc_tangents(uvmap='UVMap')
         exported_vertices = []
         vgroup_verts = {}
         vgroup_wgts = {}
@@ -198,44 +197,41 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         n_uvs = len(map_ids)
         n_colours = len(colour_map)
 
-        def generating_function(lidx):
-            uvs = [tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids]
-            colour = [tuple((mesh.vertex_colors[map_id].data.values()[lidx].color)) for map_id in colour_map]
+        def generating_function_notangents(lidx):
+            normal = tuple(signif(mesh.loops[lidx].normal, 6))
+            uvs = tuple([tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids])
+            colour = tuple([tuple((mesh.vertex_colors[map_id].data.values()[lidx].color)) for map_id in colour_map])
 
-            return tuple([*uvs, *colour])
+            return tuple([normal, uvs, colour])
 
+        def generating_function_tangents(lidx):
+            data = generating_function_notangents(lidx)
+            normal = data[0]
+            tangent = signif(mesh.loops[lidx].tangent, 6)
+            sign = mesh.loops[lidx].bitangent_sign
+            binormal = tuple(signif(sign * np.cross(normal, tangent), 6))
+            return tuple([*data, tuple([*tangent, sign]), binormal])
+
+        if can_export_tangents:
+            generating_function = generating_function_tangents
+        else:
+            generating_function = generating_function_notangents
         for vert_idx, linked_loops in link_loops.items():
             vertex = mesh.vertices[vert_idx]
             loop_datas = [generating_function(ll) for ll in linked_loops]
             unique_values = list(set(loop_datas))
             for unique_value in unique_values:
                 loops_with_this_value = [linked_loops[i] for i, x in enumerate(loop_datas) if x == unique_value]
-                loop_objs_with_this_value = [mesh.loops[lidx] for lidx in loops_with_this_value]
                 group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups]
                 group_bone_ids = None if len(group_bone_ids) == 0 else group_bone_ids
                 group_weights = [grp.weight for grp in vertex.groups]
                 group_weights = None if len(group_weights) == 0 else group_weights
 
-                if can_export_tangents:
-                    tangents = [l.tangent for l in loop_objs_with_this_value]
-                    normals = [l.normal for l in loop_objs_with_this_value]
-                    signs = [l.bitangent_sign  for l in loop_objs_with_this_value]
-                    if not all([sign == signs[0] for sign in signs]):
-                        print("!!!! WARNING !!!!")
-                        print("Not all bitangents of loops attached to an exported vertex have the same sign!!!")
-                    avg_tangent = np.mean(tangents, axis=0)
-                    avg_normal = np.mean(normals, axis=0)
-                    bitangent = signs[0]*np.cross(avg_normal, avg_tangent)
-                    tangent_data = {'Tangent': (*avg_tangent, signs[0]),
-                                    'Binormal': bitangent}
-                else:
-                    tangent_data = {}
-
                 vert = {'Position': vertex.co,
-                        'Normal': vertex.normal,
-                        **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], unique_value[:n_uvs])},
-                        **{key: value for key, value in zip(['Colour'], unique_value[n_uvs:])},
-                        **tangent_data,
+                        'Normal': unique_value[0],
+                        **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], [*unique_value[1]])},
+                        **{key: value for key, value in zip(['Colour'], [*unique_value[2]])},
+                        **{key: value for key, value in zip(["Tangent", "Binormal"], unique_value[3:])},
                         'WeightedBoneID': [group_map[grp.group] for grp in vertex.groups],
                         'BoneWeight': group_weights}
 
@@ -384,6 +380,18 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         self.export_file(context, filepath)
 
         return {'FINISHED'}
+
+
+def signif(x, p):
+    """
+    Credit to Scott Gigante
+    Taken from https://stackoverflow.com/a/59888924
+    Rounds a float x to p significant figures
+    """
+    x = np.asarray(x)
+    x_positive = np.where(np.isfinite(x) & (x != 0), np.abs(x), 10**(p-1))
+    mags = 10 ** (p - 1 - np.floor(np.log10(x_positive)))
+    return np.round(x * mags) / mags
 
 
 def extract_rest_pose_from_base_animation(bone_names, parent_bones, base_animation, bind_pose_matrices):
