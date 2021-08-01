@@ -350,28 +350,38 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                 cam.orthographic_scale = camera.ortho_scale
 
     def export_lights(self, lights, model_data):
+        type_counts = [0, 0]
         for light in lights:
             lgt = model_data.new_light()
-            childof_constraints = [constr for constr in light.constraints if constr.type == "CHILD_OF"]
-            assert len(childof_constraints) == 1, f"Light \'{light.name}\' must have ONE \'CHILD OF\' constraint."
-            constr = childof_constraints[0]
-
-            lgt.bone_name = constr.subtarget
-            assert type(lgt.bone_name) == str, "[DEBUG] Not a string"
 
             fogparam = light.get("Unknown_Fog_Param")
             if fogparam is not None:
                 lgt.mode = 4
-            elif light.type == "SUN":
+                light_name = "Fog"
+                light_id = 0
+            elif light.type == "POINT":
                 lgt.mode = 0
+                light_id = type_counts[0]
+                light_name = "PointLamp" + str(light_id).rjust(2, '0')
+                type_counts[0] += 1
             elif light.type == "AREA":
                 lgt.mode = 2
-            elif light.mode == "POINT":
+                light_name = "AmbientLamp"
+                light_id = 99
+            elif light.mode == "SUN":
                 lgt.mode = 3
+                light_id = type_counts[1]
+                light_name = "DirLamp" + str(light_id).rjust(2, '0')
+                type_counts[1] += 1
+            else:
+                assert 0, "Unrecognised light type \'{light.type}\'."
 
             lgt.intensity = light.energy
             lgt.red, lgt.green, lgt.blue = list(light.color)
             lgt.alpha = light.get("Alpha", 1.)
+
+            lgt.bone_name = light_name
+            lgt.light_id = light_id
 
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
