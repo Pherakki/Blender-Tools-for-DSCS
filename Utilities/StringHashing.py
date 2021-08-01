@@ -14,6 +14,10 @@ def int_to_BE_hex(int_):
     return ''.join(list(chunks(hexhash, 2))[::-1])
 
 
+def BE_hex_to_int(hex_):
+    return int(''.join(list(chunks(hex_, 2))[::-1]), 16)
+
+
 def dscs_name_hash(string):
     string_length = len(string)
     string_as_uint = [struct.unpack('I', stringslice)[0]
