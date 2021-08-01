@@ -306,11 +306,11 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             for key in ['160', '161', '162', '163', '164', '165', '166', '167', '168', '169', '170', '171', '172', '173', '174', '175', '176']:
                 if bmat.get(key) is not None:
                     material.unknown_data['unknown_material_components'][int(key)] = bmat.get(key)
-            if material.use_backface_culling and 166 in material.unknown_data['unknown_material_components']:
+            if bmat.use_backface_culling and 166 in material.unknown_data['unknown_material_components']:
                 del material.unknown_data['unknown_material_components'][166]
-            if material.blend_method == 'CLIP':
+            if bmat.blend_method == 'CLIP':
                 material.unknown_data['unknown_material_components'][161] = [1, 0]
-                material.unknown_data['unknown_material_components'][160] = [516., material.alpha_threshold]
+                material.unknown_data['unknown_material_components'][160] = [516., bmat.alpha_threshold]
 
     def export_textures(self, used_textures, model_data, export_images_folder):
         used_texture_names = [tex.name for tex in used_textures]
