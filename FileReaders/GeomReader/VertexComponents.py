@@ -8,7 +8,7 @@ class BaseVertexComponent:
 
     @classmethod
     def generator(cls, vtx):
-        assert len(vtx[cls.vertex_type]) == cls.num_elements, "Vertex has an invalid number of elements."
+        assert len(vtx[cls.vertex_type]) == cls.num_elements, f"Vertex \'{cls.vertex_type}\' has an invalid number of elements: {len(vtx[cls.vertex_type])}, should have {cls.num_elements}. Full vertex is:\n {vtx}"
         return {cls.vertex_type: vtx[cls.vertex_type]}
 
 
