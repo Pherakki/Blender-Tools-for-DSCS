@@ -1,5 +1,6 @@
 import numpy as np
 from ...FileReaders.GeomReader.VertexComponents import vertex_components_from_names
+from ...Utilities.StringHashing import int_to_BE_hex, BE_hex_to_int
 
 
 ##################################
@@ -44,7 +45,7 @@ class MeshInterface:
     def from_subfile(cls, meshReader):
         interface = cls()
         interface.unknown_0x31 = meshReader.unknown_0x31
-        interface.name_hash = meshReader.name_hash
+        interface.name_hash = int_to_BE_hex(meshReader.name_hash)
         interface.bounding_sphere_radius = meshReader.bounding_sphere_radius
 
         interface.vertices = process_posweights(meshReader.vertex_data, meshReader.max_vertex_groups_per_vertex)
@@ -59,6 +60,7 @@ class MeshInterface:
 
     def to_subfile(self, meshReader, virtual_pos):
         meshReader.vertex_data_start_ptr = virtual_pos
+
 
         vgroup_idxs = self.vertex_group_bone_idxs
         meshReader.bytes_per_vertex, meshReader.vertex_components = calculate_vertex_properties(self.vertices, vgroup_idxs)
@@ -86,7 +88,7 @@ class MeshInterface:
         meshReader.max_vertex_groups_per_vertex = 0 if len(meshReader.weighted_bone_idxs) == 1 else meshReader.max_vertex_groups_per_vertex
         meshReader.unknown_0x31 = self.unknown_0x31
         meshReader.polygon_numeric_data_type = 4  # Can only write to triangles atm
-        meshReader.name_hash = self.name_hash
+        meshReader.name_hash = BE_hex_to_int(self.name_hash)
         meshReader.material_id = self.material_id
         meshReader.num_vertices = len(meshReader.vertex_data)
 

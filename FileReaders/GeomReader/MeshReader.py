@@ -89,8 +89,8 @@ class MeshReaderBase(BaseRW):
 
         rw_operator('max_vertex_groups_per_vertex', 'B')  # takes values 0, 1, 2, 3, 4: 0 means map everything to idx 0, 1 means the idxs are in the position vector
         rw_operator('unknown_0x31', 'B')  # Mesh flags: 0 - isRendered, 1 - isWireframe, 2 - skinning indices are consecutive
-        rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5
-        rw_operator_raw('name_hash', 4)
+        rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5: 4 is Triangles, 5 is TriangleStrips
+        rw_operator('name_hash', 'I')
 
         rw_operator('material_id', 'I')
         rw_operator('num_vertices', 'I')
