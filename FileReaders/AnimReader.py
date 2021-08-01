@@ -103,17 +103,17 @@ class AnimReader(BaseRW):
         self.max_val_2 = None
 
     def read(self):
-        self.read_write(self.read_buffer, self.read_raw, self.read_ascii, self.maxval_read, "read", self.prepare_read_op, self.cleanup_ragged_chunk_read)
+        self.read_write(self.read_buffer, self.read_raw, self.read_ascii, "read", self.prepare_read_op, self.cleanup_ragged_chunk_read)
         self.interpret_animdata()
 
     def write(self):
         self.reinterpret_animdata()
-        self.read_write(self.write_buffer, self.write_raw, self.write_ascii, self.maxval_write, "write", lambda: None, self.cleanup_ragged_chunk_write)
+        self.read_write(self.write_buffer, self.write_raw, self.write_ascii, "write", lambda: None, self.cleanup_ragged_chunk_write)
 
-    def read_write(self, rw_operator, rw_operator_raw, rw_operator_ascii, maxval_op, rw_method_name, preparation_op, chunk_cleanup_operator):
+    def read_write(self, rw_operator, rw_operator_raw, rw_operator_ascii, rw_method_name, preparation_op, chunk_cleanup_operator):
         self.rw_header(rw_operator, rw_operator_ascii)
         preparation_op()
-        self.rw_bone_idx_lists(rw_operator, maxval_op, chunk_cleanup_operator)
+        self.rw_bone_idx_lists(rw_operator, chunk_cleanup_operator)
         self.rw_initial_pose_bone_rotations(rw_operator_raw, chunk_cleanup_operator)
         self.rw_initial_pose_bone_locations(rw_operator, chunk_cleanup_operator)
         self.rw_initial_pose_bone_scales(rw_operator)
@@ -180,25 +180,7 @@ class AnimReader(BaseRW):
         rw_operator('padding_0x58', 'I')
         rw_operator('padding_0x5C', 'I')
 
-    def maxval_read(self, val, key):
-        n2r = (8 - getattr(self, key)* 2 % 8) % 8
-        self.read_raw(val, n2r)
-
-        res_1 = struct.unpack('H' * (len(getattr(self, val)) // 2), getattr(self, val))
-        if len(res_1):
-            setattr(self, val, res_1[0])
-        else:
-            setattr(self, val, 0)
-
-    def maxval_write(self, val, key):
-        n2w = (8 - getattr(self, key) * 2 % 8) % 8
-        n2w //= 2
-        backup = getattr(self, val)
-        setattr(self, val, struct.pack('H'*n2w, *([backup]*n2w)))
-        self.write_raw(val, n2w*2)
-        setattr(self, val, backup)
-
-    def rw_bone_idx_lists(self, rw_operator, maxval_op, chunk_cleanup_operator):
+    def rw_bone_idx_lists(self, rw_operator, chunk_cleanup_operator):
         """
         # Eight lists of indices
         # First three are bone indices that correspond to entries in unknown_data_1-3
@@ -207,6 +189,7 @@ class AnimReader(BaseRW):
         # UnknownAnimSubstructure
         # Eighth is similar to #4 but in every UnknownAnimSubstructure
         """
+        summed_uv_parts = self.unknown_0x1C + self.unknown_0x24
         rw_operator('static_pose_rotations_bone_idxs', self.static_pose_bone_rotations_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.static_pose_bone_rotations_count * 2, 16, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('static_pose_locations_bone_idxs', self.static_pose_bone_locations_count * 'H', force_1d=True)
@@ -214,8 +197,7 @@ class AnimReader(BaseRW):
         rw_operator('static_pose_scales_bone_idxs', self.static_pose_bone_scales_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.static_pose_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('unknown_bone_idxs_4', self.unknown_0x1C*'H', force_1d=True)
-        # Cleanup value is max element
-        maxval_op("max_val_1", "unknown_0x1C")
+        chunk_cleanup_operator(self.unknown_0x1C * 2, 8, stepsize=2, bytevalue=struct.pack('H', summed_uv_parts))
 
         rw_operator('animated_rotations_bone_idxs', self.animated_bone_rotations_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.animated_bone_rotations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
@@ -224,8 +206,8 @@ class AnimReader(BaseRW):
         rw_operator('animated_scales_bone_idxs', self.animated_bone_scales_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.animated_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('unknown_bone_idxs_8', self.unknown_0x24*'H', force_1d=True)
-        #chunk_cleanup_operator(self.unknown_0x24*2, 8, stepsize=2, bytevalue=struct.pack('H', self.skelReader.unknown_0x0C))
-        maxval_op("max_val_2", "unknown_0x24")
+        chunk_cleanup_operator(self.unknown_0x24*2, 8, stepsize=2, bytevalue=struct.pack('H', summed_uv_parts))
+
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_initial_pose_bone_rotations(self, rw_operator_raw, chunk_cleanup_operator):
@@ -255,7 +237,6 @@ class AnimReader(BaseRW):
         # 4 bytes assigned to each idx in unknown_bone_idxs_4
         # Probably texture UVs
         """
-        # unknown 0x1C - number of materials?
         self.assert_file_pointer_now_at(self.abs_ptr_static_unknown_4)
         rw_operator('unknown_data_4', 'f'*self.unknown_0x1C, force_1d=True)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
@@ -288,8 +269,7 @@ class AnimReader(BaseRW):
         Same for whatever goes in unknown_data_7b - that other set of indices that are unknown
         """
         self.assert_file_pointer_now_at(self.setup_and_static_data_size)
-        num_to_read = max([self.skelReader.unknown_0x0C, self.max_val_1, self.max_val_2])
-        #num_to_read = max([self.max_val_1, self.max_val_2])
+        num_to_read = self.unknown_0x1C + self.unknown_0x24
         tell = self.bytestream.tell()
         if self.bone_mask_bytes != 0:
             self.header = list(self.header)

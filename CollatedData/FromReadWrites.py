@@ -114,10 +114,10 @@ def add_skeleton(model_data, imported_namedata, imported_skeldata, imported_geom
     model_data.skeleton.inverse_bind_pose_matrices = imported_geomdata.inverse_bind_pose_matrices
 
     # Put the unknown data into the skeleton
-    model_data.skeleton.unknown_data['unknown_0x0C'] = imported_skeldata.unknown_0x0C
+    model_data.skeleton.unknown_data['unknown_0x0C'] = imported_skeldata.num_uv_channels
     model_data.skeleton.unknown_data['unknown_data_1'] = imported_skeldata.unknown_data_1
     model_data.skeleton.unknown_data['unknown_data_3'] = imported_skeldata.unknown_data_3
-    model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.unknown_data_4
+    model_data.skeleton.unknown_data['unknown_data_4'] = imported_skeldata.uv_channel_material_name_hashes
     parent_bones = {p: c for p, c in imported_skeldata.parent_bones}
 
     # Should be able to replace these with methods in 'Matrices', but some of the data must get edited in these methods...

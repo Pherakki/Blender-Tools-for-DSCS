@@ -36,14 +36,14 @@ def make_nameinterface(filepath, model_data):
 
 def make_skelinterface(filepath, model_data, export=True):
     skelInterface = SkelInterface()
-    skelInterface.unknown_0x0C = model_data.skeleton.unknown_data['unknown_0x0C']
+    skelInterface.num_uv_channels = model_data.skeleton.unknown_data['unknown_0x0C']
     skelInterface.parent_bones = model_data.skeleton.bone_relations
     skelInterface.rest_pose = model_data.skeleton.rest_pose
 
     skelInterface.unknown_data_1 = model_data.skeleton.unknown_data['unknown_data_1']
     skelInterface.bone_name_hashes = [bytes.fromhex(dscs_name_hash(bone_name)) for bone_name in model_data.skeleton.bone_names]
     skelInterface.unknown_data_3 = model_data.skeleton.unknown_data['unknown_data_3']
-    skelInterface.unknown_data_4 = model_data.skeleton.unknown_data['unknown_data_4']
+    skelInterface.uv_channel_material_name_hashes = model_data.skeleton.unknown_data['unknown_data_4']
 
     if export:
         skelInterface.to_file(filepath + ".skel")

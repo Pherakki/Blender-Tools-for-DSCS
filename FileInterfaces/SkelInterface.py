@@ -10,10 +10,10 @@ class SkelInterface:
         self.unknown_data_1 = []
         self.bone_name_hashes = []
         self.unknown_data_3 = []
-        self.unknown_data_4 = []
+        self.uv_channel_material_name_hashes = []
 
         # Variables that will be removed eventually
-        self.unknown_0x0C = None
+        self.num_uv_channels = None
 
     @property
     def num_bones(self):
@@ -26,14 +26,14 @@ class SkelInterface:
             readwriter.read()
 
         new_interface = cls()
-        new_interface.unknown_0x0C = readwriter.unknown_0x0C
+        new_interface.num_uv_channels = readwriter.num_uv_channels
 
         new_interface.rest_pose = readwriter.bone_data
         new_interface.parent_bones = readwriter.parent_bones
         new_interface.unknown_data_1 = readwriter.unknown_data_1
         new_interface.bone_name_hashes = readwriter.bone_name_hashes
         new_interface.unknown_data_3 = readwriter.unknown_data_3
-        new_interface.unknown_data_4 = readwriter.unknown_data_4
+        new_interface.uv_channel_material_name_hashes = readwriter.uv_channel_material_name_hashes
 
         return new_interface
 
@@ -43,7 +43,7 @@ class SkelInterface:
 
             readwriter.filetype = '20SE'
             readwriter.num_bones = len(self.rest_pose)
-            readwriter.unknown_0x0C = self.unknown_0x0C
+            readwriter.num_uv_channels = self.num_uv_channels
 
             parent_bones = {c: p for c, p in self.parent_bones}
             bone_hierarchy = gen_bone_hierarchy(parent_bones)
@@ -56,21 +56,21 @@ class SkelInterface:
             readwriter.unknown_data_1 = self.unknown_data_1
             readwriter.bone_name_hashes = self.bone_name_hashes
             readwriter.unknown_data_3 = self.unknown_data_3
-            readwriter.unknown_data_4 = self.unknown_data_4
+            readwriter.uv_channel_material_name_hashes = self.uv_channel_material_name_hashes
 
             # Just give up and make the absolute pointers
             readwriter.rel_ptr_to_end_of_bone_hierarchy_data = 40 + readwriter.num_bone_hierarchy_data_lines * 16
             readwriter.rel_ptr_to_end_of_bone_defs = readwriter.rel_ptr_to_end_of_bone_hierarchy_data + readwriter.num_bones * 12 * 4 - 4
             readwriter.rel_ptr_to_end_of_parent_bones = readwriter.rel_ptr_to_end_of_bone_defs + readwriter.num_bones * 2 - 16
-            abs_end_of_parent_bones_chunk = readwriter.rel_ptr_to_end_of_parent_bones + readwriter.unknown_0x0C + 44
+            abs_end_of_parent_bones_chunk = readwriter.rel_ptr_to_end_of_parent_bones + readwriter.num_uv_channels + 44
 
-            readwriter.rel_ptr_to_end_of_parent_bones_chunk = readwriter.rel_ptr_to_end_of_parent_bones + readwriter.unknown_0x0C + 12
+            readwriter.rel_ptr_to_end_of_parent_bones_chunk = readwriter.rel_ptr_to_end_of_parent_bones + readwriter.num_uv_channels + 12
             readwriter.rel_ptr_to_end_of_parent_bones_chunk += (16 - ((abs_end_of_parent_bones_chunk) % 16)) % 16
             readwriter.rel_ptr_bone_name_hashes = readwriter.rel_ptr_to_end_of_parent_bones_chunk + readwriter.num_bones * 4 - 4
-            readwriter.unknown_rel_ptr_3 = readwriter.rel_ptr_bone_name_hashes + readwriter.unknown_0x0C * 4 - 4
+            readwriter.unknown_rel_ptr_3 = readwriter.rel_ptr_bone_name_hashes + readwriter.num_uv_channels * 4 - 4
 
             bytes_after_parent_bones_chunk = (readwriter.unknown_rel_ptr_3 + 40) - (
-                        readwriter.rel_ptr_to_end_of_parent_bones_chunk + 32) + len(readwriter.unknown_data_4)
+                        readwriter.rel_ptr_to_end_of_parent_bones_chunk + 32) + len(readwriter.uv_channel_material_name_hashes)
             bytes_after_parent_bones_chunk += (16 - (bytes_after_parent_bones_chunk % 16))
 
             readwriter.total_bytes = readwriter.rel_ptr_to_end_of_parent_bones_chunk + bytes_after_parent_bones_chunk + 32

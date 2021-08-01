@@ -35,7 +35,7 @@ class SkelReader(BaseRW):
         self.total_bytes = None
         self.remaining_bytes_after_parent_bones_chunk = None
         self.num_bones = None
-        self.unknown_0x0C = None
+        self.num_uv_channels = None
         self.num_bone_hierarchy_data_lines = None
 
         self.rel_ptr_to_end_of_bone_hierarchy_data = None
@@ -57,7 +57,7 @@ class SkelReader(BaseRW):
         self.unknown_data_1 = None
         self.bone_name_hashes = None
         self.unknown_data_3 = None
-        self.unknown_data_4 = None
+        self.uv_channel_material_name_hashes = None
 
         # Utility variables
         self.filesize = None
@@ -87,7 +87,7 @@ class SkelReader(BaseRW):
         chunk_cleanup(self.bytestream.tell(), 16)
         self.rw_bone_name_hashes(rw_operator_raw)
         self.rw_unknown_data_3(rw_operator)
-        self.rw_unknown_data_4(rw_operator_raw)
+        self.rw_uv_channel_material_name_hashes(rw_operator_raw)
         chunk_cleanup(self.bytestream.tell() - self.remaining_bytes_after_parent_bones_chunk, 16)
 
     def rw_header(self, rw_operator, rw_operator_ascii):
@@ -98,7 +98,7 @@ class SkelReader(BaseRW):
         rw_operator('total_bytes', 'Q')
         rw_operator('remaining_bytes_after_parent_bones_chunk', 'I')
         rw_operator('num_bones',  'H')
-        rw_operator('unknown_0x0C', 'H')
+        rw_operator('num_uv_channels', 'H')
         rw_operator('num_bone_hierarchy_data_lines', 'I')
 
         upcd_pos = self.bytestream.tell()  # 24
@@ -128,7 +128,7 @@ class SkelReader(BaseRW):
         self.abs_ptr_parent_bones = pcp_pos + self.rel_ptr_to_end_of_parent_bones - self.num_bones * 2
         self.abs_ptr_end_of_parent_bones_chunk = pb_chunk_ptr_pos + self.rel_ptr_to_end_of_parent_bones_chunk
         self.abs_ptr_bone_name_hashes = unk2_pos + self.rel_ptr_bone_name_hashes - self.num_bones * 4
-        self.abs_ptr_unknown_3 = unk3_pos + self.unknown_rel_ptr_3 - self.unknown_0x0C * 4
+        self.abs_ptr_unknown_3 = unk3_pos + self.unknown_rel_ptr_3 - self.num_uv_channels * 4
 
         self.assert_equal("total_bytes", self.abs_ptr_bone_name_hashes + self.remaining_bytes_after_parent_bones_chunk)
 
@@ -150,7 +150,7 @@ class SkelReader(BaseRW):
 
     def rw_unknown_data_1(self, rw_operator):
         #self.assert_file_pointer_now_at()
-        rw_operator('unknown_data_1', 'B'*self.unknown_0x0C, force_1d=True)
+        rw_operator('unknown_data_1', 'B' * self.num_uv_channels, force_1d=True)
 
     def rw_bone_name_hashes(self, rw_operator_raw):
         self.assert_file_pointer_now_at(self.abs_ptr_bone_name_hashes)
@@ -161,19 +161,19 @@ class SkelReader(BaseRW):
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_3)
         #bytes_to_read = self.unknown_0x0C * 4
         # Looks like uint32s, no idea what these are for though.
-        rw_operator('unknown_data_3', 'I'*self.unknown_0x0C, force_1d=True)
+        rw_operator('unknown_data_3', 'I' * self.num_uv_channels, force_1d=True)
 
-    def rw_unknown_data_4(self, rw_operator_raw):
+    def rw_uv_channel_material_name_hashes(self, rw_operator_raw):
         # ???
-        rw_operator_raw('unknown_data_4', 4*self.unknown_0x0C)
+        rw_operator_raw('uv_channel_material_name_hashes', 4 * self.num_uv_channels)
 
     def interpret_skel_data(self):
         self.bone_hierarchy_data = self.chunk_list(self.bone_hierarchy_data, 8)
         self.bone_data = self.chunk_list(self.chunk_list(self.bone_data, 4), 3)
         self.bone_name_hashes = self.chunk_list(self.bone_name_hashes, 4)
         self.parent_bones = [(i, idx) for i, idx in enumerate(self.parent_bones)]
-        self.unknown_data_4 = self.chunk_list(self.unknown_data_4, 4)
-        self.unknown_data_4 = [item.hex() for item in self.unknown_data_4]
+        self.uv_channel_material_name_hashes = self.chunk_list(self.uv_channel_material_name_hashes, 4)
+        self.uv_channel_material_name_hashes = [item.hex() for item in self.uv_channel_material_name_hashes]
         # Basic error checking - make sure no bone idx exceeds the known number of bones
         if len(self.parent_bones) != 0:
             max_idx = max([subitem for item in self.parent_bones for subitem in item])
@@ -192,5 +192,5 @@ class SkelReader(BaseRW):
         self.bone_data = self.flatten_list(self.flatten_list(self.bone_data))
         self.bone_name_hashes = b''.join(self.bone_name_hashes)
         self.parent_bones = [parent for child, parent in self.parent_bones]
-        self.unknown_data_4 = [bytes.fromhex(item) for item in self.unknown_data_4]
-        self.unknown_data_4 = b''.join(self.unknown_data_4)
+        self.uv_channel_material_name_hashes = [bytes.fromhex(item) for item in self.uv_channel_material_name_hashes]
+        self.uv_channel_material_name_hashes = b''.join(self.uv_channel_material_name_hashes)
