@@ -5,7 +5,7 @@ from ..FileInterfaces.AnimInterface import AnimInterface
 from .IntermediateFormat import IntermediateFormat
 from ..Utilities.Rotation import bone_matrix_from_rotation_location, quat_to_matrix, rotation_matrix_to_quat
 
-from ..Utilities.StringHashing import dscs_name_hash
+from ..Utilities.StringHashing import dscs_name_hash, int_to_BE_hex
 
 import os
 import numpy as np
@@ -176,12 +176,10 @@ def add_anims(model_data, imported_animdata):
 def add_lights(model_data, imported_lightdata):
     for light in imported_lightdata:
         model_light = model_data.new_light()
-        target_bone_hash = hex(light.bone_name_hash)[2:]
-        target_bone_hash = (8-len(target_bone_hash))*'0' + target_bone_hash
-        target_bone_hash = target_bone_hash[6:8] + target_bone_hash[4:6] + target_bone_hash[2:4] + target_bone_hash[0:2]
+        target_bone_hash = int_to_BE_hex(light.bone_name_hash)
         # print(model_data.bone_name_hashes)
         # print(model_data.material_name_hashes)
-        model_light.bone_name = target_bone_hash  # model_data.bone_name_hashes[target_bone_hash]
+        model_light.bone_name = model_data.bone_name_hashes.get(target_bone_hash, 'Fog')
         model_light.mode = light.mode
         model_light.intensity = light.intensity
         model_light.unknown_fog_param = light.unknown_fog_param
