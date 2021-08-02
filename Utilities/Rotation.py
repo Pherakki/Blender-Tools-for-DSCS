@@ -50,3 +50,20 @@ def bone_matrix_from_rotation_location(quaternion, position):
     bone_matrix[3, 3] = 1
 
     return bone_matrix
+
+
+def XYZ_eulers_to_quat(eulers, WXYZ=False):
+    phi, theta, psi = eulers
+    cphi = np.cos(phi/2)
+    sphi = np.sin(phi/2)
+    ctheta = np.cos(theta/2)
+    stheta = np.sin(theta/2)
+    cpsi = np.cos(psi/2)
+    spsi = np.sin(psi/2)
+
+    w = cphi * ctheta * cpsi + sphi * stheta * spsi
+    x = sphi * ctheta * cpsi - cphi * stheta * spsi
+    y = cphi * stheta * cpsi + sphi * ctheta * spsi
+    z = cphi * ctheta * spsi - sphi * stheta * cpsi
+
+    return np.roll([x, y, z, w], shift=WXYZ)

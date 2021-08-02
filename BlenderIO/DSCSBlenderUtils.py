@@ -55,9 +55,10 @@ def get_first_frame_of_pose(suffix):
     pose_name = f"{obj_name}_{suffix}"
     rest_pose_action = bpy.data.actions[pose_name]
     model_armature.pose_library = rest_pose_action
-    data, _ = get_action_data(rest_pose_action, {'rotation_quaternion': [None, None, None, None],
-                                                 'location':            [None, None, None],
-                                                 'scale':               [None, None, None]})
+    data = get_action_data(rest_pose_action, {'rotation_quaternion': [None, None, None, None],
+                                               'location':           [None, None, None],
+                                               'scale':              [None, None, None],
+                                               'rotation_euler':     [None, None, None]})
     return {bone_name: generate_transform_matrix(transform['rotation_quaternion'][0.],
                                                  transform['location'][0.],
                                                  transform['scale'][0.],

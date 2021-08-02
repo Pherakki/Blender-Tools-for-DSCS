@@ -407,9 +407,9 @@ def signif(x, p):
 def extract_rest_pose_from_base_animation(bone_names, parent_bones, base_animation, bind_pose_matrices):
     curve_defaults = {'rotation_quaternion': [1., 0., 0., 0.],
                       'location': [0., 0., 0.],
-                      'scale': [1., 1., 1.]}
-    base_animation_data, _ = get_action_data(base_animation,
-                                             curve_defaults)
+                      'scale': [1., 1., 1.],
+                      'rotation_euler': [0., 0., 0.]}
+    base_animation_data= get_action_data(base_animation, curve_defaults)
 
     rest_pose = []
     for i, bone_name in enumerate(bone_names):

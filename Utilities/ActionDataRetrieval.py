@@ -1,7 +1,7 @@
 import numpy as np
 
 from .Interpolation import lerp, slerp, produce_interpolation_method
-from .Matrices import apply_transform_to_keyframe, generate_transform_matrix
+from .Rotation import XYZ_eulers_to_quat
 
 
 #############################
@@ -13,7 +13,8 @@ def get_action_data(action, curve_defaults):
     for bone_name, group in fcurve_groups.items():
         animation_data[bone_name] = {'rotation_quaternion': {},
                                      'location': {},
-                                     'scale': {}}
+                                     'scale': {},
+                                     'rotation_euler': {}}
         # Get whether any of the locations, rotations, and scales are animated; plus the f-curves for those
         # that are
         elements_used, bone_data = get_used_animation_elements_in_group(group)
@@ -24,12 +25,20 @@ def get_action_data(action, curve_defaults):
                 curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type], lerp)
                 zipped_data = zip_vector_elements(curve_data)
                 animation_data[bone_name][curve_type] = zipped_data
-    return animation_data, fcurve_groups
+        convert_eulers_to_quats(animation_data[bone_name])
+    return animation_data
 
 
 #####################
 # UTILITY FUNCTIONS #
 #####################
+def convert_eulers_to_quats(group):
+    if 'rotation_euler' in group:
+        euler_data = group.pop("rotation_euler")
+        for frame_idx, frame_value in euler_data.items():
+            group['rotation_quaternion'][frame_idx] = XYZ_eulers_to_quat(frame_value, WXYZ=True)
+
+
 def get_bone_name_from_fcurve(fcurve):
     return fcurve.data_path.split('[')[1].split(']')[0][1:-1]
 
@@ -46,7 +55,8 @@ def group_fcurves_by_bone_and_type(action):
             if bone_name not in res:
                 res[bone_name] = {'rotation_quaternion': [None, None, None, None],
                                   'location':            [None, None, None],
-                                  'scale':               [None, None, None]}
+                                  'scale':               [None, None, None],
+                                  'rotation_euler':      [None, None, None]}
             curve_type = get_fcurve_type(fcurve)
             array_index = fcurve.array_index
 
@@ -85,11 +95,13 @@ def get_used_animation_elements_in_group(group):
     """
     elements_used = {'location': False,
                      'rotation_quaternion': False,
-                     'scale': False}
+                     'scale': False,
+                     'rotation_euler': False}
 
     bone_data = {'rotation_quaternion': [{}, {}, {}, {}],
                  'location':            [{}, {}, {}],
-                 'scale':               [{}, {}, {}]}
+                 'scale':               [{}, {}, {}],
+                 'rotation_euler': [{}, {}, {}]}
     for curve_type in group:
         for curve_idx, f_curve in enumerate(group[curve_type]):
             if f_curve is None:

@@ -1,8 +1,6 @@
 import numpy as np
 from ...Utilities.ActionDataRetrieval import get_action_data
 
-# armature.animation_data.nla_tracks
-
 
 def export_animations(nla_tracks, model_data, strip_single_frame_transforms, required_transforms, out_transforms=None):
     """
@@ -17,7 +15,8 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
 
     curve_defaults = {'location': [0., 0., 0.],
                       'rotation_quaternion': [1., 0., 0., 0.],
-                      'scale': [1., 1., 1.]}
+                      'scale': [1., 1., 1.],
+                      'rotation_euler': [0, 0, 0]}
     if required_transforms is None:
         required_transforms = {}
     if out_transforms is None:
@@ -32,9 +31,8 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
             continue
 
         nla_strip = strips[0]
-        fps = nla_strip.scale * 24
 
-        animation_data, _ = get_action_data(nla_strip.action, curve_defaults)
+        animation_data = get_action_data(nla_strip.action, curve_defaults)
 
         ad = model_data.new_anim(nla_track.name)
         ad.playback_rate = fps
