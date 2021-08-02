@@ -33,8 +33,12 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
         nla_strip = strips[0]
 
         animation_data = get_action_data(nla_strip.action, curve_defaults)
+        smallest_frame_delta = get_smallest_frame_delta(animation_data)
+        stretch_frame_indices_by_factor(animation_data, 1./smallest_frame_delta)
 
         ad = model_data.new_anim(nla_track.name)
+
+        fps = 24. / (nla_strip.scale * smallest_frame_delta)
         ad.playback_rate = fps
 
         required_rotations = required_transforms.get('rotation_quaternion', [])
@@ -61,3 +65,29 @@ def fetch_subdata(data, bone_name, strip_single_frame_transforms, required_subtr
         subdata = {}
         out_transforms[fetch_string].append(bone_name)
     return subdata
+
+
+def get_smallest_frame_delta(animation_data):
+    smallest_frame_delta = np.inf
+    for bone_name, group in animation_data.items():
+        for curve_type, curve_data in group.items():
+            frame_indices = np.array(list(curve_data.keys()))
+            if len(frame_indices) < 2:
+                continue
+            min_diff = np.min(frame_indices[1:] - frame_indices[:-1])
+            smallest_frame_delta = np.min((smallest_frame_delta, min_diff))
+    if smallest_frame_delta == np.inf:
+        smallest_frame_delta = 1.
+    return smallest_frame_delta
+
+
+def stretch_frame_indices_by_factor(animation_data, factor):
+    for bone_name, group in animation_data.items():
+        for curve_type, curve_data in group.items():
+            # curve_data is a dict...
+            # so take all the (index, value) pairs from it, wipe it, then we can re-populate it with the values at new
+            # indices
+            frame_data = list(curve_data.items())
+            curve_data.clear()
+            for idx, value in frame_data:
+                curve_data[idx*factor] = value
