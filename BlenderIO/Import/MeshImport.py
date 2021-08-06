@@ -1,13 +1,15 @@
 import bpy
 from mathutils import Vector, Matrix
 
+import numpy as np
+
 
 def import_meshes(parent_obj, filename, model_data, armature_name):
     for i, IF_mesh in enumerate(model_data.meshes):
-        # This function should be the best way to remove duplicate vertices (?) but doesn't pick up overlapping polygons with opposite normals
-        # verts, faces, map_of_loops_to_model_vertices, map_of_model_verts_to_verts = self.build_loops_and_verts(IF_mesh.vertices, IF_mesh.polygons)
-        # verts = [Vector(vert) for vert in verts]
-        edges = []
+        faces = [poly.indices for poly in IF_mesh.polygons]
+
+        new_verts, new_tris, new_facevert_to_old_facevert_map = merge_opengl_vertices(IF_mesh.vertices, faces)
+        vert_positions = [np.array(v.position) for v in new_verts]
 
         # Init mesh
         meshobj_name = f"{filename}_{i}"
