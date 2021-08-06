@@ -16,18 +16,23 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         mesh = bpy.data.meshes.new(name=meshobj_name)
         mesh_object = bpy.data.objects.new(meshobj_name, mesh)
 
-        verts = [Vector(v['Position']) for v in IF_mesh.vertices]
-        faces = [poly.indices for poly in IF_mesh.polygons]
-        mesh_object.data.from_pydata(verts, edges, faces)
+        mesh_object.data.from_pydata(vert_positions, [], new_tris)
         bpy.context.collection.objects.link(mesh_object)
 
         # Get the loop data
-        # map_of_blenderloops_to_modelloops = {}
-        # for poly_idx, poly in enumerate(mesh.polygons):
-        #     for loop_idx in poly.loop_indices:
-        #         vert_idx = mesh.loops[loop_idx].vertex_index
-        #         model_vertex = map_of_loops_to_model_vertices[(poly_idx, vert_idx)]
-        #         map_of_blenderloops_to_modelloops[loop_idx] = IF_mesh.vertices[model_vertex]
+        n_loops = len(mesh.loops)
+        map_of_loops_to_model_verts = {}
+        map_of_model_verts_to_blender_verts = {}
+        for new_poly_idx, poly in enumerate(mesh.polygons):
+            for loop_idx in poly.loop_indices:
+                assert loop_idx not in map_of_loops_to_model_verts, "Loop already exists!"
+                new_vert_idx = mesh.loops[loop_idx].vertex_index
+                # Take only the vert id from the old (face_id, vert_id) pair
+                old_vert_idx = new_facevert_to_old_facevert_map[(new_poly_idx, new_vert_idx)][1]
+                map_of_loops_to_model_verts[loop_idx] = old_vert_idx
+                map_of_model_verts_to_blender_verts[old_vert_idx] = new_vert_idx
+
+        loop_data = [IF_mesh.vertices[map_of_loops_to_model_verts[loop_idx]] for loop_idx in range(n_loops)]
 
         # Assign normals
         # if 'Normal' in map_of_blenderloops_to_modelloops[0]:
@@ -36,8 +41,10 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
             # loop_normals = [Vector(IF_mesh.vertices[loop.vertex_index]['Normal']) for loop in mesh_object.data.loops]
             # mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
             # mesh_object.data.normals_split_custom_set(loop_normals)
-            mesh_object.data.normals_split_custom_set_from_vertices([Vector(v['Normal']) for v in IF_mesh.vertices])
-
+            loop_normals = [Vector(l["Normal"]) for l in loop_data]
+            mesh_object.data.normals_split_custom_set(loop_normals)
+            #mesh.create_normals_split()
+            #mesh.loops.foreach_set("normal", [subitem for item in loop_normals for subitem in item])
         mesh.use_auto_smooth = True
 
         # Assign materials
@@ -52,19 +59,20 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
                 uv_layer = mesh.uv_layers.new(name=f"{uv_type}Map", do_init=True)
                 for loop_idx, loop in enumerate(mesh.loops):
                     # uv_layer.data[loop_idx].uv = map_of_blenderloops_to_modelloops[loop_idx][uv_type]
-                    uv_layer.data[loop_idx].uv = IF_mesh.vertices[loop.vertex_index][uv_type]
+                    uv_layer.data[loop_idx].uv = loop_data[loop_idx][uv_type]
 
         # Assign vertex colours
         if 'Colour' in IF_mesh.vertices[0]:
             colour_map = mesh.vertex_colors.new(name=f"Map", do_init=True)
             for loop_idx, loop in enumerate(mesh.loops):
-                colour_map.data[loop_idx].color = IF_mesh.vertices[loop.vertex_index]['Colour']
+                colour_map.data[loop_idx].color = loop_data[loop_idx][uv_type]
 
         # Rig the vertices
-        for IF_vertex_group in IF_mesh.vertex_groups:
-            vertex_group = mesh_object.vertex_groups.new(name=model_data.skeleton.bone_names[IF_vertex_group.bone_idx])
-            for vert_idx, vert_weight in zip(IF_vertex_group.vertex_indices, IF_vertex_group.weights):
                 # vertex_group.add([map_of_model_verts_to_verts[vert_idx]], vert_weight, 'REPLACE')
+        vertex_groups = make_vertex_groups(new_verts, [vg.bone_idx for vg in IF_mesh.vertex_groups])
+        for bone_idx, vg in vertex_groups.items():
+            vertex_group = mesh_object.vertex_groups.new(name=model_data.skeleton.bone_names[bone_idx])
+            for vert_idx, vert_weight in vg:
                 vertex_group.add([vert_idx], vert_weight, 'REPLACE')
 
         # Add unknown data
