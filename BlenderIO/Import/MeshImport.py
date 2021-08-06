@@ -70,18 +70,12 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         # Add unknown data
         mesh_object['name_hash'] = IF_mesh.name_hash
 
-        bpy.data.objects[meshobj_name].select_set(True)
-        bpy.data.objects[armature_name].select_set(True)
-        # I would prefer to do this by directly calling object methods if possible
-        # mesh_object.parent_set()...
-        bpy.context.view_layer.objects.active = bpy.data.objects[armature_name]
-        bpy.ops.object.parent_set(type='ARMATURE')
+        mesh_object.parent = bpy.data.objects[armature_name]
+        modifier = mesh_object.modifiers.new(name="Armature", type="ARMATURE")
+        modifier.object = bpy.data.objects[armature_name]
 
         mesh.validate(verbose=True)
         mesh.update()
-
-        bpy.data.objects[meshobj_name].select_set(False)
-        bpy.data.objects[armature_name].select_set(False)
 
     # Top-level unknown data
     parent_obj['unknown_footer_data'] = model_data.unknown_data['unknown_footer_data']
