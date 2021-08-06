@@ -52,7 +52,7 @@ def make_geominterface(filepath, model_data, platform):
     geomInterface.meshes = []
     for mesh in model_data.meshes:
         gi_mesh = geomInterface.add_mesh()
-        gi_mesh.unknown_0x31 = mesh.unknown_data['unknown_0x31']
+        gi_mesh.meshflags = mesh.unknown_data['meshflags']
         gi_mesh.name_hash = mesh.name_hash
 
         for uv_type in ['UV', 'UV2', 'UV3']:

@@ -20,13 +20,6 @@ class MeshReaderBase(BaseRW):
     (o) MeshReader can fully interpret all mesh data in geom files in DSDB archive.
     (o) MeshReader can write data to geom files.
 
-    Current hypotheses and observations
-    ------
-    1. *Every* header contains a value of 5123 occupying bytes 0x2C-0x2F. Maybe it's a checksum?
-    2. *Every* vertex component contains a value of 20 occupying byte 0x05. Another checksum?! Weird junk data?
-    3. The remaining unknowns have been modified on the pc002 mesh, and the results have been inconclusive.
-       No visual changes have been seen, except in the case of unknown_0x31, which may affect bone weights.
-       Setting all the floats to 0 (unknowns 0x48 - 0x68) has no observable effect.
     """
     def __init__(self, io_stream):
         super().__init__(io_stream)
@@ -44,7 +37,7 @@ class MeshReaderBase(BaseRW):
         self.always_5123 = None
 
         self.max_vertex_groups_per_vertex = None
-        self.unknown_0x31 = None
+        self.meshflags = None
         self.polygon_numeric_data_type = None
         self.name_hash = None
         self.material_id = None
@@ -88,7 +81,7 @@ class MeshReaderBase(BaseRW):
         # PS4: self.assert_equal('always_5123', 0)
 
         rw_operator('max_vertex_groups_per_vertex', 'B')  # takes values 0, 1, 2, 3, 4: 0 means map everything to idx 0, 1 means the idxs are in the position vector
-        rw_operator('unknown_0x31', 'B')  # Mesh flags: 0 - isRendered, 1 - isWireframe, 2 - skinning indices are consecutive
+        rw_operator('meshflags', 'B')  # Mesh flags: >>0 - isRendered, >>1 - isWireframe, >>2 - skinning indices are consecutive
         rw_operator('polygon_numeric_data_type', 'H')  # 4 or 5: 4 is Triangles, 5 is TriangleStrips
         rw_operator('name_hash', 'I')
 

@@ -30,7 +30,7 @@ triangle_converters = {'Triangles': triangles_to_polys,
 
 class MeshInterface:
     def __init__(self):
-        self.unknown_0x31 = None
+        self.meshflags = None
         self.name_hash = None
         self.bounding_sphere_radius = None
 
@@ -44,7 +44,7 @@ class MeshInterface:
     @classmethod
     def from_subfile(cls, meshReader):
         interface = cls()
-        interface.unknown_0x31 = meshReader.unknown_0x31
+        interface.meshflags = meshReader.meshflags
         interface.name_hash = int_to_BE_hex(meshReader.name_hash)
         interface.bounding_sphere_radius = meshReader.bounding_sphere_radius
 
@@ -86,7 +86,7 @@ class MeshInterface:
 
         meshReader.max_vertex_groups_per_vertex = max([len(vtx['WeightedBoneID']) if vtx['WeightedBoneID'] is not None else 0 for vtx in self.vertices])
         meshReader.max_vertex_groups_per_vertex = 0 if len(meshReader.weighted_bone_idxs) == 1 else meshReader.max_vertex_groups_per_vertex
-        meshReader.unknown_0x31 = self.unknown_0x31
+        meshReader.meshflags = self.meshflags
         meshReader.polygon_numeric_data_type = 4  # Can only write to triangles atm
         meshReader.name_hash = BE_hex_to_int(self.name_hash)
         meshReader.material_id = self.material_id
