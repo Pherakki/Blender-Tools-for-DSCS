@@ -198,7 +198,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         n_colours = len(colour_map)
 
         def generating_function_notangents(lidx):
-            normal = tuple(signif(mesh.loops[lidx].normal, 6))
+            normal = tuple(round_to_sigfigs(mesh.loops[lidx].normal, 6))
             uvs = tuple([tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids])
             colour = tuple([tuple((mesh.vertex_colors[map_id].data.values()[lidx].color)) for map_id in colour_map])
 
@@ -207,9 +207,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         def generating_function_tangents(lidx):
             data = generating_function_notangents(lidx)
             normal = data[0]
-            tangent = signif(mesh.loops[lidx].tangent, 6)
+            tangent = round_to_sigfigs(mesh.loops[lidx].tangent, 6)
             sign = mesh.loops[lidx].bitangent_sign
-            binormal = tuple(signif(sign * np.cross(normal, tangent), 6))
+            binormal = tuple(round_to_sigfigs(sign * np.cross(normal, tangent), 6))
             return tuple([*data, tuple([*tangent, sign]), binormal])
 
         if can_export_tangents:
@@ -392,7 +392,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-def signif(x, p):
+def round_to_sigfigs(x, p):
     """
     Credit to Scott Gigante
     Taken from https://stackoverflow.com/a/59888924
