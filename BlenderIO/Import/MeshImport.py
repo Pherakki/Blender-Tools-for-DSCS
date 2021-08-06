@@ -35,12 +35,7 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         loop_data = [IF_mesh.vertices[map_of_loops_to_model_verts[loop_idx]] for loop_idx in range(n_loops)]
 
         # Assign normals
-        # if 'Normal' in map_of_blenderloops_to_modelloops[0]:
         if 'Normal' in IF_mesh.vertices[0]:
-            # loop_normals = [Vector(loop_data['Normal']) for loop_data in map_of_blenderloops_to_modelloops.values()]
-            # loop_normals = [Vector(IF_mesh.vertices[loop.vertex_index]['Normal']) for loop in mesh_object.data.loops]
-            # mesh_object.data.normals_split_custom_set([(0, 0, 0) for _ in mesh_object.data.loops])
-            # mesh_object.data.normals_split_custom_set(loop_normals)
             loop_normals = [Vector(l["Normal"]) for l in loop_data]
             mesh_object.data.normals_split_custom_set(loop_normals)
             #mesh.create_normals_split()
@@ -54,11 +49,9 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
 
         # Assign UVs
         for uv_type in ['UV', 'UV2', 'UV3']:
-            # if uv_type in map_of_blenderloops_to_modelloops[0]:
             if uv_type in IF_mesh.vertices[0]:
                 uv_layer = mesh.uv_layers.new(name=f"{uv_type}Map", do_init=True)
                 for loop_idx, loop in enumerate(mesh.loops):
-                    # uv_layer.data[loop_idx].uv = map_of_blenderloops_to_modelloops[loop_idx][uv_type]
                     uv_layer.data[loop_idx].uv = loop_data[loop_idx][uv_type]
 
         # Assign vertex colours
@@ -68,7 +61,6 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
                 colour_map.data[loop_idx].color = loop_data[loop_idx][uv_type]
 
         # Rig the vertices
-                # vertex_group.add([map_of_model_verts_to_verts[vert_idx]], vert_weight, 'REPLACE')
         vertex_groups = make_vertex_groups(new_verts, [vg.bone_idx for vg in IF_mesh.vertex_groups])
         for bone_idx, vg in vertex_groups.items():
             vertex_group = mesh_object.vertex_groups.new(name=model_data.skeleton.bone_names[bone_idx])
