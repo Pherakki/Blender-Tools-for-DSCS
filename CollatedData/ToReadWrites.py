@@ -1,8 +1,3 @@
-from ..FileReaders.NameReader import NameReader
-from ..FileReaders.SkelReader import SkelReader
-from ..FileReaders.GeomReader import GeomReader
-from ..FileReaders.AnimReader import AnimReader
-
 from ..FileInterfaces.NameInterface import NameInterface
 from ..FileInterfaces.SkelInterface import SkelInterface
 from ..FileInterfaces.GeomInterface import GeomInterface
