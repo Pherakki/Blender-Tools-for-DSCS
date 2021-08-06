@@ -152,7 +152,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             else:
                 md.material_id = mat_names.index(matname)
 
-            md.unknown_data['unknown_0x31'] = mesh_obj.get('unknown_0x31', 1)
+            md.unknown_data['meshflags'] = 1  # Support this later... # mesh_obj.get('unknown_0x31', 1)
             md.name_hash = mesh_obj.get('name_hash', dscs_name_hash(parent_obj.name))
 
     def generate_link_loops(self, mesh):
