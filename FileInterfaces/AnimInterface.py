@@ -3,7 +3,7 @@ import numpy as np
 
 from ..FileReaders.AnimReader import AnimReader
 from ..Utilities.Interpolation import lerp, slerp
-import copy
+
 
 class AnimInterface:
     def __init__(self):
