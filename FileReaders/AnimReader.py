@@ -30,9 +30,8 @@ class AnimReader(BaseRW):
     1.  The fourth data type - other than rotations, locations, and bones - looks like it might be UV coord shifts
     """
 
-    def __init__(self, bytestream, skelReader):
+    def __init__(self, bytestream):
         super().__init__(bytestream)
-        self.skelReader = skelReader
 
         # Header variables
         self.filetype = None
@@ -439,7 +438,6 @@ class KeyframeChunk(BaseRW):
 
     def rw_part_9(self, rw_operator):
         rw_operator('unknown_data_9', 'f' * (self.unknown_0x0E//4), force_1d=True)
-
         self.bytes_read += self.unknown_0x0E
 
     def interpret_keyframe_chunk(self):
@@ -461,6 +459,7 @@ class KeyframeChunk(BaseRW):
         self.keyframed_rotations = [deserialise_quaternion(elem) for elem in self.keyframed_rotations]
         self.keyframed_locations = self.chunk_list(self.keyframed_locations, 3)
         self.keyframed_scales = self.chunk_list(self.keyframed_scales, 3)
+        
 
     def reinterpret_keyframe_chunk(self):
         self.keyframes_in_use: str

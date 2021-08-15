@@ -15,10 +15,10 @@ class AnimInterface:
         self.scales = {}
 
     @classmethod
-    def from_file(cls, path, skelReader):
+    def from_file(cls, path):
         instance = cls()
         with open(path, 'rb') as F:
-            readwriter = AnimReader(F, skelReader)
+            readwriter = AnimReader(F)
             readwriter.read()
 
         # Only need to take the playback rate; duration can be calculated from this and the total number of frames
@@ -110,7 +110,7 @@ class AnimInterface:
 
         return instance
 
-    def to_file(self, path, sk, blend_bones=None):
+    def to_file(self, path, blend_bones=None):
         try:
             max_rotations = max([list(self.rotations[bone_idx].keys())[-1] if len(self.rotations[bone_idx].keys()) else 0 for bone_idx in self.rotations])
         except:
@@ -129,7 +129,7 @@ class AnimInterface:
         num_bones = self.num_bones
 
         with open(path, 'wb') as F:
-            readwriter = AnimReader(F, sk)
+            readwriter = AnimReader(F)
             readwriter.filetype = '40AE'
             readwriter.animation_duration = (num_frames - 1)/self.playback_rate
             readwriter.playback_rate = self.playback_rate

@@ -131,4 +131,4 @@ def make_animreader(file_folder, model_data, animation_name, base_name, sk):
         data = {k: v for k, v in zip(fcurve.frames, fcurve.values)}
         anim_interface.scales[bone_idx] = data
 
-    anim_interface.to_file(os.path.join(file_folder, animation_name) + '.anim', sk, [] if animation_name == base_name else None)
+    anim_interface.to_file(os.path.join(file_folder, animation_name) + '.anim', [] if animation_name == base_name else None)
