@@ -174,31 +174,24 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         mesh = mesh_obj.data
         has_uvs = len(mesh.uv_layers) > 0
 
-        use_tangents = mesh_obj.get("export_tangents", False)
-        use_binormals = mesh_obj.get("export_binormals", False)
-        can_export_tangents = has_uvs and mesh.uv_layers.get('UVMap') is not None and (use_tangents or use_binormals)
-
-        if can_export_tangents:
-            mesh.calc_tangents(uvmap='UVMap')
         exported_vertices = []
         vgroup_verts = {}
         vgroup_wgts = {}
         faces = [{l: mesh.loops[l].vertex_index for l in f.loop_indices} for f in mesh.polygons]
         group_map = {g.index: i for i, g in enumerate(get_all_nonempty_vertex_groups(mesh_obj))}
 
-        if 'UV3Map' in mesh.uv_layers:
-            map_ids = ['UVMap', 'UV2Map', 'UV3Map']
-        elif 'UV2Map' in mesh.uv_layers:
-            map_ids = ['UVMap', 'UV2Map']
-        elif 'UVMap' in mesh.uv_layers:
-            map_ids = ['UVMap']
-        else:
-            map_ids = []
-        colour_map = []
-        if 'Map' in mesh.vertex_colors:
-            colour_map = ['Map']
+        map_ids = list(mesh.uv_layers.keys())[:3]
+        colour_map = list(mesh.vertex_colors.keys())[:1]
         n_uvs = len(map_ids)
         n_colours = len(colour_map)
+
+        use_tangents = mesh_obj.get("export_tangents", False)
+        use_binormals = mesh_obj.get("export_binormals", False)
+        map_name = map_ids[0] if len(map_ids) else 'dummy'
+        can_export_tangents = has_uvs and mesh.uv_layers.get(map_name) is not None and (use_tangents or use_binormals)
+
+        if can_export_tangents:
+            mesh.calc_tangents(uvmap=map_name)
 
         def generating_function_notangents(lidx):
             normal = tuple(round_to_sigfigs(mesh.loops[lidx].normal, 6))
