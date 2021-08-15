@@ -64,7 +64,7 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         if 'Colour' in IF_mesh.vertices[0]:
             colour_map = mesh.vertex_colors.new(name=f"Map", do_init=True)
             for loop_idx, loop in enumerate(mesh.loops):
-                colour_map.data[loop_idx].color = loop_data[loop_idx][uv_type]
+                colour_map.data[loop_idx].color = loop_data[loop_idx]['Colour']
 
         # Rig the vertices
         vertex_groups = make_vertex_groups(new_verts, [vg.bone_idx for vg in IF_mesh.vertex_groups])
