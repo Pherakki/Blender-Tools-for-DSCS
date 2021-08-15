@@ -340,24 +340,27 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                     continue
 
     def export_cameras(self, cameras, model_data):
-        for camera in cameras:
+        for camera_obj in cameras:
             cam = model_data.new_camera()
-            childof_constraints = [constr for constr in camera.constraints if constr.type == "CHILD_OF"]
-            assert len(childof_constraints) == 1, f"Camera \'{camera.name}\' must have ONE \'CHILD OF\' constraint."
+            childof_constraints = [constr for constr in camera_obj.constraints if constr.type == "CHILD_OF"]
+            assert len(childof_constraints) == 1, f"Camera \'{camera_obj.name}\' must have ONE \'CHILD OF\' constraint."
             constr = childof_constraints[0]
-
             cam.bone_name = constr.subtarget
             assert type(cam.bone_name) == str, "[DEBUG] Not a string"
+
+            camera = camera_obj.data
             cam.zNear = camera.clip_start
             cam.zFar = camera.clip_end
 
             if camera.type == "PERSP":
                 cam.projection = 0
                 # Put in a conversion from mm later...
-                assert camera.lens_units == "FOV", f"Camera not in FOV mode."
+                assert camera.lens_unit == "FOV", f"Camera not in FOV mode."
                 cam.fov = camera.lens
+                cam.orthographic_scale = 0.
             elif camera.type == "ORTHO":
                 cam.projection = 1
+                cam.fov = 0.
                 cam.orthographic_scale = camera.ortho_scale
 
     def export_lights(self, lights, model_data):
