@@ -26,8 +26,8 @@ def interpolate_keyframe(frame_idxs, frame_values, idx, interpolation_function):
         t = (idx - next_smallest_frame) / (next_largest_frame - next_smallest_frame)
 
     # Should change lerp to the proper interpolation method
-    min_value = frame_values[frame_idxs.index(next_smallest_frame)]
-    max_value = frame_values[frame_idxs.index(next_largest_frame)]
+    min_value = frame_values[next_smallest_frame]
+    max_value = frame_values[next_largest_frame]
 
     return interpolation_function(np.array(min_value), np.array(max_value), t)
 
@@ -54,9 +54,9 @@ def produce_interpolation_method(frame_idxs, frame_values, default_value, interp
 # Surely these can be unified with the above...
 def interpolate_keyframe_dict(frames, idx, interpolation_function):
     frame_idxs = list(frames.keys())
-    smaller_elements = [idx for idx in frame_idxs if idx < idx]
+    smaller_elements = [fidx for fidx in frame_idxs if fidx < idx]
     next_smallest_frame = max(smaller_elements) if len(smaller_elements) else frame_idxs[0]
-    larger_elements = [idx for idx in frame_idxs if idx > idx]
+    larger_elements = [fidx for fidx in frame_idxs if fidx > idx]
     next_largest_frame = min(larger_elements) if len(larger_elements) else frame_idxs[-1]
 
     if next_largest_frame == next_smallest_frame:
