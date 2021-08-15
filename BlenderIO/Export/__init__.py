@@ -365,9 +365,11 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
     def export_lights(self, lights, model_data):
         type_counts = [0, 0]
+        for light_obj in lights:
             light = light_obj.data
             
             lgt = model_data.new_light()
+            fogparam = light_obj.get("Unknown_Fog_Param")
             if fogparam is not None:
                 lgt.mode = 4
                 light_name = "Fog"
