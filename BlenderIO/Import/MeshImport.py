@@ -4,6 +4,12 @@ from mathutils import Vector, Matrix
 import numpy as np
 
 
+def set_mesh_vertex_attribute_labels(vert, mesh):
+    attributes = set(list(vert.keys()))
+    mesh['export_tangent'] = 'Tangent' in attributes
+    mesh['export_binormal'] = 'Binormal' in attributes
+
+
 def import_meshes(parent_obj, filename, model_data, armature_name):
     for i, IF_mesh in enumerate(model_data.meshes):
         faces = [poly.indices for poly in IF_mesh.polygons]
@@ -75,6 +81,7 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         modifier.object = bpy.data.objects[armature_name]
 
         mesh.validate(verbose=True)
+        set_mesh_vertex_attribute_labels(IF_mesh.vertices[0], mesh)
         mesh.update()
 
     # Top-level unknown data

@@ -173,7 +173,10 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
     def split_verts_by_loop_data(self, mesh_obj, link_loops, face_link_loops, model_data):
         mesh = mesh_obj.data
         has_uvs = len(mesh.uv_layers) > 0
-        can_export_tangents = has_uvs and mesh.uv_layers.get('UVMap') is not None
+
+        use_tangents = mesh_obj.get("export_tangents", False)
+        use_binormals = mesh_obj.get("export_binormals", False)
+        can_export_tangents = has_uvs and mesh.uv_layers.get('UVMap') is not None and (use_tangents or use_binormals)
 
         if can_export_tangents:
             mesh.calc_tangents(uvmap='UVMap')
@@ -212,8 +215,16 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             binormal = tuple(round_to_sigfigs(sign * np.cross(normal, tangent), 6))
             return tuple([*data, tuple([*tangent, sign]), binormal])
 
+        tangent_attribs = []
         if can_export_tangents:
             generating_function = generating_function_tangents
+            if use_tangents:
+                tangent_attribs.append("Tangent")
+                if use_binormals:
+                    tangent_attribs.append("Binormal")
+            elif use_binormals:
+                # Should never *want* to do this, but let's not introduce a bug...!
+                tangent_attribs = ["dummy", "Binormal"]
         else:
             generating_function = generating_function_notangents
         for vert_idx, linked_loops in link_loops.items():
@@ -231,7 +242,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                         'Normal': unique_value[0],
                         **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], [*unique_value[1]])},
                         **{key: value for key, value in zip(['Colour'], [*unique_value[2]])},
-                        **{key: value for key, value in zip(["Tangent", "Binormal"], unique_value[3:])},
+                        **{key: value for key, value in zip(tangent_attribs, unique_value[3:])},
                         'WeightedBoneID': [group_map[grp.group] for grp in vertex.groups],
                         'BoneWeight': group_weights}
 
