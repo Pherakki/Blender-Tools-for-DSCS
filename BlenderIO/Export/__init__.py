@@ -14,7 +14,8 @@ from ..DSCSBlenderUtils import find_selected_model
 from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, generate_transform_delta, decompose_matrix, generate_transform_matrix
 from ...Utilities.ActionDataRetrieval import get_action_data
 from ...Utilities.StringHashing import dscs_name_hash
-
+from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_options, glBlendFunc_options, glBlendEquationSeparate_options, glCullFace_options, glComparison_options
+from ...Utilities.Lists import flip_dict
 
 class ExportDSCS(bpy.types.Operator, ExportHelper):
     bl_idname = 'export_file.export_dscs'
@@ -260,6 +261,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
     def export_materials(self, model_data, used_materials, used_textures):
         tex_names = []
+        glfunc_to_id = flip_dict(id_to_glfunc)
         for bmat in used_materials:
             material = model_data.new_material()
             node_tree = bmat.node_tree
@@ -280,6 +282,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                         tex_idx = tex_names.index(texname)
                     else:
                         tex_idx = len(used_textures)
+                        tex_names.append(texname)
 
                     # Construct the additional, unknown data
                     extra_data = bmat.get(nm)
@@ -297,6 +300,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                     tex_idx = tex_names.index(texname)
                 else:
                     tex_idx = len(used_textures)
+                    tex_names.append(texname)
                 material.shader_uniforms['ToonTextureID'] = [tex_idx, 0, 0]
                 used_textures.append(DummyTexture(texname))
             if 'DiffuseColour' not in node_names:
@@ -306,15 +310,58 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             for key in shader_uniforms_vp_fp_from_names.keys():
                 if bmat.get(key) is not None:
                     material.shader_uniforms[key] = bmat.get(key)
+
+            #########################
+            # EXPORT OPENGL OPTIONS #
+            #########################
             material.unknown_data['unknown_material_components'] = {}
-            for key in ['162', '163', '164', '165', '167', '168', '169', '170', '171', '172', '173', '174', '175', '176']:
-                if bmat.get(key) is not None:
-                    material.unknown_data['unknown_material_components'][int(key)] = bmat.get(key)
+            out = material.unknown_data['unknown_material_components']
+
+            data = bmat.get("glBlendFunc")
+            if data is not None:
+                fglBlendFunc_options = flip_dict(glBlendFunc_options)
+                out[glfunc_to_id["glBlendFunc"]] = [fglBlendFunc_options[data[0]], fglBlendFunc_options[data[1]], 0, 0]
+
+            data = bmat.get("glBlendEquationSeparate")
+            if data is not None:
+                fglBlendEquationSeparate_options = flip_dict(glBlendEquationSeparate_options)
+                out[glfunc_to_id["glBlendEquationSeparate"]] = [fglBlendEquationSeparate_options[data], 0, 0, 0]
+
+            data = bmat.get("GL_BLEND")
+            if data is not None:
+                fglEnable_options = flip_dict(glEnable_options)
+                out[glfunc_to_id["GL_BLEND"]] = [fglEnable_options[data], 0, 0, 0]
+
+            data = bmat.get("glCullFace")
+            if data is not None:
+                fglCullFace_options = flip_dict(glCullFace_options)
+                out[glfunc_to_id["glCullFace"]] = [fglCullFace_options[data], 0, 0, 0]
+
+            data = bmat.get("glDepthFunc")
+            if data is not None:
+                fglComparison_options = flip_dict(glComparison_options)
+                out[glfunc_to_id["glDepthFunc"]] = [fglComparison_options[data], 0, 0, 0]
+
+            data = bmat.get("glDepthMask")
+            if data is not None:
+                fglBool_options = flip_dict(glBool_options)
+                out[glfunc_to_id["glDepthMask"]] = [fglBool_options[data], 0, 0, 0]
+
+            data = bmat.get("GL_DEPTH_TEST")
+            if data is not None:
+                fglEnable_options = flip_dict(glEnable_options)
+                out[glfunc_to_id["GL_DEPTH_TEST"]] = [fglEnable_options[data], 0, 0, 0]
+
+            data = bmat.get("glColorMask")
+            if data is not None:
+                fglBool_options = flip_dict(glBool_options)
+                out[glfunc_to_id["glColorMask"]] = [fglBool_options[opt] for opt in data]
+
             if not bmat.use_backface_culling:
-                material.unknown_data['unknown_material_components'][166] = [0, 0]
+                material.unknown_data['unknown_material_components'][glfunc_to_id["GL_CULL_FACE"]] = [0, 0]
             if bmat.blend_method == 'CLIP':
-                material.unknown_data['unknown_material_components'][161] = [1, 0]
-                material.unknown_data['unknown_material_components'][160] = [516., bmat.alpha_threshold]
+                material.unknown_data['unknown_material_components'][glfunc_to_id["GL_ALPHA_TEST"]] = [1, 0]
+                material.unknown_data['unknown_material_components'][glfunc_to_id["glAlphaFunc"]] = [516., bmat.alpha_threshold]
 
     def export_textures(self, used_textures, model_data, export_images_folder):
         used_texture_names = [tex.name for tex in used_textures]
@@ -360,7 +407,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         type_counts = [0, 0]
         for light_obj in lights:
             light = light_obj.data
-            
+
             lgt = model_data.new_light()
             fogparam = light_obj.get("Unknown_Fog_Param")
             if fogparam is not None:

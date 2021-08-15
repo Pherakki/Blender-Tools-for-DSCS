@@ -3,6 +3,7 @@ import os
 import shutil
 
 from ...FileReaders.GeomReader.ShaderUniforms import shader_textures
+from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_options, glBlendFunc_options, glBlendEquationSeparate_options, glCullFace_options, glComparison_options
 
 
 def import_materials(model_data):
@@ -14,8 +15,6 @@ def import_materials(model_data):
 
         for nm, value in IF_material.shader_uniforms.items():
             new_material[nm] = value
-        for nm, value in IF_material.unknown_data['unknown_material_components'].items():
-            new_material[str(nm)] = value
 
         new_material.use_nodes = True
 
@@ -115,9 +114,13 @@ def import_materials(model_data):
         if final_diffuse_node is not None:
             connect(final_diffuse_node.outputs['BSDF'], output_node.inputs['Surface'])
 
+        #########################################
+        # IMPLEMENT OR STORE THE OPENGL OPTIONS #
+        #########################################
         new_material.use_backface_culling = True
         for key, gl_option_data in IF_material.unknown_data["unknown_material_components"].items():
-            if key == 160:  # glAlphaFunc
+            gl_func = id_to_glfunc[key]
+            if gl_func == "glAlphaFunc":
                 input_alpha_threshold = gl_option_data[1]
                 gl_enum = gl_option_data[0]
                 if gl_enum == 0x200:  # GL_NEVER
@@ -140,12 +143,44 @@ def import_materials(model_data):
                     new_material.alpha_threshold = 0.
                 else:
                     assert 0, f"Unknown GL_ENUM \'{hex(gl_enum)}\' encounted in glAlphaTest."
-            elif key == 161:  # glEnable(GL_ALPHA_TEST)
+
+            elif gl_func == "GL_ALPHA_TEST":
                 new_material.blend_method = 'CLIP'
-            elif key == 166:  # glEnable(GL_CULL_FACE)
-                is_active = gl_option_data[0]  # 1 calls glEnable, 0 calls glDisable
+
+            elif gl_func == "glBlendFunc":
+                src_blend_factor_enum = glBlendFunc_options[gl_option_data[0]]  # Always GL_SOURCE_ALPHA
+                dst_blend_factor_enum = glBlendFunc_options[gl_option_data[1]]  # GL_ZERO or GL_ONE
+                new_material["glBlendFunc"] = [src_blend_factor_enum, dst_blend_factor_enum]
+
+            elif gl_func == "glBlendEquationSeparate":
+                rgba_blend_factor_enum = glBlendEquationSeparate_options[gl_option_data[0]]  # GL_FUNC_REVERSE_SUBTRACT or GL_FUNC_ADD
+                new_material["glBlendEquationSeparate"] = rgba_blend_factor_enum
+
+            elif gl_func == "GL_BLEND":
+                new_material["GL_BLEND"] = glEnable_options[gl_option_data[0]]
+
+            elif gl_func == "glCullFace":
+                new_material["glCullFace"] = glCullFace_options[gl_option_data[0]]
+
+            elif gl_func == "GL_CULL_FACE":
                 # This option is always set to 0
-                new_material.use_backface_culling = is_active
+                new_material.use_backface_culling = gl_option_data[0]
+
+            elif gl_func == "glDepthFunc":
+                new_material["glDepthFunc"] = glComparison_options[gl_option_data[0]]
+
+            elif gl_func == "glDepthMask":
+                new_material["glDepthMask"] = glBool_options[gl_option_data[0]]
+
+            elif gl_func == "GL_DEPTH_TEST":
+                # This option is always set to 0
+                new_material["GL_DEPTH_TEST"] = glEnable_options[gl_option_data[0]]
+
+            elif gl_func == "glColorMask":
+                new_material["glColorMask"] = [glBool_options[opt] for opt in gl_option_data[:4]]
+
+            else:
+                print("Unrecognised openGL option \'{key}\'.")
 
 
 def import_material_texture_nodes(nodes, model_data, mat_shader_uniforms):
