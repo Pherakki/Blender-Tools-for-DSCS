@@ -1,5 +1,6 @@
 import numpy as np
 from ...Utilities.ActionDataRetrieval import get_action_data
+from ...Utilities.Interpolation import produce_interpolation_method_dict, lerp, slerp
 
 
 def export_animations(nla_tracks, model_data, strip_single_frame_transforms, required_transforms, out_transforms=None):
@@ -37,7 +38,6 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
         # Normalise the smallest distance between frames to 1 to allow more accurate integerisation
         smallest_frame_delta = get_smallest_frame_delta(animation_data)
         stretch_frame_indices_by_factor(animation_data, 1./smallest_frame_delta)
-
         # Integerise any float frame indices
         for bone_idx, animation_bone_data in animation_data.items():
             for curve_type, default, interp_method in zip(['rotation_quaternion', 'location', 'scale'],
