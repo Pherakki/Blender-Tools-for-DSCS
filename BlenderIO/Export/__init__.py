@@ -272,7 +272,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             node_tree = bmat.node_tree
             material.name = bmat.name
             material.shader_hex = bmat.get('shader_hex',
-                                           '088100c1_00880111_00000000_00058000')  # maybe use 00000000_00000000_00000000_00000000 instead
+                                           '088100c1_00880111_00000000_00058000')
             material.enable_shadows = bmat.get('enable_shadows', 1)
 
             # Export Textures
