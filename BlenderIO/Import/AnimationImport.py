@@ -64,6 +64,12 @@ def import_animations(armature_name, model_data):
                 for fc in fcs:
                     fc.lock = False
 
+        # Do this properly later
+        for idx in animation_data.uv_data:
+            channel = animation_data.uv_data[idx]
+            action[f"uv_data_frames_{idx}"] = list(channel.keys())
+            action[f"uv_data_values_{idx}"] = list(channel.values())
+
         model_armature.animation_data.action = action
         track = model_armature.animation_data.nla_tracks.new()
         track.name = action.name

@@ -56,6 +56,14 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
             subdata = fetch_subdata(data, bone_name, strip_single_frame_transforms, required_scales, curve_defaults, out_transforms, 'scale')
             ad.add_scale_fcurve(bone_idx, list(subdata.keys()), list(subdata.values()))
 
+        # Do this properly later
+        ad.uv_data = {}
+        curr_idx = 0
+        while nla_strip.action.get(f"uv_data_frames_{curr_idx}") is not None:
+            ad.uv_data[curr_idx] = {frame: value for frame, value in zip(nla_strip.action.get(f"uv_data_frames_{curr_idx}", []),
+                                                                         nla_strip.action.get(f"uv_data_values_{curr_idx}", []))}
+            curr_idx += 1
+
 
 def fetch_subdata(data, bone_name, strip_single_frame_transforms, required_subtransforms, curve_defaults, out_transforms, fetch_string):
     subdata = data.get(fetch_string, {})

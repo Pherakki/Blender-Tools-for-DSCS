@@ -171,6 +171,9 @@ def add_anims(model_data, imported_animdata):
             ad.add_location_fcurve(bone_idx, location_fcurves_frames[bone_idx], location_fcurves_values[bone_idx])
             ad.add_scale_fcurve(bone_idx, scale_fcurves_frames[bone_idx], scale_fcurves_values[bone_idx])
 
+        # Do this properly in the future
+        ad.uv_data = ar.user_channels
+
 
 def add_lights(model_data, imported_lightdata):
     for light in imported_lightdata:
