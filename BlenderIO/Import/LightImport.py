@@ -20,16 +20,19 @@ def import_lights(parent_obj, model_data):
             assert 0, f"Unknown light mode enum \'{light_data.mode}\'."
 
         light = bpy.data.lights.new(light_name, l_type)
-        if light_data.mode == 4:
-            light["Unknown_Fog_Param"] = light_data.unknown_fog_param
         light.energy = light_data.intensity
         light.color = (light_data.red, light_data.green, light_data.blue)
-        light["Alpha"] = light_data.alpha
 
         light_obj = bpy.data.objects.new(light_name, light)
         bpy.context.collection.objects.link(light_obj)
         light_obj.parent = parent_obj
 
+        # Add data that I don't think Blender can handle
+        if light_data.mode == 4:
+            light_obj["Unknown_Fog_Param"] = light_data.unknown_fog_param
+        light_obj["Alpha"] = light_data.alpha
+
+        # Attach it to a bone if it isn't fog
         if light_data.mode != 4:
             light_obj.rotation_euler[0] = -90 * (np.pi/180)
             constraint = light_obj.constraints.new("CHILD_OF")

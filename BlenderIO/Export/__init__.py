@@ -365,10 +365,9 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
 
     def export_lights(self, lights, model_data):
         type_counts = [0, 0]
-        for light in lights:
+            light = light_obj.data
+            
             lgt = model_data.new_light()
-
-            fogparam = light.get("Unknown_Fog_Param")
             if fogparam is not None:
                 lgt.mode = 4
                 light_name = "Fog"
@@ -390,12 +389,16 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             else:
                 assert 0, "Unrecognised light type \'{light.type}\'."
 
+            if fogparam is None:
+                fogparam = 0.
+
             lgt.intensity = light.energy
             lgt.red, lgt.green, lgt.blue = list(light.color)
-            lgt.alpha = light.get("Alpha", 1.)
+            lgt.alpha = light_obj.get("Alpha", 1.)
 
             lgt.bone_name = light_name
             lgt.light_id = light_id
+            lgt.unknown_fog_param = fogparam
 
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
