@@ -3,7 +3,7 @@ import numpy as np
 import os
 import shutil
 from bpy_extras.io_utils import ExportHelper
-from bpy.props import EnumProperty
+from bpy.props import BoolProperty, EnumProperty
 
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
@@ -16,6 +16,7 @@ from ...Utilities.ActionDataRetrieval import get_action_data
 from ...Utilities.StringHashing import dscs_name_hash
 from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_options, glBlendFunc_options, glBlendEquationSeparate_options, glCullFace_options, glComparison_options
 from ...Utilities.Lists import flip_dict
+
 
 class ExportDSCS(bpy.types.Operator, ExportHelper):
     bl_idname = 'export_file.export_dscs'
@@ -35,6 +36,10 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
         items=[("Modelling", "Modelling", "Exports the model with its base animation only", "", 0),
                ("Animation", "Animation", "Exports overlay animations only", "", 1),
                ("QA", "QA", "Exports the model and all animations", "", 2)])
+    img_to_dds: BoolProperty(
+        name="IMG->DDS File Extension",
+        description="Exports textures that have an 'img' extension with a 'dds' extension."
+    )
 
     def export_file(self, context, filepath):
         # Grab the parent object
@@ -295,7 +300,7 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                     used_textures.append(node_tree.nodes[nm].image)
 
             if 'ToonTextureID' not in node_names and 'DiffuseTextureID' in node_names:
-                texname = 'placeholder_toon'
+                texname = 'placeholder_toon.img'
                 if texname in tex_names:
                     tex_idx = tex_names.index(texname)
                 else:
@@ -358,10 +363,10 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                 out[glfunc_to_id["glColorMask"]] = [fglBool_options[opt] for opt in data]
 
             if not bmat.use_backface_culling:
-                material.unknown_data['unknown_material_components'][glfunc_to_id["GL_CULL_FACE"]] = [0, 0]
+                out[glfunc_to_id["GL_CULL_FACE"]] = [0, 0, 0, 0]
             if bmat.blend_method == 'CLIP':
-                material.unknown_data['unknown_material_components'][glfunc_to_id["GL_ALPHA_TEST"]] = [1, 0]
-                material.unknown_data['unknown_material_components'][glfunc_to_id["glAlphaFunc"]] = [516., bmat.alpha_threshold]
+                out[glfunc_to_id["GL_ALPHA_TEST"]] = [1, 0, 0, 0]
+                out[glfunc_to_id["glAlphaFunc"]] = [516., bmat.alpha_threshold, 0, 0]
 
     def export_textures(self, used_textures, model_data, export_images_folder):
         used_texture_names = [tex.name for tex in used_textures]
@@ -371,8 +376,13 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
             tex.name = os.path.splitext(texture)[0]
             if texture_path is not None:
                 try:
+                    texture_stem, texture_ext = os.path.splitext(texture)
+                    if self.img_to_dds and texture_ext == ".img":
+                        use_texture = texture_stem + ".dds"
+                    else:
+                        use_texture = texture
                     shutil.copy2(texture_path,
-                                 os.path.join(export_images_folder, texture))
+                                 os.path.join(export_images_folder, use_texture))
                 except shutil.SameFileError:
                     continue
                 except FileNotFoundError:
@@ -504,7 +514,9 @@ def get_bone_id(mesh_obj, bone_names, grp):
 class DummyTexture:
     def __init__(self, name):
         self.name = name
-        self.filepath = os.path.join(*(os.path.split(__file__)[:-3]), 'Resources', name + ".img")
+        self.filepath = os.path.join(*((__file__.split(os.sep))[:-3]), 'Resources', name)
+        if os.name == 'nt' and self.filepath[1] == ':' and not self.filepath[2] == os.sep:
+            self.filepath = self.filepath[:2] + os.sep + self.filepath[2:]
 
 
 def get_all_nonempty_vertex_groups(mesh_obj):
