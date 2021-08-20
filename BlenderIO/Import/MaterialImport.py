@@ -5,8 +5,10 @@ import shutil
 from ...FileReaders.GeomReader.ShaderUniforms import shader_textures
 from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_options, glBlendFunc_options, glBlendEquationSeparate_options, glCullFace_options, glComparison_options
 
+from ...Utilities.Paths import normalise_abs_path
 
-def import_materials(model_data):
+
+def import_materials(model_data, remame_imgs):
     for i, IF_material in enumerate(model_data.materials):
         new_material = bpy.data.materials.new(name=IF_material.name)
         # Unknown data
@@ -29,7 +31,7 @@ def import_materials(model_data):
 
         output_node = new_material.node_tree.nodes.get('Material Output')
         new_material.node_tree.links.clear()
-        import_material_texture_nodes(nodes, model_data, IF_material.shader_uniforms)
+        import_material_texture_nodes(nodes, model_data, IF_material.shader_uniforms, remame_imgs)
 
         final_diffuse_node = None
         if 'DiffuseTextureID' in shader_uniforms:
@@ -183,7 +185,7 @@ def import_materials(model_data):
                 print("Unrecognised openGL option \'{key}\'.")
 
 
-def import_material_texture_nodes(nodes, model_data, mat_shader_uniforms):
+def import_material_texture_nodes(nodes, model_data, mat_shader_uniforms, rename_dds):
     imported_textures = {}
     for nm in shader_textures.keys():
         if nm in mat_shader_uniforms:
@@ -191,13 +193,26 @@ def import_material_texture_nodes(nodes, model_data, mat_shader_uniforms):
             tex_img_node.name = nm
             tex_img_node.label = nm
             set_texture_node_image(tex_img_node, mat_shader_uniforms[nm][0],
-                                   model_data.textures[mat_shader_uniforms[nm][0]], imported_textures)
+                                   model_data.textures[mat_shader_uniforms[nm][0]], imported_textures, rename_dds)
 
 
-def set_texture_node_image(node, texture_idx, IF_texture, import_memory):
+def set_texture_node_image(node, texture_idx, IF_texture, import_memory, rename_dds):
     tex_filename = os.path.split(IF_texture.filepath)[-1]
     dds_loc = IF_texture.filepath
+    if rename_dds:
+        dds_folder = "renamed_dds_imgs"
+        use_filename = os.path.splitext(tex_filename)[0] + '.dds'
+        dds_loc = os.path.dirname(dds_loc)
+        dds_loc = os.path.join(dds_loc, dds_folder)
+        dds_loc = normalise_abs_path(dds_loc)
+        if not os.path.exists(dds_loc):
+            os.mkdir(dds_loc)
+        dds_loc = os.path.join(dds_loc, use_filename)
+        dds_loc = normalise_abs_path(dds_loc)
+        shutil.copy2(IF_texture.filepath, dds_loc)
+    else:
+        use_filename = tex_filename
     if texture_idx not in import_memory:
-        import_memory[texture_idx] = tex_filename
+        import_memory[texture_idx] = use_filename
         bpy.data.images.load(dds_loc)
-    node.image = bpy.data.images[tex_filename]
+    node.image = bpy.data.images[use_filename]

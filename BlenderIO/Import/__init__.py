@@ -12,6 +12,7 @@ from .MeshImport import import_meshes
 from .CameraImport import import_cameras
 from .LightImport import import_lights
 from ...Utilities.Reposing import set_new_rest_pose
+from ...Utilities.Paths import normalise_abs_path
 
 
 class ImportDSCS(bpy.types.Operator, ImportHelper):
@@ -39,6 +40,11 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
                ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
                ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display correctly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
 
+    img_to_dds: BoolProperty(
+        name="Import IMG as DDS",
+        description="Create a copy of each IMG file with a DDS extension before import."
+    )
+
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
         model_data = generate_intermediate_format_from_files(filepath, self.platform,
@@ -49,7 +55,7 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
 
         bpy.context.collection.objects.link(parent_obj)
         import_skeleton(parent_obj, armature_name, model_data)
-        import_materials(model_data)
+        import_materials(model_data, self.img_to_dds)
         import_meshes(parent_obj, filename, model_data, armature_name)
         import_cameras(parent_obj, model_data)
         import_lights(parent_obj, model_data)
