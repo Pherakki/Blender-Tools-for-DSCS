@@ -116,7 +116,7 @@ class AnimInterface:
                 values = itertools.islice(user_channels, len(frames))  # Pop the next num_frames user channel data
                 for frame, value in zip(frames, values):
                     instance.user_channels[channel_idx][frame] = value
-            assert len(list(masks)) == 0
+            # assert len(list(masks)) == 0
 
         # Recover quaternion signs lost during compression
         for bone_idx, rotations in instance.rotations.items():
