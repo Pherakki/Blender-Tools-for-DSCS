@@ -192,15 +192,6 @@ class MaterialReader(BaseRW):
         self.unknown_data = b''.join(self.unknown_data)
 
     def umc_factory(self, data):
-        padding_0x08 = struct.unpack('H', data[8:10])[0]  # Always 0
-        padding_0x0A = struct.unpack('H', data[10:12])[0]   # Always 0
-        padding_0x0C = struct.unpack('H', data[12:14])[0]   # Always 0
-        padding_0x0E = struct.unpack('H', data[14:16])[0]   # Always 0
-        assert padding_0x08 == 0, f"padding_0x08 is {padding_0x08}, not 0"
-        assert padding_0x0A == 0, f"padding_0x0A is {padding_0x0A}, not 0"
-        assert padding_0x0C == 0, f"padding_0x0C is {padding_0x0C}, not 0"
-        assert padding_0x0E == 0, f"padding_0x0E is {padding_0x0E}, not 0"
-
         # If you index a single byte from a bytestring, Python automatically turns it into an integer...
         maybe_component_type = data[16]   # Few values, 160 - 169 + 172 # Presumably the component type?
         always_100 = data[17]
@@ -210,16 +201,12 @@ class MaterialReader(BaseRW):
         assert always_65280 == 65280, f"always_65280 is {always_65280}, not 65280"
         assert padding_0x14 == 0, f"padding_0x14 is {padding_0x14}, not 0"
 
-        return maybe_component_type, struct.unpack(possibly_umc_types[maybe_component_type], data[0:8])
+        return maybe_component_type, struct.unpack(possibly_umc_types[maybe_component_type], data[0:16])
 
     def umc_data_factory(self, maybe_component_type, data):
         if maybe_component_type == 160:
-            data = [int(data[0]), data[1]]
+            data = [int(data[0]), data[1], data[2], data[3]]
         out = struct.pack(possibly_umc_types[maybe_component_type], *data)
-        out += struct.pack('H', 0)
-        out += struct.pack('H', 0)
-        out += struct.pack('H', 0)
-        out += struct.pack('H', 0)
         out += struct.pack('B', maybe_component_type)
         out += struct.pack('B', 100)
         out += struct.pack('H', 65280)
@@ -228,14 +215,14 @@ class MaterialReader(BaseRW):
         return out
 
 
-possibly_umc_types = {160: 'If', #  516, float between 0 and 1
-                  161: 'II',  # (1, 0)
-                  162: 'II',  # (770, 0), (770, 1)
-                  163: 'II',  # (32779, 0) or (32774, 0)
-                  164: 'II',  # (1, 0)
-                  166: 'II',  # (0, 0)  Disables backface culling
-                  167: 'II',  # Always (516, 0)
-                  168: 'II',  # Always (0, 0)
-                  169: 'II',  # Always (0, 0)
-                  172: 'II',  # Always (0, 0)
+possibly_umc_types = {160: 'Ifff', #  516, float between 0 and 1
+                  161: 'IIII',  # (1, 0)
+                  162: 'IIII',  # (770, 0), (770, 1)
+                  163: 'IIII',  # (32779, 0) or (32774, 0)
+                  164: 'IIII',  # (1, 0)
+                  166: 'IIII',  # (0, 0)  Disables backface culling
+                  167: 'IIII',  # Always (516, 0)
+                  168: 'IIII',  # Always (0, 0)
+                  169: 'IIII',  # Always (0, 0)
+                  172: 'IIII',  # Always (0, 0)
                   }
