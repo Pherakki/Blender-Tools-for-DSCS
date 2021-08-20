@@ -17,6 +17,8 @@ from ...Utilities.StringHashing import dscs_name_hash
 from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_options, glBlendFunc_options, glBlendEquationSeparate_options, glCullFace_options, glComparison_options
 from ...Utilities.Lists import flip_dict
 
+from ...Utilities.Paths import normalise_abs_path
+
 
 class ExportDSCS(bpy.types.Operator, ExportHelper):
     bl_idname = 'export_file.export_dscs'
@@ -515,9 +517,7 @@ class DummyTexture:
     def __init__(self, name):
         self.name = name
         self.filepath = os.path.join(*((__file__.split(os.sep))[:-3]), 'Resources', name)
-        if os.name == 'nt' and self.filepath[1] == ':' and not self.filepath[2] == os.sep:
-            self.filepath = self.filepath[:2] + os.sep + self.filepath[2:]
-
+        self.filepath = normalise_abs_path(self.filepath)
 
 def get_all_nonempty_vertex_groups(mesh_obj):
     nonempty_vgs = set()
