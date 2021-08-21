@@ -8,7 +8,7 @@ from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_
 from ...Utilities.Paths import normalise_abs_path
 
 
-def import_materials(model_data, remame_imgs):
+def import_materials(model_data, rename_imgs, use_custom_nodes):
     for i, IF_material in enumerate(model_data.materials):
         new_material = bpy.data.materials.new(name=IF_material.name)
         # Unknown data
@@ -20,101 +20,30 @@ def import_materials(model_data, remame_imgs):
 
         new_material.use_nodes = True
 
-        # Set some convenience variables
-        shader_uniforms = IF_material.shader_uniforms
-        nodes = new_material.node_tree.nodes
-        connect = new_material.node_tree.links.new
+        if use_custom_nodes:
+            generate_material_nodes(model_data, new_material, IF_material, rename_imgs)
+        else:
+            # Set some convenience variables
+            shader_uniforms = IF_material.shader_uniforms
+            nodes = new_material.node_tree.nodes
+            connect = new_material.node_tree.links.new
 
-        # Remove the default shader node
-        bsdf_node = nodes.get('Principled BSDF')
-        nodes.remove(bsdf_node)
+            # Remove the default shader node
+            bsdf_node = nodes.get('Principled BSDF')
+            imported_textures = {}
 
-        output_node = new_material.node_tree.nodes.get('Material Output')
-        new_material.node_tree.links.clear()
-        import_material_texture_nodes(nodes, model_data, IF_material.shader_uniforms, remame_imgs)
+            diff_tex_name = 'DiffuseTextureID'
+            if diff_tex_name in shader_uniforms:
+                diff_tex = shader_uniforms[diff_tex_name]
+                tex_img_node = nodes.new('ShaderNodeTexImage')
+                tex_img_node.name = diff_tex_name
+                tex_img_node.label = diff_tex_name
+                set_texture_node_image(tex_img_node, shader_uniforms[diff_tex_name][0],
+                                       model_data.textures[shader_uniforms[diff_tex_name][0]], imported_textures, rename_imgs)
 
-        final_diffuse_node = None
-        if 'DiffuseTextureID' in shader_uniforms:
-            tex0_img_node = nodes["DiffuseTextureID"]
-            tex0_node = nodes.new('ShaderNodeBsdfPrincipled')
-            tex0_node.name = "DiffuseShader"
-            tex0_node.label = "DiffuseShader"
-
-            # Might be updated by following nodes
-            final_diffuse_colour_node = tex0_img_node
-            final_alpha_node = tex0_img_node
-            if "ToonTextureID" in shader_uniforms:
-                toon_texture_node = nodes["ToonTextureID"]
-                toon_node = nodes.new('ShaderNodeBsdfToon')
-                toon_node.name = "ToonShader"
-                toon_node.label = "ToonShader"
-                connect(toon_texture_node.outputs['Color'], toon_node.inputs['Color'])
-
-                converter_node = nodes.new('ShaderNodeShaderToRGB')
-                connect(toon_node.outputs['BSDF'], converter_node.inputs['Shader'])
-
-                mix_node = new_material.node_tree.nodes.new('ShaderNodeMixRGB')
-                mix_node.blend_type = 'MULTIPLY'
-
-                connect(final_diffuse_colour_node.outputs['Color'], mix_node.inputs['Color1'])
-                connect(converter_node.outputs['Color'], mix_node.inputs['Color2'])
-
-                final_diffuse_colour_node = mix_node
-            if "DiffuseColour" in shader_uniforms:
-                rgba_node = nodes.new('ShaderNodeRGB')
-                rgba_node.name = "DiffuseColour"
-                rgba_node.label = "DiffuseColour"
-                rgba_node.outputs['Color'].default_value = shader_uniforms["DiffuseColour"]
-
-                mix_node = nodes.new('ShaderNodeMixRGB')
-                mix_node.blend_type = 'MULTIPLY'
-                connect(final_diffuse_colour_node.outputs['Color'], mix_node.inputs['Color1'])
-                connect(rgba_node.outputs['Color'], mix_node.inputs['Color2'])
-
-                final_diffuse_colour_node = mix_node
-
-            # Vertex Colours
-            vertex_colour_input_node = nodes.new('ShaderNodeVertexColor')
-            vertex_colour_input_node.name = "VertexColour"
-            vertex_colour_input_node.label = "VertexColour"
-
-            mix_node = nodes.new('ShaderNodeMixRGB')
-            mix_node.blend_type = 'MULTIPLY'
-            connect(final_diffuse_colour_node.outputs['Color'], mix_node.inputs['Color1'])
-            connect(vertex_colour_input_node.outputs['Color'], mix_node.inputs['Color2'])
-            final_diffuse_colour_node = mix_node
-
-            alpha_mix_node = nodes.new('ShaderNodeMath')
-            alpha_mix_node.operation = "MULTIPLY"
-            connect(final_alpha_node.outputs['Alpha'], alpha_mix_node.inputs[0])
-            connect(vertex_colour_input_node.outputs['Alpha'], alpha_mix_node.inputs[1])
-            final_alpha_node = alpha_mix_node
-            connect(final_alpha_node.outputs['Value'], tex0_node.inputs['Alpha'])
-
-            if "SpecularStrength" in shader_uniforms:
-                specular_value = nodes.new('ShaderNodeValue')
-                specular_value.name = 'SpecularStrength'
-                specular_value.label = 'SpecularStrength'
-                specular_value.outputs['Value'].default_value = shader_uniforms["SpecularStrength"][0]
-                connect(specular_value.outputs['Value'], tex0_node.inputs['Specular'])
-            connect(final_diffuse_colour_node.outputs['Color'], tex0_node.inputs['Base Color'])
-            final_diffuse_node = tex0_node
-
-        elif "DiffuseColour" in shader_uniforms:
-            rgba_node = nodes.new('ShaderNodeRGB')
-            rgba_node.name = "DiffuseColour"
-            rgba_node.label = "DiffuseColour"
-            rgba_node.outputs['Color'].default_value = shader_uniforms["DiffuseColour"]
-
-            diffuse_node = nodes.new('ShaderNodeBsdfDiffuse')
-            diffuse_node.name = "DiffuseColourShader"
-            diffuse_node.label = "DiffuseColourShader"
-
-            connect(rgba_node.outputs['Color'], diffuse_node.inputs['Color'])
-            final_diffuse_node = diffuse_node
-
-        if final_diffuse_node is not None:
-            connect(final_diffuse_node.outputs['BSDF'], output_node.inputs['Surface'])
+                tex0_img_node = nodes["DiffuseTextureID"]
+                connect(tex0_img_node.outputs['Color'], bsdf_node.inputs['Base Color'])
+                connect(tex0_img_node.outputs['Alpha'], bsdf_node.inputs['Alpha'])
 
         #########################################
         # IMPLEMENT OR STORE THE OPENGL OPTIONS #
@@ -216,3 +145,101 @@ def set_texture_node_image(node, texture_idx, IF_texture, import_memory, rename_
         import_memory[texture_idx] = use_filename
         bpy.data.images.load(dds_loc)
     node.image = bpy.data.images[use_filename]
+
+
+def generate_material_nodes(model_data, new_material, IF_material, rename_imgs):
+    # Set some convenience variables
+    shader_uniforms = IF_material.shader_uniforms
+    nodes = new_material.node_tree.nodes
+    connect = new_material.node_tree.links.new
+
+    # Remove the default shader node
+    bsdf_node = nodes.get('Principled BSDF')
+    nodes.remove(bsdf_node)
+
+    output_node = new_material.node_tree.nodes.get('Material Output')
+    new_material.node_tree.links.clear()
+    import_material_texture_nodes(nodes, model_data, IF_material.shader_uniforms, rename_imgs)
+
+    final_diffuse_node = None
+    if 'DiffuseTextureID' in shader_uniforms:
+        tex0_img_node = nodes["DiffuseTextureID"]
+        tex0_node = nodes.new('ShaderNodeBsdfPrincipled')
+        tex0_node.name = "DiffuseShader"
+        tex0_node.label = "DiffuseShader"
+
+        # Might be updated by following nodes
+        final_diffuse_colour_node = tex0_img_node
+        final_alpha_node = tex0_img_node
+        if "ToonTextureID" in shader_uniforms:
+            toon_texture_node = nodes["ToonTextureID"]
+            toon_node = nodes.new('ShaderNodeBsdfToon')
+            toon_node.name = "ToonShader"
+            toon_node.label = "ToonShader"
+            connect(toon_texture_node.outputs['Color'], toon_node.inputs['Color'])
+
+            converter_node = nodes.new('ShaderNodeShaderToRGB')
+            connect(toon_node.outputs['BSDF'], converter_node.inputs['Shader'])
+
+            mix_node = new_material.node_tree.nodes.new('ShaderNodeMixRGB')
+            mix_node.blend_type = 'MULTIPLY'
+
+            connect(final_diffuse_colour_node.outputs['Color'], mix_node.inputs['Color1'])
+            connect(converter_node.outputs['Color'], mix_node.inputs['Color2'])
+
+            final_diffuse_colour_node = mix_node
+        if "DiffuseColour" in shader_uniforms:
+            rgba_node = nodes.new('ShaderNodeRGB')
+            rgba_node.name = "DiffuseColour"
+            rgba_node.label = "DiffuseColour"
+            rgba_node.outputs['Color'].default_value = shader_uniforms["DiffuseColour"]
+
+            mix_node = nodes.new('ShaderNodeMixRGB')
+            mix_node.blend_type = 'MULTIPLY'
+            connect(final_diffuse_colour_node.outputs['Color'], mix_node.inputs['Color1'])
+            connect(rgba_node.outputs['Color'], mix_node.inputs['Color2'])
+
+            final_diffuse_colour_node = mix_node
+
+        # Vertex Colours
+        vertex_colour_input_node = nodes.new('ShaderNodeVertexColor')
+        vertex_colour_input_node.name = "VertexColour"
+        vertex_colour_input_node.label = "VertexColour"
+
+        mix_node = nodes.new('ShaderNodeMixRGB')
+        mix_node.blend_type = 'MULTIPLY'
+        connect(final_diffuse_colour_node.outputs['Color'], mix_node.inputs['Color1'])
+        connect(vertex_colour_input_node.outputs['Color'], mix_node.inputs['Color2'])
+        final_diffuse_colour_node = mix_node
+
+        alpha_mix_node = nodes.new('ShaderNodeMath')
+        alpha_mix_node.operation = "MULTIPLY"
+        connect(final_alpha_node.outputs['Alpha'], alpha_mix_node.inputs[0])
+        connect(vertex_colour_input_node.outputs['Alpha'], alpha_mix_node.inputs[1])
+        final_alpha_node = alpha_mix_node
+        connect(final_alpha_node.outputs['Value'], tex0_node.inputs['Alpha'])
+
+        if "SpecularStrength" in shader_uniforms:
+            specular_value = nodes.new('ShaderNodeValue')
+            specular_value.name = 'SpecularStrength'
+            specular_value.label = 'SpecularStrength'
+            specular_value.outputs['Value'].default_value = shader_uniforms["SpecularStrength"][0]
+            connect(specular_value.outputs['Value'], tex0_node.inputs['Specular'])
+        connect(final_diffuse_colour_node.outputs['Color'], tex0_node.inputs['Base Color'])
+        final_diffuse_node = tex0_node
+
+    elif "DiffuseColour" in shader_uniforms:
+        rgba_node = nodes.new('ShaderNodeRGB')
+        rgba_node.name = "DiffuseColour"
+        rgba_node.label = "DiffuseColour"
+        rgba_node.outputs['Color'].default_value = shader_uniforms["DiffuseColour"]
+
+        diffuse_node = nodes.new('ShaderNodeBsdfDiffuse')
+        diffuse_node.name = "DiffuseColourShader"
+        diffuse_node.label = "DiffuseColourShader"
+
+        connect(rgba_node.outputs['Color'], diffuse_node.inputs['Color'])
+        final_diffuse_node = diffuse_node
+
+    if final_diffuse_node is not None:
+        connect(final_diffuse_node.outputs['BSDF'], output_node.inputs['Surface'])

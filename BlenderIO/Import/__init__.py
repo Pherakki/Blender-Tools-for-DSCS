@@ -45,6 +45,12 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
         description="Create a copy of each IMG file with a DDS extension before import."
     )
 
+    use_custom_nodes: BoolProperty(
+        name="Emulate DSCS Materials",
+        description="Create a material node tree to partially emulate DSCS rendering.",
+        default=True
+    )
+
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
         model_data = generate_intermediate_format_from_files(filepath, self.platform,
@@ -55,7 +61,7 @@ class ImportDSCS(bpy.types.Operator, ImportHelper):
 
         bpy.context.collection.objects.link(parent_obj)
         import_skeleton(parent_obj, armature_name, model_data)
-        import_materials(model_data, self.img_to_dds)
+        import_materials(model_data, self.img_to_dds, self.use_custom_nodes)
         import_meshes(parent_obj, filename, model_data, armature_name)
         import_cameras(parent_obj, model_data)
         import_lights(parent_obj, model_data)
