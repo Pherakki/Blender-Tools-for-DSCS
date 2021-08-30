@@ -134,4 +134,4 @@ def make_animreader(file_folder, model_data, animation_name, base_name, sk):
     # Do this properly later
     anim_interface.user_channels = animation.uv_data
 
-    anim_interface.to_file(os.path.join(file_folder, animation_name) + '.anim', [] if animation_name == base_name else None)
+    anim_interface.to_file(os.path.join(file_folder, animation_name) + '.anim', sk.num_uv_channels, [] if animation_name == base_name else None)

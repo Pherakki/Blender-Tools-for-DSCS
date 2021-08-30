@@ -29,14 +29,14 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     directory = os.path.join(*directory[:-1])
 
     # Always import the base anim, because it plays a special role in skeleton construction
-    imported_animdata = {filename: AnimInterface.from_file(filepath + '.anim')}
+    imported_animdata = {filename: AnimInterface.from_file(filepath + '.anim', imported_skeldata.num_uv_channels)}
     if import_anims:
         for afile in os.listdir(directory):
             afilepath = os.path.join(directory, afile)
             if afile[-4:] == 'anim' and afile[:len(filename)] == filename and afile[:-4] != filename:
                 afile_name, afile_ext = os.path.splitext(afile)
                 print(afile)
-                imported_animdata[afile_name] = AnimInterface.from_file(afilepath)
+                imported_animdata[afile_name] = AnimInterface.from_file(afilepath, imported_skeldata.num_uv_channels)
 
     images_directory = os.path.join(*os.path.split(filepath)[:-1], 'images')
     model_data = IntermediateFormat()
