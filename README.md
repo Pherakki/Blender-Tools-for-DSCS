@@ -51,7 +51,7 @@ Note: If you point the import function towards the unpacked game files, all the 
     * 'QA' will export the model and any animations.
 
 ## Putting models into the game files
-[SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) will make the installation of exported models easy. Follow the guide for making mods in the SimpleDSCSModManager user guide, in its documentation folder. For successful install, your mod requires:
+[SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) makes the installation of exported models easy, as well as many other game edits. Follow the guide for making mods in the SimpleDSCSModManager user guide, located in the SimpleDSCSModManager documentation folder. For successful install, your mod requires:
 1. The name, skel, and geom files in the "modfiles" folder of your mod. Both the skel and geom **must** be present or the game will crash.
 2. Any animations also go in the "modfiles" folder. Optional if you are replacing a model. For the successful install of new models, follow the naming convention of another model in the same category (_e.g._ chr, mob, pc, _etc._).
 3. Images must be exported in a DDS format with the extension renamed to ".img". These go into an "images" folder within the "modfiles" folder.
