@@ -83,35 +83,6 @@ class SkelInterface:
 
             readwriter.write()
 
-    def bone_data_from_armature_space(self, bone_matrices):
-        bone_data = []
-        parent_bones = {c: p for c, p in self.parent_bones}
-        for i, bone_matrix in enumerate(bone_matrices):
-            parent_idx = parent_bones[i]
-            if parent_idx != -1:
-                parent_bone_matrix = bone_matrices[parent_idx]
-
-            else:
-                parent_bone_matrix = np.eye(4)
-
-            pr = parent_bone_matrix[:3, :3]
-            cr = bone_matrix[:3, :3]
-            rdiff = np.dot(pr.T, cr)
-            rdiff = rotation_matrix_to_quat(rdiff)
-
-            c_pos = bone_matrix[3, :3]
-            p_pos = parent_bone_matrix[3, :3]
-            diff = np.dot(pr.T, c_pos - p_pos)
-            diff = (*diff, 1.)
-
-            # Not really sure if setting the scale to always be 1 is legit, but...
-            # eh, doesn't look like it's stored in the geom
-            scal = (1., 1., 1., 1.)
-
-            bd = [tuple(rdiff), diff, scal]
-            bone_data.append(bd)
-        return bone_data
-
 
 def gen_bone_hierarchy(parent_bones):
     to_return = []
