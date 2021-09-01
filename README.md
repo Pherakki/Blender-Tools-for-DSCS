@@ -77,7 +77,7 @@ e-mail: pherakki@gmail.com
 reddit: [u/Pherakki](https://www.reddit.com/user/Pherakki)
 
 ## Notes
-1. Images are stored in a 'img' format, which is a DDS **with mipmaps** in disguise. 
+1. Images are stored in an 'img' format, which is a DDS **with mipmaps** in disguise. The main compressions used are DXT1, DXT3, and DXT5, with some textures uncompressed.
 
 ## Acknowledgements
 This project would not have even got off the ground without the [DSCSTools program](https://github.com/SydMontague/DSCSTools) by [SydMontague](https://github.com/SydMontague). Also, the [CSGeom program](https://github.com/xdanieldzd/CSGeom) by [xdanieldzd](https://github.com/xdanieldzd) was very useful to compare against for the geom files, even though the file format has changed somewhat for the PC release.
