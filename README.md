@@ -69,7 +69,7 @@ Note: If you point the import function towards the unpacked game files, all the 
 ## Future Plans
 1. Finish the custom-channel animation feature.
 2. Readers for remaining filetypes: DETR, NAVI, NOTE, PHYS, SPRK
-3. [An external program that can assign shaders to models.](https://github.com/Pherakki/DSCSModelDataEditor) **Currently WIP** but under heavy development; the repositiory may not be kept up-to-date during this period.
+3. [An external program that can assign shaders to models.](https://github.com/Pherakki/DSCSModelDataEditor) **Currently WIP** but under heavy development; the repository may not be kept up-to-date during this period.
 
 ## Contact
 e-mail: pherakki@gmail.com
