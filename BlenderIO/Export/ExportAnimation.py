@@ -120,14 +120,9 @@ def integerise_frame_indices(animation_channel, frame_default, interpolation_fun
         return {}
 
     required_frame_indices = [int(np.ceil(idx)) for idx in animation_channel.keys()]
-    equivalent_frame_indices = [key == frame for key, frame in zip(animation_channel.keys(), required_frame_indices)]
-
     # First frame must be 0
     if required_frame_indices[0] != 0:
         required_frame_indices.insert(0, 0)
     interpolation_function = produce_interpolation_method_dict(animation_channel, frame_default, interpolation_function, debug_output)
 
-    return {frame: animation_channel[original_frame] if is_equivalent else interpolation_function(frame)
-            for frame, original_frame, is_equivalent in zip(required_frame_indices,
-                                                            animation_channel.keys(),
-                                                            equivalent_frame_indices)}
+    return {frame: interpolation_function(frame) for frame in required_frame_indices}
