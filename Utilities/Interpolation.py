@@ -52,7 +52,7 @@ def produce_interpolation_method(frame_idxs, frame_values, default_value, interp
 
 
 # Surely these can be unified with the above...
-def interpolate_keyframe_dict(frames, idx, interpolation_function):
+def interpolate_keyframe_dict(frames, idx, interpolation_function, debug_output=False):
     frame_idxs = list(frames.keys())
     smaller_elements = [fidx for fidx in frame_idxs if fidx < idx]
     next_smallest_frame = max(smaller_elements) if len(smaller_elements) else frame_idxs[0]
@@ -64,14 +64,18 @@ def interpolate_keyframe_dict(frames, idx, interpolation_function):
     else:
         t = (idx - next_smallest_frame) / (next_largest_frame - next_smallest_frame)
 
-    # Should change lerp to the proper interpolation method
     min_value = frames[next_smallest_frame]
     max_value = frames[next_largest_frame]
+
+    if debug_output:
+        print(">>>", next_smallest_frame, idx, next_largest_frame)
+        print(">>>", "t", t)
+        print(">>>", min_value, max_value)
 
     return interpolation_function(np.array(min_value), np.array(max_value), t)
 
 
-def produce_interpolation_method_dict(frames, default_value, interpolation_function):
+def produce_interpolation_method_dict(frames, default_value, interpolation_function, debug_output=False):
     """
     Returns an interpolation function dependant on the number of passed frames.
     """
@@ -85,6 +89,6 @@ def produce_interpolation_method_dict(frames, default_value, interpolation_funct
             return value
     else:
         def interp_method(input_frame_idx):
-            return interpolate_keyframe_dict(frames, input_frame_idx, interpolation_function)
+            return interpolate_keyframe_dict(frames, input_frame_idx, interpolation_function, debug_output)
 
     return interp_method

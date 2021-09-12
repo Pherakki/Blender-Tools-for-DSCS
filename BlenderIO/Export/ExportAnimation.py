@@ -34,10 +34,10 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
         nla_strip = strips[0]
 
         animation_data = get_action_data(nla_strip.action, curve_defaults)
-
         # Normalise the smallest distance between frames to 1 to allow more accurate integerisation
         smallest_frame_delta = get_smallest_frame_delta(animation_data)
         stretch_frame_indices_by_factor(animation_data, 1./smallest_frame_delta)
+
         # Integerise any float frame indices
         for bone_idx, animation_bone_data in animation_data.items():
             for curve_type, default, interp_method in zip(['rotation_quaternion', 'location', 'scale'],
@@ -45,6 +45,7 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
                                                           [slerp, lerp, lerp]):
                 channel_data = animation_bone_data[curve_type]
                 animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)
+
         ad = model_data.new_anim(nla_track.name)
 
         fps = 24. / (nla_strip.scale * smallest_frame_delta)
@@ -110,7 +111,7 @@ def stretch_frame_indices_by_factor(animation_data, factor):
                 curve_data[idx*factor] = value
 
 
-def integerise_frame_indices(animation_channel, frame_default, interpolation_function):
+def integerise_frame_indices(animation_channel, frame_default, interpolation_function, debug_output=False):
     """
     Integerise frame indices by rounding up all non-integer frames, and then interpolating between the two
     nearest-neighbour frames to each rounded-up frame using the input interpolation function.
@@ -122,6 +123,6 @@ def integerise_frame_indices(animation_channel, frame_default, interpolation_fun
     # First frame must be 0
     if required_frame_indices[0] != 0:
         required_frame_indices.insert(0, 0)
-    interpolation_function = produce_interpolation_method_dict(animation_channel, frame_default, interpolation_function)
+    interpolation_function = produce_interpolation_method_dict(animation_channel, frame_default, interpolation_function, debug_output)
 
     return {frame: interpolation_function(frame) for frame in required_frame_indices}
