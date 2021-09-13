@@ -178,8 +178,9 @@ class MeshReaderBase(BaseRW):
 
     @classmethod
     def vertex_component_data_factory(cls, vertex_component):
-        return (cls.reverse_vertex_types[vertex_component.vertex_type], vertex_component.num_elements,
-                cls.get_reverse_vertex_dtypes()[vertex_component.vertex_dtype], 20, vertex_component.data_start_ptr)
+        return (cls.reverse_vertex_types[vertex_component.vertex_type], vertex_component.flag,
+                vertex_component.num_elements, cls.get_reverse_vertex_dtypes()[vertex_component.vertex_dtype], 20,
+                vertex_component.data_start_ptr)
 
     def interpret_mesh_data(self):
         self.vertex_components = [self.vertex_component_factory(*data) for data in self.chunk_list(self.vertex_components, 6)]
