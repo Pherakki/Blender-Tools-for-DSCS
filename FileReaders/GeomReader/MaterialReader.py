@@ -7,8 +7,8 @@ class MaterialReader(BaseRW):
     """
     A class to read material data within geom files. These files are split into three main sections:
         1. The header, which is mostly unknown, but does contain counts of further data.
-        2. A section of what appears to be sub-components of the material.
-        3. A section of completely unknown material data.
+        2. A section of shader uniforms and their values.
+        3. A section containing codes for OpenGL functions and the data to pass into them.
 
     Completion status
     ------
@@ -16,13 +16,6 @@ class MaterialReader(BaseRW):
     (0) MaterialReader can fully interpret all material data in geom files in DSDB archive.
     (o) MaterialReader can write data to geom files.
 
-    Current hypotheses and observations
-    ------
-    1. Some materials are listed as being e.g. 'specular' materials in the name file - so information of this type may
-       exist in the material definitions.
-    2. acc129's 2nd material appears to be a Lambert shader - look into this.
-    3. '65280' == \x00\xff - looks like a stop code to me
-    4. Material data may related to that in the shader files --- they are plaintext, so fully readable..! 1398 of them. See if you can match this up with any material data...
     """
 
     shader_uniform_from_ids = {
