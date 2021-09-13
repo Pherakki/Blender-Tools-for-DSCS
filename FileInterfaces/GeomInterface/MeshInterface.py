@@ -157,39 +157,39 @@ def calculate_vertex_properties_dscs(vertices, num_vertex_groups):
     max_vtx_groups = max([len(vtx['WeightedBoneID']) for vtx in vertices])
     if 'Position' in example_vertex:
         if max_vtx_groups == 1 and len(num_vertex_groups) > 1:
-            vertex_components.append(vertex_components_from_names['PosWeight'](bytes_per_vertex))
+            vertex_components.append(vertex_components_from_names['PosWeight'](bytes_per_vertex, 0))
             bytes_per_vertex += 16
         else:
-            vertex_components.append(vertex_components_from_names['Position'](bytes_per_vertex))
+            vertex_components.append(vertex_components_from_names['Position'](bytes_per_vertex, 0))
             bytes_per_vertex += 12
     if 'Normal' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Normal'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['Normal'](bytes_per_vertex, 0))
         bytes_per_vertex += 8
     if 'UV' in example_vertex:
-        vertex_components.append(vertex_components_from_names['UV'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['UV'](bytes_per_vertex, 0))
         bytes_per_vertex += 4
     if 'UV2' in example_vertex:
-        vertex_components.append(vertex_components_from_names['UV2'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['UV2'](bytes_per_vertex, 0))
         bytes_per_vertex += 4
     if 'UV3' in example_vertex:
-        vertex_components.append(vertex_components_from_names['UV3'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['UV3'](bytes_per_vertex, 0))
         bytes_per_vertex += 4
     if 'Colour' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Colour'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['Colour'](bytes_per_vertex, 0))
         bytes_per_vertex += 8
     if 'Tangent' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Tangent4'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['Tangent4'](bytes_per_vertex, 0))
         bytes_per_vertex += 8
     if 'Binormal' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Binormal'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['Binormal'](bytes_per_vertex, 0))
         bytes_per_vertex += 8
     if 'WeightedBoneID' in example_vertex and max_vtx_groups >= 2:
         num_grps = max_vtx_groups
-        vertex_components.append(vertex_components_from_names[f'Indices{num_grps}'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names[f'Indices{num_grps}'](bytes_per_vertex, 0))
         nominal_bytes = num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
 
-        vertex_components.append(vertex_components_from_names[f'Weights{num_grps}'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names[f'Weights{num_grps}'](bytes_per_vertex, 0))
         nominal_bytes = 2*num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
 
@@ -207,29 +207,29 @@ def calculate_vertex_properties_megido(vertices, num_vertex_groups):
     example_vertex = vertices[0]
     max_vtx_groups = max([len(vtx['WeightedBoneID']) for vtx in vertices])
     if 'Position' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Position'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['Position'](bytes_per_vertex, 0))
         bytes_per_vertex += 12
     if 'Normal' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Normal'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['NormalH'](bytes_per_vertex, 1))
         vertex_components[-1].normalise = True
         bytes_per_vertex += 8
     if 'UV' in example_vertex:
-        vertex_components.append(vertex_components_from_names['UV'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['UVH'](bytes_per_vertex, 0))
         bytes_per_vertex += 4
     if 'UV2' in example_vertex:
-        vertex_components.append(vertex_components_from_names['UV2'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['UV2H'](bytes_per_vertex, 0))
         bytes_per_vertex += 4
     if 'UV3' in example_vertex:
-        vertex_components.append(vertex_components_from_names['UV3'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['UV3H'](bytes_per_vertex, 0))
         bytes_per_vertex += 4
     if 'Colour' in example_vertex:
-        vertex_components.append(vertex_components_from_names['ByteColour'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['ByteColour'](bytes_per_vertex, 1))
         bytes_per_vertex += 8
     if 'Tangent' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Tangent3'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['TangentH'](bytes_per_vertex, 1))
         bytes_per_vertex += 8
     if 'Binormal' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Binormal'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['BinormalH'](bytes_per_vertex, 1))
         bytes_per_vertex += 8
     if 'WeightedBoneID' in example_vertex and max_vtx_groups >= 1:
         num_grps = max_vtx_groups
@@ -238,7 +238,7 @@ def calculate_vertex_properties_megido(vertices, num_vertex_groups):
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
         vertex_components[-1].normalise = True
 
-        vertex_components.append(vertex_components_from_names[f'ByteWeights{num_grps}'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names[f'ByteWeights{num_grps}'](bytes_per_vertex, 1))
         nominal_bytes = 2*num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
         vertex_components[-1].normalise = True
