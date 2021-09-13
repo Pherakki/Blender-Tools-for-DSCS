@@ -1,5 +1,5 @@
 import numpy as np
-from ...FileReaders.GeomReader.VertexComponents import vertex_components_from_names
+from ...FileReaders.GeomReader.VertexComponents import vertex_components_from_names_dscs, vertex_components_from_names_megido
 from ...Utilities.StringHashing import int_to_BE_hex, BE_hex_to_int
 
 
@@ -58,12 +58,18 @@ class MeshInterface:
 
         return interface
 
-    def to_subfile(self, meshReader, virtual_pos):
+    def to_subfile(self, meshReader, virtual_pos, platform):
         meshReader.vertex_data_start_ptr = virtual_pos
 
+        if platform == 'Megido':
+            vertex_property_calculator = calculate_vertex_properties_megido
+        elif platform == 'PC' or platform == 'PS4':
+            vertex_property_calculator = calculate_vertex_properties_dscs
+        else:
+            raise Exception(f"Unknown platform '{platform}' encountered in MeshInterface's MeshReader generator.")
 
         vgroup_idxs = self.vertex_group_bone_idxs
-        meshReader.bytes_per_vertex, meshReader.vertex_components = calculate_vertex_properties(self.vertices, vgroup_idxs)
+        meshReader.bytes_per_vertex, meshReader.vertex_components = vertex_property_calculator(self.vertices, vgroup_idxs)
         vertex_generators = [vc.generator for vc in meshReader.vertex_components]
 
         meshReader.vertex_data = generate_vertex_data(self.vertices, vertex_generators)
@@ -139,10 +145,12 @@ def process_posweights(vertices, max_vertex_groups_per_vertex):
     return vertices
 
 
-def calculate_vertex_properties(vertices, num_vertex_groups):
+def calculate_vertex_properties_dscs(vertices, num_vertex_groups):
     """
     Still a bit messy but much nicer than before.
     """
+    vertex_components_from_names = vertex_components_from_names_dscs
+
     bytes_per_vertex = 0
     vertex_components = []
     example_vertex = vertices[0]
@@ -170,7 +178,7 @@ def calculate_vertex_properties(vertices, num_vertex_groups):
         vertex_components.append(vertex_components_from_names['Colour'](bytes_per_vertex))
         bytes_per_vertex += 8
     if 'Tangent' in example_vertex:
-        vertex_components.append(vertex_components_from_names['Tangent'](bytes_per_vertex))
+        vertex_components.append(vertex_components_from_names['Tangent4'](bytes_per_vertex))
         bytes_per_vertex += 8
     if 'Binormal' in example_vertex:
         vertex_components.append(vertex_components_from_names['Binormal'](bytes_per_vertex))
@@ -184,6 +192,56 @@ def calculate_vertex_properties(vertices, num_vertex_groups):
         vertex_components.append(vertex_components_from_names[f'Weights{num_grps}'](bytes_per_vertex))
         nominal_bytes = 2*num_grps
         bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
+
+    return bytes_per_vertex, vertex_components
+
+
+def calculate_vertex_properties_megido(vertices, num_vertex_groups):
+    """
+    Still a bit messy but much nicer than before.
+    """
+    vertex_components_from_names = vertex_components_from_names_megido
+
+    bytes_per_vertex = 0
+    vertex_components = []
+    example_vertex = vertices[0]
+    max_vtx_groups = max([len(vtx['WeightedBoneID']) for vtx in vertices])
+    if 'Position' in example_vertex:
+        vertex_components.append(vertex_components_from_names['Position'](bytes_per_vertex))
+        bytes_per_vertex += 12
+    if 'Normal' in example_vertex:
+        vertex_components.append(vertex_components_from_names['Normal'](bytes_per_vertex))
+        vertex_components[-1].normalise = True
+        bytes_per_vertex += 8
+    if 'UV' in example_vertex:
+        vertex_components.append(vertex_components_from_names['UV'](bytes_per_vertex))
+        bytes_per_vertex += 4
+    if 'UV2' in example_vertex:
+        vertex_components.append(vertex_components_from_names['UV2'](bytes_per_vertex))
+        bytes_per_vertex += 4
+    if 'UV3' in example_vertex:
+        vertex_components.append(vertex_components_from_names['UV3'](bytes_per_vertex))
+        bytes_per_vertex += 4
+    if 'Colour' in example_vertex:
+        vertex_components.append(vertex_components_from_names['ByteColour'](bytes_per_vertex))
+        bytes_per_vertex += 8
+    if 'Tangent' in example_vertex:
+        vertex_components.append(vertex_components_from_names['Tangent3'](bytes_per_vertex))
+        bytes_per_vertex += 8
+    if 'Binormal' in example_vertex:
+        vertex_components.append(vertex_components_from_names['Binormal'](bytes_per_vertex))
+        bytes_per_vertex += 8
+    if 'WeightedBoneID' in example_vertex and max_vtx_groups >= 1:
+        num_grps = max_vtx_groups
+        vertex_components.append(vertex_components_from_names[f'Indices{num_grps}'](bytes_per_vertex))
+        nominal_bytes = num_grps
+        bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
+        vertex_components[-1].normalise = True
+
+        vertex_components.append(vertex_components_from_names[f'ByteWeights{num_grps}'](bytes_per_vertex))
+        nominal_bytes = 2*num_grps
+        bytes_per_vertex += nominal_bytes + ((4 - (nominal_bytes % 4)) % 4)
+        vertex_components[-1].normalise = True
 
     return bytes_per_vertex, vertex_components
 
