@@ -7,13 +7,13 @@ class SkelReader(BaseRW):
     A class to read skel files. These files are split into eight main sections:
         1. The header, which gives file pointers to split the file into its major sections, plus counts of what appears
            in each section.
-        2. Pairs of bone indices that seem to have something to do with parent-child relationships, 8 int16s per element
+        2. Pairs of bone indices that create parent-bone relationships procedurally, 8 int16s per element
         3. A section of 12 floats per bone
         4. A section of 1 int16 per bone that gives the parent of each bone
-        5. A section of one-multiple-of-8 per unknown_0x0C
+        5. A section of one-multiple-of-8 per shader uniform channel
         6. A section of 4 bytes per bone
-        7. A section of 1 (u?)int32 per unknown_0x0C
-        8. A section of 4 bytes per unknown_0x0C
+        7. A section of 1 uint32 per user channel, identifying which shader uniform the channel is for.
+        8. A section of material/camera/light name hashes for the shader uniform channels.
 
     Completion status
     ------
@@ -23,9 +23,8 @@ class SkelReader(BaseRW):
 
     Current hypotheses and observations
     ------
-    1. There may be a section containing IK data.
-    2. There may be a section containing bone constraints.
-    3. The above two may instead be in the anim file, if they exist at all
+    1. Currently not 100% clear what the 0/8/16 per shader uniform channel is for, but is connected to the type...
+       could be a flag?
     """
     def __init__(self, io_stream):
         super().__init__(io_stream)
