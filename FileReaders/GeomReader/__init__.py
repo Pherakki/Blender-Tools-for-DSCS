@@ -1,5 +1,5 @@
 from ..BaseRW import BaseRW
-from .MeshReader import MeshReaderPC, MeshReaderPS4
+from .MeshReader import MeshReaderPC, MeshReaderPS4, MeshReaderMegido
 from .MaterialReader import MaterialReader
 
 import numpy as np
@@ -71,7 +71,8 @@ class GeomReader(BaseRW):
     @staticmethod
     def for_platform(bytestream, platform):
         platform_table = {'PC': GeomReaderPC,
-                          'PS4': GeomReaderPS4}
+                          'PS4': GeomReaderPS4,
+                          'Megido': GeomReaderMegido}
         return platform_table[platform](bytestream)
 
     def read(self):
@@ -269,6 +270,14 @@ class GeomReaderPS4(GeomReader):
 
     def new_meshreader(self):
         return MeshReaderPS4
+
+
+class GeomReaderMegido(GeomReader):
+    def __init__(self, bytestream):
+        super().__init__(bytestream)
+
+    def new_meshreader(self):
+        return MeshReaderMegido
 
 
 class LightSource(BaseRW):

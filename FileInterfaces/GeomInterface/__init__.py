@@ -89,7 +89,7 @@ class GeomInterface:
             geomReader.meshes_start_ptr = virtual_pos if len(self.meshes) > 0 else 0
             virtual_pos += 104 * geomReader.num_meshes
             for mesh, meshReader in zip(self.meshes, geomReader.meshes):
-                virtual_pos = mesh.to_subfile(meshReader, virtual_pos)
+                virtual_pos = mesh.to_subfile(meshReader, virtual_pos, platform)
 
             # Dump materials
             geomReader.materials_start_ptr = virtual_pos if len(self.material_data) > 0 else 0
