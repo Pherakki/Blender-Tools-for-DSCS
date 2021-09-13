@@ -1,5 +1,5 @@
 # Blender Tools for Digimon Story: Cyber Sleuth
-This repository provides a work-in-progress addon for Blender 2.8 that can (to some degree) import model files from the PC version of Digimon Story: Cyber Sleuth. It provides new options in `File > Import` and `File > Export` named "DSCS Model", which should be pointed towards 'name' files in the game data. The file format is mostly understood; but some bugs remain and there are some Blender issues yet to be understood. There is also experimental support for the PS4 version.
+This repository provides a work-in-progress addon for Blender 2.8 that can (to some degree) import model files from the PC version of Digimon Story: Cyber Sleuth. It provides new options in `File > Import` and `File > Export` named "DSCS Model", which should be pointed towards 'name' files in the game data. The file format is mostly understood; but some bugs remain and there are some Blender issues yet to be understood. There is also experimental support for the PS4 version and for Megido72.
 
 Progress reports are hosted in the [discussions](https://github.com/Pherakki/Blender-Tools-for-DSCS/discussions/1) and documentation is in-progress in the [wiki](https://github.com/Pherakki/Blender-Tools-for-DSCS/wiki).
 
