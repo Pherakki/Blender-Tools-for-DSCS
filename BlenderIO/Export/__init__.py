@@ -20,28 +20,13 @@ from ...Utilities.Lists import flip_dict
 from ...Utilities.Paths import normalise_abs_path
 
 
-class ExportDSCS(bpy.types.Operator, ExportHelper):
-    bl_idname = 'export_file.export_dscs'
-    bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
+class ExportMediaVision(bpy.types.Operator):
     bl_options = {'REGISTER'}
     filename_ext = ".name"
 
-    platform: EnumProperty(
-        name="Platform",
-        description="Select which platform the model is for.",
-        items=[("PC", "PC", "Exports a DSCS Complete Edition PC model", "", 0),
-               ("PS4", "PS4 (WIP)", "Exports a DSCS pr DSHM PS4 model. Not fully tested", "", 1)])
-
-    export_mode: EnumProperty(
-        name="Export Mode",
-        description="Which mode to export in.",
-        items=[("Modelling", "Modelling", "Exports the model with its base animation only", "", 0),
-               ("Animation", "Animation", "Exports overlay animations only", "", 1),
-               ("QA", "QA", "Exports the model and all animations", "", 2)])
-    img_to_dds: BoolProperty(
-        name="IMG->DDS File Extension",
-        description="Exports textures that have an 'img' extension with a 'dds' extension."
-    )
+    platform: None
+    export_mode: None
+    img_to_dds: None
 
     def export_file(self, context, filepath):
         # Grab the parent object
@@ -301,17 +286,17 @@ class ExportDSCS(bpy.types.Operator, ExportHelper):
                     material.shader_uniforms[nm] = [tex_idx, *extra_data]
                     used_textures.append(node_tree.nodes[nm].image)
 
-            if 'ToonTextureID' not in node_names and 'DiffuseTextureID' in node_names:
+            if 'CLUTSampler' not in node_names and 'ColorSampler' in node_names:
                 texname = 'placeholder_toon.img'
                 if texname in tex_names:
                     tex_idx = tex_names.index(texname)
                 else:
                     tex_idx = len(used_textures)
                     tex_names.append(texname)
-                material.shader_uniforms['ToonTextureID'] = [tex_idx, 0, 0]
+                material.shader_uniforms['CLUTSampler'] = [tex_idx, 0, 0]
                 used_textures.append(DummyTexture(texname))
-            if 'DiffuseColour' not in node_names:
-                material.shader_uniforms['DiffuseColour'] = [1., 1., 1., 1.]
+            if 'DiffuseColor' not in node_names:
+                material.shader_uniforms['DiffuseColor'] = [1., 1., 1., 1.]
 
             # Export the material components
             for key in shader_uniforms_vp_fp_from_names.keys():
@@ -594,3 +579,45 @@ def check_vertex_weight_counts(mesh_objs):
                         f"The vertices for the mesh \"{bad_meshes[0].name}\" have been selected for you.\n"
                         f"Reduce the number of vertex groups these vertices are part of to 4 or less.\n"
                         f"You can do this per-vertex via the 'Items' panel of the pop-out menu near the top-right of the 3D viewport.")
+
+
+class ExportDSCS(ExportMediaVision, ExportHelper):
+    bl_idname = 'export_file.export_dscs'
+    bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
+
+    platform: EnumProperty(
+        name="Platform",
+        description="Select which platform the model is for.",
+        items=[("PC", "PC", "Exports a DSCS Complete Edition PC model", "", 0),
+               ("PS4", "PS4 (WIP)", "Exports a DSCS pr DSHM PS4 model. Not fully tested", "", 1)])
+
+    export_mode: EnumProperty(
+        name="Export Mode",
+        description="Which mode to export in.",
+        items=[("Modelling", "Modelling", "Exports the model with its base animation only", "", 0),
+               ("Animation", "Animation", "Exports overlay animations only", "", 1),
+               ("QA", "QA", "Exports the model and all animations", "", 2)])
+
+    img_to_dds: BoolProperty(
+        name="IMG->DDS File Extension",
+        description="Exports textures that have an 'img' extension with a 'dds' extension."
+    )
+
+
+class ExportMegido(ExportMediaVision, ExportHelper):
+    bl_idname = 'export_file.export_megido'
+    bl_label = 'Megido 72 (.name, .skel, .geom)'
+
+    platform = "Megido"
+
+    export_mode: EnumProperty(
+        name="Export Mode",
+        description="Which mode to export in.",
+        items=[("Modelling", "Modelling", "Exports the model with its base animation only", "", 0),
+               ("Animation", "Animation", "Exports overlay animations only", "", 1),
+               ("QA", "QA", "Exports the model and all animations", "", 2)])
+
+    img_to_dds: BoolProperty(
+        name="IMG->DDS File Extension",
+        description="Exports textures that have an 'img' extension with a 'dds' extension."
+    )

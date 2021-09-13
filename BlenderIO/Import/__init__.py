@@ -12,44 +12,13 @@ from .MeshImport import import_meshes
 from .CameraImport import import_cameras
 from .LightImport import import_lights
 from ...Utilities.Reposing import set_new_rest_pose
-from ...Utilities.Paths import normalise_abs_path
 
 
-class ImportDSCS(bpy.types.Operator, ImportHelper):
-    bl_idname = 'import_file.import_dscs'
-    bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
-    bl_options = {'REGISTER', 'UNDO'}
-    # This will actually work with any file extension since the code just looks for the right ones...
-    filename_ext = "*.name"
-
-    filter_glob: bpy.props.StringProperty(
-                                             default="*.name",
-                                             options={'HIDDEN'},
-                                         )
-
-    platform: EnumProperty(
-        name="Platform",
-        description="Select which platform the model is for.",
-        items=[("PC", "PC", "Imports a DSCS Complete Edition PC model", "", 0),
-               ("PS4", "PS4 (WIP)", "Imports a DSCS pr DSHM PS4 model. Not fully tested", "", 1)])
-
-    import_mode: EnumProperty(
-        name="Import Mode",
-        description="Which mode to import in.",
-        items=[("Modelling", "Modelling", "Imports the model in the Bind Pose with its base animation only", "", 0),
-               ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
-               ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display correctly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
-
-    img_to_dds: BoolProperty(
-        name="Import IMG as DDS",
-        description="Create a copy of each IMG file with a DDS extension before import."
-    )
-
-    use_custom_nodes: BoolProperty(
-        name="Emulate DSCS Materials",
-        description="Create a material node tree to partially emulate DSCS rendering.",
-        default=True
-    )
+class ImportMediaVision(bpy.types.Operator):
+    platform = None
+    import_mode = None
+    img_to_dds = None
+    use_custom_nodes = None
 
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
@@ -104,3 +73,73 @@ def add_rest_pose_to_base_anim(filename, model_data):
         if not len(base_animation.scales[bone_idx].frames):
             base_animation.scales[bone_idx].frames.append(0)
             base_animation.scales[bone_idx].values.append(scl[:3])  # Cut off affine coord
+
+
+class ImportDSCS(ImportMediaVision, ImportHelper):
+    bl_idname = 'import_file.import_dscs'
+    bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
+    bl_options = {'REGISTER', 'UNDO'}
+    # This will actually work with any file extension since the code just looks for the right ones...
+    filename_ext = "*.name"
+
+    filter_glob: bpy.props.StringProperty(
+                                             default="*.name",
+                                             options={'HIDDEN'},
+                                         )
+
+    platform: EnumProperty(
+        name="Platform",
+        description="Select which platform the model is for.",
+        items=[("PC", "PC", "Imports a DSCS Complete Edition PC model", "", 0),
+               ("PS4", "PS4 (WIP)", "Imports a DSCS pr DSHM PS4 model. Not fully tested", "", 1)])
+
+    import_mode: EnumProperty(
+        name="Import Mode",
+        description="Which mode to import in.",
+        items=[("Modelling", "Modelling", "Imports the model in the Bind Pose with its base animation only", "", 0),
+               ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
+               ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display correctly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
+
+    img_to_dds: BoolProperty(
+        name="Import IMG as DDS",
+        description="Create a copy of each IMG file with a DDS extension before import."
+    )
+
+    use_custom_nodes: BoolProperty(
+        name="Emulate DSCS Materials",
+        description="Create a material node tree to partially emulate DSCS rendering.",
+        default=True
+    )
+
+
+class ImportMegido(ImportMediaVision, ImportHelper):
+    bl_idname = 'import_file.import_megido'
+    bl_label = 'Megido 72 (.name, .skel, .geom)'
+    bl_options = {'REGISTER', 'UNDO'}
+    # This will actually work with any file extension since the code just looks for the right ones...
+    filename_ext = "*.name"
+
+    filter_glob: bpy.props.StringProperty(
+                                             default="*.name",
+                                             options={'HIDDEN'},
+                                         )
+
+    platform = "Megido"
+
+    import_mode: EnumProperty(
+        name="Import Mode",
+        description="Which mode to import in.",
+        items=[("Modelling", "Modelling", "Imports the model in the Bind Pose with its base animation only", "", 0),
+               ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
+               ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display correctly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
+
+    img_to_dds: BoolProperty(
+        name="Import IMG as DDS",
+        description="Create a copy of each IMG file with a DDS extension before import."
+    )
+
+    use_custom_nodes: BoolProperty(
+        name="Emulate Materials",
+        description="Create a material node tree to partially emulate Media.Vision rendering.",
+        default=True
+    )
