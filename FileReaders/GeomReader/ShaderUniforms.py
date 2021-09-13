@@ -5,52 +5,90 @@ class BaseUniform:
         self.data = data
 
 
-class DiffuseTextureID(BaseUniform): num_floats = 0
-class DiffuseColour(BaseUniform): num_floats = 4  # FP uniform, half-floats?
-class NormalMapTextureID(BaseUniform): num_floats = 0
-class Bumpiness(BaseUniform): num_floats = 1  # FP Uniform, half-float?
-class SpecularStrength(BaseUniform): num_floats = 1  # FP Uniform, half-float?
-class SpecularPower(BaseUniform): num_floats = 1  # FP Uniform, half-float?
-class CubeMapTextureID(BaseUniform): num_floats = 0
-class ReflectionStrength(BaseUniform): num_floats = 1  # FP Uniform, half-float? Works with cube map
-class FresnelExp(BaseUniform): num_floats = 1  # FP Uniform, half-float?  ### COULD BE MIXED UP WTH BELOW ####
-class FresnelMin(BaseUniform): num_floats = 1  # FP Uniform, half-float?
-class FuzzySpecColor(BaseUniform): num_floats = 3  # Only appears in chr435, chr912  ### COULD BE MIXED UP WTH TWO BELOW ####
-class SubColor(BaseUniform): num_floats = 3  # Only appears in chr435, chr912
-class SurfaceColor(BaseUniform): num_floats = 3  # Only appears in chr435, chr912
-class Rolloff(BaseUniform): num_floats = 1  # Only appears in chr435, chr912   ### COULD BE MIXED UP WTH BELOW ####
-class VelvetStrength(BaseUniform): num_floats = 1  # Only appears in chr435, chr912
-class UnknownTextureSlot1(BaseUniform): num_floats = 0  # Some kind of texture - seems to be sometimes assigned to UV2, sometimes to UV3?
-class OverlayTextureID(BaseUniform): num_floats = 0  # UV2 texture? Always appears with OverlayStrength.
-class UnknownTextureSlot2(BaseUniform): num_floats = 0  # Overlay normal texture ID? # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
-class OverlayBumpiness(BaseUniform): num_floats = 1  # FP Uniform, half-float?
-class OverlayStrength(BaseUniform): num_floats = 1  # FP Uniform, half-float? Blend ratio of 1st and 2nd texture
-class ToonTextureID(BaseUniform): num_floats = 0  # idx 0 is texture id, rest are...?
-class Curvature(BaseUniform): num_floats = 1  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom  ### COULD BE MIXED UP WTH TWO BELOW ####
-class GlassStrength(BaseUniform): num_floats = 1  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-class UpsideDown(BaseUniform): num_floats = 1  # d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-class ParallaxBiasX(BaseUniform): num_floats = 1  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom  ### COULD BE MIXED UP WTH BELOW ####
-class ParallaxBiasY(BaseUniform): num_floats = 1  # d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
+class ColorSampler(BaseUniform): num_floats = 0
+class DiffuseColor(BaseUniform): num_floats = 4  # FP uniform
+class DiffuseAlpha(BaseUniform): num_floats = 1  # FP uniform
+class NormalSampler(BaseUniform): num_floats = 0
+class Bumpiness(BaseUniform): num_floats = 1  # FP Uniform,
+class SpecularParams(BaseUniform): num_floats = 2  # FP Uniform
+class SpecularStrength(BaseUniform): num_floats = 1  # FP Uniform
+class SpecularPower(BaseUniform): num_floats = 1  # FP Uniform
+class EnvSampler(BaseUniform): num_floats = 0
+class ReflectionStrength(BaseUniform): num_floats = 1  # FP Uniform
+class FresnelExp(BaseUniform): num_floats = 1  # FP Uniform
+class FresnelMin(BaseUniform): num_floats = 1  # FP Uniform
+class FuzzySpecColor(BaseUniform): num_floats = 3
+class SubColor(BaseUniform): num_floats = 3  #
+class SurfaceColor(BaseUniform): num_floats = 3
+class Rolloff(BaseUniform): num_floats = 1
+class VelvetStrength(BaseUniform): num_floats = 1
+class LightSampler(BaseUniform): num_floats = 0
+class OverlayColorSampler(BaseUniform): num_floats = 0
+class OverlayNormalSampler(BaseUniform): num_floats = 0
+class OverlayBumpiness(BaseUniform): num_floats = 1  # FP Uniform
+class OverlayStrength(BaseUniform): num_floats = 1  # FP Uniform
+class CLUTSampler(BaseUniform): num_floats = 0  # idx 0 is texture id, rest are...?
+class GlassParams(BaseUniform): num_floats = 3
+class Curvature(BaseUniform): num_floats = 1
+class GlassStrength(BaseUniform): num_floats = 1
+class UpsideDown(BaseUniform): num_floats = 1
+class ParallaxBias(BaseUniform): num_floats = 2
+class ParallaxBiasX(BaseUniform): num_floats = 1
+class ParallaxBiasY(BaseUniform): num_floats = 1
 class Time(BaseUniform): num_floats = 1  # VP uniform
 class ScrollSpeedSet1(BaseUniform): num_floats = 2  # VP uniform
 class ScrollSpeedSet2(BaseUniform): num_floats = 2  # VP uniform
+class ScrollSpeedSet2U(BaseUniform): num_floats = 1  # VP uniform
+class ScrollSpeedSet2V(BaseUniform): num_floats = 1  # VP uniform
 class ScrollSpeedSet3(BaseUniform): num_floats = 2  # VP uniform
+class ScrollSpeedSet3U(BaseUniform): num_floats = 1  # VP uniform
+class ScrollSpeedSet3V(BaseUniform): num_floats = 1  # VP uniform
 class OffsetSet1(BaseUniform): num_floats = 2  # VP uniform
+class OffsetSet1U(BaseUniform): num_floats = 1  # VP uniform
+class OffsetSet1V(BaseUniform): num_floats = 1  # VP uniform
 class OffsetSet2(BaseUniform): num_floats = 2  # VP uniform # c.f. Meramon
-class DistortionStrength(BaseUniform): num_floats = 1  # FP uniform, half-float?
-class LightMapStrength(BaseUniform): num_floats = 1  # FP Uniform, half-float?  ### COULD BE MIXED UP WTH BELOW ####
-class LightMapPower(BaseUniform): num_floats = 1  # FP Uniform, half-float?
+class OffsetSet2U(BaseUniform): num_floats = 1  # VP uniform
+class OffsetSet2V(BaseUniform): num_floats = 1  # VP uniform
+class DistortionStrength(BaseUniform): num_floats = 1  # FP uniform
+class MipBias(BaseUniform): num_floats = 1  # FP uniform
+class LightMapStrength(BaseUniform): num_floats = 1  # FP Uniform
+class LightMapPower(BaseUniform): num_floats = 1  # FP Uniform
+class Saturation(BaseUniform): num_floats = 1  # FP Uniform
 class OffsetSet3(BaseUniform): num_floats = 2  # VP uniform
+class OffsetSet3U(BaseUniform): num_floats = 1  # VP uniform
+class OffsetSet3V(BaseUniform): num_floats = 1  # VP uniform
 class Fat(BaseUniform): num_floats = 1  # VP uniform
-class RotationSet1(BaseUniform): num_floats = 1  # VP uniform # eff_bts_chr429_swarhead.geom, eff_bts_chr590_hdr.geom
-class RotationSet2(BaseUniform): num_floats = 1  # VP uniform # chr803.geom, chr805.geom, eff_bts_chr803_s02.geom
-class ScaleSet1(BaseUniform): num_floats = 2  # VP uniform # eff_bts_chr802_s01.geom
-class ZBias(BaseUniform): num_floats = 1  # VP uniform, half-float?
-class UnknownTextureSlot3(BaseUniform): num_floats = 0
+class RotationSet1(BaseUniform): num_floats = 1  # VP uniform
+class RotationSet2(BaseUniform): num_floats = 1  # VP uniform
+class RotationSet3(BaseUniform): num_floats = 1  # VP uniform
+class ScaleSet1(BaseUniform): num_floats = 2  # VP uniform
+class ScaleSet1U(BaseUniform): num_floats = 1  # VP uniform
+class ScaleSet1V(BaseUniform): num_floats = 1  # VP uniform
+class ScaleSet2(BaseUniform): num_floats = 2  # VP uniform
+class ScaleSet2U(BaseUniform): num_floats = 1  # VP uniform
+class ScaleSet2V(BaseUniform): num_floats = 1  # VP uniform
+class ScaleSet3(BaseUniform): num_floats = 2  # VP uniform
+class ScaleSet3U(BaseUniform): num_floats = 1  # VP uniform
+class ScaleSet3V(BaseUniform): num_floats = 1  # VP uniform
+class ZBias(BaseUniform): num_floats = 1  # VP uniform
+class EnvsSampler(BaseUniform): num_floats = 0
+class InnerGrowAValue(BaseUniform): num_floats = 3
+class InnerGrowAPower(BaseUniform): num_floats = 1
+class InnerGrowAStrength(BaseUniform): num_floats = 1
+class InnerGrowALimit(BaseUniform): num_floats = 1
+class GlowACLUTSampler(BaseUniform): num_floats = 0
+class InnerGrowBValue(BaseUniform): num_floats = 3
+class InnerGrowBPower(BaseUniform): num_floats = 1
+class InnerGrowBStrength(BaseUniform): num_floats = 1
+class InnerGrowBLimit(BaseUniform): num_floats = 1
+class GlowBCLUTSampler(BaseUniform): num_floats = 0
+class InnerGrowAColor(BaseUniform): num_floats = 4
+class InnerGrowBColor(BaseUniform): num_floats = 4
 
 
-texture_nodes = [DiffuseTextureID, NormalMapTextureID, CubeMapTextureID, UnknownTextureSlot1,
-                 OverlayTextureID, UnknownTextureSlot2, ToonTextureID, UnknownTextureSlot3]
+texture_nodes = [ColorSampler, NormalSampler, EnvSampler, LightSampler,
+                 OverlayColorSampler, OverlayNormalSampler, CLUTSampler, EnvsSampler,
+                 GlowACLUTSampler, GlowBCLUTSampler]
 # VP_uniforms = [Time, ScrollSpeedSet1, ScrollSpeedSet2, ScrollSpeedSet3, OffsetSet1, OffsetSet2, OffsetSet3,
 #                Fat, RotationSet1, RotationSet2, ScaleSet1, ZBias]
 # FP_uniforms = [DiffuseColour, Bumpiness, SpecularStrength, SpecularPower, ReflectionStrength, FresnelExp, FresnelMin,
@@ -58,12 +96,17 @@ texture_nodes = [DiffuseTextureID, NormalMapTextureID, CubeMapTextureID, Unknown
 #                Curvature, GlassStrength, UpsideDown, ParallaxBiasX, ParallaxBiasY, DistortionStrength,
 #                LightMapStrength, LightMapPower]
 
-shader_uniforms_vp_fp = [DiffuseColour, Bumpiness, SpecularStrength, SpecularPower, ReflectionStrength,
-                       FresnelExp, FresnelMin, FuzzySpecColor, SubColor, SurfaceColor, Rolloff, VelvetStrength,
-                       OverlayBumpiness, OverlayStrength, Curvature, GlassStrength, UpsideDown,
-                       ParallaxBiasX, ParallaxBiasY, Time, ScrollSpeedSet1, ScrollSpeedSet2, ScrollSpeedSet3,
-                       OffsetSet1, OffsetSet2, DistortionStrength, LightMapStrength, LightMapPower, OffsetSet3,
-                       Fat, RotationSet1, RotationSet2, ScaleSet1, ZBias]
+shader_uniforms_vp_fp = [DiffuseColor, DiffuseAlpha, Bumpiness, SpecularParams, SpecularStrength, SpecularPower,
+                         ReflectionStrength, FresnelExp, FresnelMin, FuzzySpecColor, SubColor, SurfaceColor, Rolloff,
+                         VelvetStrength, OverlayBumpiness, OverlayStrength, GlassParams, Curvature, GlassStrength,
+                         UpsideDown, ParallaxBias, ParallaxBiasX, ParallaxBiasY, Time, ScrollSpeedSet1, ScrollSpeedSet2,
+                         ScrollSpeedSet2U, ScrollSpeedSet2V, ScrollSpeedSet3, ScrollSpeedSet3U, ScrollSpeedSet3V,
+                         OffsetSet1, OffsetSet1U, OffsetSet1V, OffsetSet2, OffsetSet2U, OffsetSet2V, DistortionStrength,
+                         MipBias, LightMapStrength, LightMapPower, Saturation, OffsetSet3, OffsetSet3U, OffsetSet3V,
+                         Fat, RotationSet1, RotationSet2, RotationSet3, ScaleSet1, ScaleSet1U, ScaleSet1V, ScaleSet2,
+                         ScaleSet2U, ScaleSet2V, ScaleSet3, ScaleSet3U, ScaleSet3V, ZBias, InnerGrowAValue,
+                         InnerGrowAPower, InnerGrowAStrength, InnerGrowALimit, InnerGrowBValue, InnerGrowBPower,
+                         InnerGrowBStrength, InnerGrowBLimit, InnerGrowAColor, InnerGrowBColor]
 
 all_shader_uniforms = [*texture_nodes, *shader_uniforms_vp_fp]
 

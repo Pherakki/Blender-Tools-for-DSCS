@@ -13,7 +13,7 @@ class MaterialReader(BaseRW):
     Completion status
     ------
     (o) MaterialReader can successfully parse all meshes in geom files in DSDB archive within current constraints.
-    (x) MaterialReader cannot yet fully interpret all material data in geom files in DSDB archive.
+    (0) MaterialReader can fully interpret all material data in geom files in DSDB archive.
     (o) MaterialReader can write data to geom files.
 
     Current hypotheses and observations
@@ -24,51 +24,104 @@ class MaterialReader(BaseRW):
     3. '65280' == \x00\xff - looks like a stop code to me
     4. Material data may related to that in the shader files --- they are plaintext, so fully readable..! 1398 of them. See if you can match this up with any material data...
     """
+
     shader_uniform_from_ids = {
                         #        Name              numfloats
-                        50: 'DiffuseTextureID',      # 0,  # Texture ID
-                        51: 'DiffuseColour',         # 4,  # FP uniform, half-floats?
-                        53: 'NormalMapTextureID',    # 0,  # Texture ID
-                        54: 'Bumpiness',             # 1,  # FP Uniform, half-float?
-                        56: 'SpecularStrength',      # 1,  # FP Uniform, half-float?
-                        57: 'SpecularPower',         # 1,  # FP Uniform, half-float?
-                        58: 'CubeMapTextureID',      # 0,  # Texture ID
-                        59: 'ReflectionStrength',    # 1,  # FP Uniform, half-float? Works with cube map
-                        60: 'FresnelExp',            # 1,  # FP Uniform, half-float?  ### COULD BE MIXED UP WTH BELOW ####
-                        61: 'FresnelMin',            # 1,  # FP Uniform, half-float?
-                        62: 'FuzzySpecColor',        # 3,  # FP uniform Only appears in chr435, chr912  ### COULD BE MIXED UP WTH TWO BELOW ####
-                        63: 'SubColor',              # 3,  # FP uniform Only appears in chr435, chr912
-                        64: 'SurfaceColor',          # 3,  # FP uniform Only appears in chr435, chr912
-                        65: 'Rolloff',               # 1,  # FP uniform Only appears in chr435, chr912   ### COULD BE MIXED UP WTH BELOW ####
-                        66: 'VelvetStrength',        # 1,  # FP uniform Only appears in chr435, chr912
-                        67: 'UnknownTextureSlot1',   # 0,  # Texture ID
-                        68: 'OverlayTextureID',      # 0,  # Texture ID Always appears with 71.
-                        69: 'UnknownTextureSlot2',   # 0,  # Texture ID Overlay normal texture ID? # only appears in d13001f.geom, d13002f.geom, d13003f.geom, d13051b.geom, d13090f.geom, d15008f.geom, d15115f.geom
-                        70: 'OverlayBumpiness',      # 1,  # FP Uniform, half-float?
-                        71: 'OverlayStrength',       # 1,  # FP Uniform, half-float? Blend ratio of 1st and 2nd texture
-                        72: 'ToonTextureID',         # 0,  # Texture UD
-                        75: 'Curvature',             # 1,  # FP uniform d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom  ### COULD BE MIXED UP WTH TWO BELOW ####
-                        76: 'GlassStrength',         # 1,  # FP uniform d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-                        77: 'UpsideDown',            # 1,  # FP uniform d12301f.geom, d12302f.geom, d12303f.geom, d12351b.geom, d15105f.geom, d15125f.geom, t2405f.geom
-                        79: 'ParallaxBiasX',         # 1,  # FP uniform d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom  ### COULD BE MIXED UP WTH BELOW ####
-                        80: 'ParallaxBiasY',         # 1,  # FP uniform d13001f.geom, d13002f.geom, d13003f.geom, d15008f.geom, d15115f.geom
-                        84: 'Time',                  # 1,  # VP uniform
-                        85: 'ScrollSpeedSet1',       # 2,  # VP uniform
-                        88: 'ScrollSpeedSet2',       # 2,  # VP uniform
-                        91: 'ScrollSpeedSet3',       # 2,  # VP uniform
-                        94: 'OffsetSet1',            # 2,  # VP uniform
-                        97: 'OffsetSet2',            # 2,  # VP uniform # c.f. Meramon
-                        100: 'DistortionStrength',   # 1,  # FP uniform, half-float?
-                        113: 'LightMapStrength',     # 1,  # FP Uniform, half-float?  ### COULD BE MIXED UP WTH BELOW ####
-                        114: 'LightMapPower',        # 1,  # FP Uniform, half-float?
-                        116: 'OffsetSet3',           # 2,  # VP uniform
-                        119: 'Fat',                  # 1,  # VP uniform
-                        120: 'RotationSet1',         # 1,  # VP uniform # eff_bts_chr429_swarhead.geom, eff_bts_chr590_hdr.geom
-                        123: 'RotationSet2',         # 1,  # VP uniform # chr803.geom, chr805.geom, eff_bts_chr803_s02.geom
-                        129: 'ScaleSet1',            # 2,  # VP uniform # eff_bts_chr802_s01.geom
-                        141: 'ZBias',                # 1,  # VP uniform, half-float?
-                        142: 'UnknownTextureSlot3',  # 0   # Texture ID # eff_bts_chr032_c_revolution.geom
+                        0x32: 'ColorSampler',          # 0,  # Diffuse Map Texture ID
+                        0x33: 'DiffuseColor',          # 4,  # FP uniform
+                        0x34: 'DiffuseAlpha',          # 1
+                        0x35: 'NormalSampler',         # 0,  # Normal Map Texture ID
+                        0x36: 'Bumpiness',             # 1,  # FP Uniform
+                        0x37: 'SpecularParams',        # 2
+                        0x38: 'SpecularStrength',      # 1,  # FP Uniform
+                        0x39: 'SpecularPower',         # 1,  # FP Uniform
+                        0x3a: 'EnvSampler',            # 0,  # Cube Map Texture ID
+                        0x3b: 'ReflectionStrength',    # 1,  # FP Uniform
+                        0x3c: 'FresnelMin',            # 1,  # FP Uniform
+                        0x3d: 'FresnelExp',            # 1,  # FP Uniform
+                        0x3e: 'FuzzySpecColor',        # 3,  # FP uniform
+                        0x3f: 'SurfaceColor',          # 3,  # FP uniform
+                        0x40: 'SubColor',             # 3,  # FP uniform
+                        0x41: 'Rolloff',               # 1,  # FP uniform
+                        0x42: 'VelvetStrength',        # 1,  # FP uniform
+                        0x43: 'LightSampler',          # 0,  # Texture ID
+                        0x44: 'OverlayColorSampler',   # 0,  # Overlay Diffuse Texture ID
+                        0x45: 'OverlayNormalSampler',  # 0,  # Overlay normal texture ID?
+                        0x46: 'OverlayBumpiness',      # 1,  # FP Uniform
+                        0x47: 'OverlayStrength',       # 1,  # FP Uniform, Blend ratio of 1st and 2nd texture
+                        0x48: 'CLUTSampler',           # 0,  # Toon Texture UD
+                        # Missing
+                        0x4a: 'GlassParams',           # 3
+                        0x4b: 'GlassStrength',         # 1,  # FP uniform
+                        0x4c: 'Curvature',             # 1,  # FP uniform
+                        0x4d: 'UpsideDown',            # 1,  # FP uniform
+                        0x4e: 'ParallaxBias',          # 2
+                        0x4f: 'ParallaxBiasX',         # 1,  # FP uniform
+                        0x50: 'ParallaxBiasY',         # 1,  # FP uniform
+                        # Missing
+                        # Missing
+                        # Missing
+                        0x54: 'Time',                  # 1,  # VP uniform
+                        0x55: 'ScrollSpeedSet1',       # 2,  # VP uniform
+                        # Missing
+                        # Missing
+                        0x58: 'ScrollSpeedSet2',       # 2,  # VP uniform
+                        0x59: "ScrollSpeedSet2U",      # 1
+                        0x5a: "ScrollSpeedSet2V",      # 1
+                        0x5b: 'ScrollSpeedSet3',       # 2,  # VP uniform
+                        0x5c: "ScrollSpeedSet3U",      # 1
+                        0x5d: "ScrollSpeedSet3V",      # 1
+                        0x5e: 'OffsetSet1',            # 2,  # VP uniform
+                        0x5f: "OffsetSet1U",           # 1
+                        0x60: "OffsetSet1V",           # 1
+                        0x61: 'OffsetSet2',            # 2,  # VP uniform # c.f. Meramon
+                        0x62: "OffsetSet2U",           # 1
+                        0x63: "OffsetSet2V",           # 1
+                        0x64: 'DistortionStrength',    # 1,  # FP uniform
+                        # Several missing
+                        0x70: 'MipBias',               # 1,  # FP uniform
+                        0x71: 'LightMapPower',         # 1,  # FP uniform
+                        0x72: 'LightMapStrength',      # 1,  # FP uniform
+                        0x73: "Saturation",            # 1,  # FP uniform
+                        0x74: 'OffsetSet3',            # 2,  # VP uniform
+                        0x75: 'OffsetSet3U',           # 1,  # VP uniform
+                        0x76: 'OffsetSet3V',           # 1,  # VP uniform
+                        0x77: 'Fat',                   # 1,  # VP uniform
+                        0x78: 'RotationSet1',          # 1,  # VP uniform
+                        # Missing
+                        # Missing
+                        0x7b: 'RotationSet2',          # 1,  # VP uniform
+                        # Missing
+                        # Missing
+                        0x7e: 'RotationSet3',          # 1,  VP uniform
+                        # Missing
+                        # Missing
+                        0x81: 'ScaleSet1',             # 2,  # VP uniform
+                        0x82: 'ScaleSet1U',            # 1,  # VP uniform
+                        0x83: 'ScaleSet1V',            # 1,  # VP uniform
+                        0x84: 'ScaleSet2',             # 2,  # VP uniform
+                        0x85: 'ScaleSet2U',            # 1,  # VP uniform
+                        0x86: 'ScaleSet2V',            # 1,  # VP uniform
+                        0x87: 'ScaleSet3',             # 2,  # VP uniform
+                        0x88: 'ScaleSet3U',            # 1,  # VP uniform
+                        0x89: 'ScaleSet3V',            # 1,  # VP uniform
+                        0x8d: 'ZBias',                 # 1,  # VP uniform
+                        0x8e: 'EnvsSampler',           # 0   # Texture ID
+                        0x8f: 'InnerGrowAValue',       # 3,  # FP uniform
+                        0x90: 'InnerGrowAPower',       # 1,  # FP uniform
+                        0x91: 'InnerGrowAStrength',    # 1,  # FP uniform
+                        0x92: 'InnerGrowALimit',       # 1,  # FP uniform
+                        0x93: 'GlowACLUTSampler',      # 0, # Texture ID
+                        0x94: 'InnerGrowBValue',       # 3,  # FP uniform
+                        0x95: 'InnerGrowBPower',       # 1,  # FP uniform
+                        0x96: 'InnerGrowBStrength',    # 1,  # FP uniform
+                        0x97: 'InnerGrowBLimit',       # 1,  # FP uniform
+                        0x98: 'GlowBCLUTSampler',      # 0,  # Texture ID,
+                        # Missing
+                        0x9a: 'InnerGrowAColor',       # 1
+                        0x9b: 'InnerGrowBColor',       # 1
                       }
+
     shader_uniform_from_names = dict([reversed(i) for i in shader_uniform_from_ids.items()])
 
     def __init__(self, io_stream):
@@ -215,14 +268,15 @@ class MaterialReader(BaseRW):
         return out
 
 
-possibly_umc_types = {160: 'Ifff', #  516, float between 0 and 1
-                  161: 'IIII',  # (1, 0)
-                  162: 'IIII',  # (770, 0), (770, 1)
-                  163: 'IIII',  # (32779, 0) or (32774, 0)
-                  164: 'IIII',  # (1, 0)
-                  166: 'IIII',  # (0, 0)  Disables backface culling
-                  167: 'IIII',  # Always (516, 0)
-                  168: 'IIII',  # Always (0, 0)
-                  169: 'IIII',  # Always (0, 0)
-                  172: 'IIII',  # Always (0, 0)
+possibly_umc_types = {
+                  0xa0: 'Ifff', #  516, float between 0 and 1, 0, 0
+                  0xa1: 'IIII',  # (1, 0, 0, 0)
+                  0xa2: 'IIII',  # (770, 0, 0, 0), (770, 1, 0, 0)
+                  0xa3: 'IIII',  # (32779, 0, 0, 0) or (32774, 0, 0, 0)
+                  0xa4: 'IIII',  # (1, 0, 0, 0)
+                  0xa6: 'IIII',  # (0, 0, 0, 0)  Disables backface culling
+                  0xa7: 'IIII',  # Always (516, 0, 0, 0)
+                  0xa8: 'IIII',  # Always (0, 0, 0, 0)
+                  0xa9: 'IIII',  # Always (0, 0, 0, 0)
+                  0xac: 'IIII',  # Always (0, 0, 0, 0)
                   }
