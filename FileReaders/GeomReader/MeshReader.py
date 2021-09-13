@@ -317,14 +317,10 @@ class MeshReaderMegido(MeshReaderBase):
                 else:
                     interpreted_data = np.array(struct.unpack(dtype, raw_vertex_subdata[:used_data]))
 
-                print("New")
-                print(interpreted_data)
-
                 interpreted_vertex[vertex_component.vertex_type] = interpreted_data
 
                 unused_data = raw_vertex_subdata[used_data:]
                 if len(unused_data) > 0:
                     assert unused_data == self.pad_byte * len(unused_data), f"Presumed junk data is non-zero: {unused_data}"
-            print("Completed vertex:", interpreted_vertex)
 
             self.vertex_data[i] = interpreted_vertex
