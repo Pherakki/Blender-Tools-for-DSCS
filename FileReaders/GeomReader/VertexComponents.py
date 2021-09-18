@@ -34,6 +34,13 @@ class Normal(BaseVertexComponent):
     num_elements = 3
     vertex_dtype = 'e'
 
+
+class NormalF(BaseVertexComponent):
+    vertex_type = 'Normal'
+    num_elements = 3
+    vertex_dtype = 'f'
+
+
 class NormalH(BaseVertexComponent):
     vertex_type = 'Normal'
     num_elements = 3
@@ -206,7 +213,7 @@ all_dscs_vtx_components = [Position, PosWeight, Normal, UV, UV2, UV3, Colour, Ta
 vertex_components_from_names_dscs = {cls.__name__: cls for cls in all_dscs_vtx_components}
 vertex_components_from_defn_dscs = {(cls.vertex_type, cls.num_elements, cls.vertex_dtype): cls for cls in all_dscs_vtx_components}
 
-all_megido_vtx_components = [Position, NormalH, UVH, UV2H, UV3H, ByteColour, BinormalH,
+all_megido_vtx_components = [Position, NormalH, NormalF, UVH, UV2H, UV3H, ByteColour, BinormalH,
                              Indices1, Indices2, Indices3, Indices4,
                              ByteWeights1, ByteWeights2, ByteWeights3, ByteWeights4]
 
