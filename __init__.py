@@ -34,7 +34,7 @@ class MVExportSubmenu(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
         layout.operator(ExportDSCS.bl_idname, text="DSCS Model (.name)")
-        layout.operator(ExportMegido.bl_idname, text="Megido 72 Model (.name)")
+        # layout.operator(ExportMegido.bl_idname, text="Megido 72 Model (.name)")
 
 
 def menu_func_import(self, context):
@@ -52,7 +52,7 @@ def register():
     bpy.utils.register_class(MVImportSubmenu)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.utils.register_class(ExportDSCS)
-    bpy.utils.register_class(ExportMegido)
+    # bpy.utils.register_class(ExportMegido)
     bpy.utils.register_class(MVExportSubmenu)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
@@ -63,7 +63,7 @@ def unregister():
     bpy.utils.unregister_class(MVImportSubmenu)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     bpy.utils.unregister_class(ExportDSCS)
-    bpy.utils.unregister_class(ExportMegido)
+    # bpy.utils.unregister_class(ExportMegido)
     bpy.utils.unregister_class(MVExportSubmenu)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
