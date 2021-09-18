@@ -33,7 +33,14 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     if import_anims:
         for afile in os.listdir(directory):
             afilepath = os.path.join(directory, afile)
-            if afile[-4:] == 'anim' and afile[:len(filename)] == filename and afile[:-4] != filename:
+
+            # Some of the Megido files have a different animation name convention
+            if platform == 'Megido' and filename[-3:-1] == 's0':
+                matches_name_pattern = afile[:len(filename) - 3] == filename[:-3]
+            else:
+                matches_name_pattern = afile[:len(filename)] == filename
+
+            if afile[-4:] == 'anim' and matches_name_pattern and afile[:-4] != filename:
                 afile_name, afile_ext = os.path.splitext(afile)
                 print(afile)
                 imported_animdata[afile_name] = AnimInterface.from_file(afilepath, imported_skeldata.num_uv_channels)
