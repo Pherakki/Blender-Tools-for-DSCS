@@ -315,7 +315,6 @@ class MeshReaderMegido(MeshReaderBase):
                             bits = bytes_to_bits(byte)
                             raw_vertex_subdata = raw_vertex_subdata[:idx] + bits_to_bytes('000000' + bits[6:]) + raw_vertex_subdata[idx+1:]
 
-
                     elif vertex_component.vertex_dtype == 'B':  # Keep as int8
                         amplitude = (2 ** 8) - 1
                     else:
