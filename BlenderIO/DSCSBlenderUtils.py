@@ -1,6 +1,5 @@
 import bpy
 from ..Utilities.ActionDataRetrieval import get_action_data, get_bone_name_from_fcurve, get_fcurve_type
-from ..Utilities.ExportedAnimationReposingFunctions import shift_animation_by_transforms
 from ..Utilities.Matrices import generate_transform_matrix
 
 
