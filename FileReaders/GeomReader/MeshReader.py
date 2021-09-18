@@ -301,14 +301,22 @@ class MeshReaderMegido(MeshReaderBase):
                 used_data = vertex_component.num_elements * self.type_buffers[vertex_component.vertex_dtype]
 
                 dtype = f'{vertex_component.num_elements}{vertex_component.vertex_dtype}'
-
                 if not(vertex_component.vertex_dtype == 'B' and not vertex_component.flag) and vertex_component.vertex_dtype != 'f':
-                    if vertex_component.vertex_dtype == 'h' and vertex_component.flag: # Keep as int16
+                    if vertex_component.vertex_dtype == 'h' and vertex_component.flag:  # Keep as int16
                         amplitude = (2**16) / 2 - 1
-                    elif vertex_component.vertex_dtype == 'h' and not vertex_component.flag:  # Flip to uint16
-                        amplitude = (2 ** 16) - 1
+                    elif vertex_component.vertex_dtype == 'h' and not vertex_component.flag:  # Flip to uint16, UVs
+                        # This is *CLEARLY* not right, but gets the right results...
+
+                        amplitude = (2 ** 10) - 1
                         dtype = dtype.upper()
-                    elif vertex_component.vertex_dtype == 'B': # Keep as int8
+
+                        for idx in [1, 3]:
+                            byte = raw_vertex_subdata[idx:idx+1]
+                            bits = bytes_to_bits(byte)
+                            raw_vertex_subdata = raw_vertex_subdata[:idx] + bits_to_bytes('000000' + bits[6:]) + raw_vertex_subdata[idx+1:]
+
+
+                    elif vertex_component.vertex_dtype == 'B':  # Keep as int8
                         amplitude = (2 ** 8) - 1
                     else:
                         assert 0, "Unexpected integer-float."
@@ -325,3 +333,17 @@ class MeshReaderMegido(MeshReaderBase):
                     assert unused_data == self.pad_byte * len(unused_data), f"Presumed junk data is non-zero: {unused_data}"
 
             self.vertex_data[i] = interpreted_vertex
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
+def bytes_to_bits(bytelist):
+    return ("{:0" + str(len(bytelist) * 8) + "b}").format(int(bytelist.hex(), 16))
+
+
+def bits_to_bytes(bitstring):
+    return b''.join([struct.pack('B', (int(elem, 2))) for elem in chunks(bitstring, 8)])
