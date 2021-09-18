@@ -1,24 +1,3 @@
-def build_loops_and_verts(self, model_vertices, model_polygons):
-    # Currently unused because it doesn't distinguish overlapping polygons with the same vertices but different vertex orders
-    set_compliant_model_vertex_positions = [tuple(vert['Position']) for vert in model_vertices]
-    verts = set(set_compliant_model_vertex_positions)
-    verts = list(verts)
-
-    map_of_model_verts_to_verts = {i: verts.index(vert) for i, vert in
-                                   enumerate(set_compliant_model_vertex_positions)}
-
-    map_of_loops_to_model_vertices = {}
-    polys = []
-    for poly_idx, poly in enumerate(model_polygons):
-        poly_verts = []
-        for model_vertex_idx in poly.indices:
-            vert_idx = map_of_model_verts_to_verts[model_vertex_idx]
-            map_of_loops_to_model_vertices[(poly_idx, vert_idx)] = model_vertex_idx
-            poly_verts.append(vert_idx)
-        polys.append(poly_verts)
-
-    return verts, polys, map_of_loops_to_model_vertices, map_of_model_verts_to_verts
-
 
     # Merge this with import_skeleton
 def import_rest_pose_skeleton(parent_obj, armature_name, model_data):
