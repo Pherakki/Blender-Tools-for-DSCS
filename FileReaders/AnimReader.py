@@ -300,10 +300,10 @@ class AnimReader(BaseRW):
 
             rw_operator('bone_masks', 'b'*(self.num_bones))
             chunk_cleanup_operator(self.bytestream.tell(), 4)
-
         # Suuuper hacky check. There should be a way to do this without referring back to the current position..?
         if (self.bone_mask_bytes - (self.bytestream.tell() - tell)) > 0:
-            rw_operator('unknown_data_masks', 'b'*(num_to_read))
+            # NOT equal to 'num_to_read'
+            rw_operator('unknown_data_masks', 'b'*(self.bone_mask_bytes - (self.bytestream.tell() - tell)))
             chunk_cleanup_operator(self.bytestream.tell(), 4)
 
         if self.bone_mask_bytes != 0:
