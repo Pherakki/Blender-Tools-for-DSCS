@@ -33,7 +33,10 @@ class AnimInterface:
             instance.rotations[idx] = {}
             instance.locations[idx] = {}
             instance.scales[idx] = {}
-        total_uv_channels = readwriter.unknown_0x1C + readwriter.unknown_0x24
+        # User channel set up will be prettier when you can figure out how many user channels are supposed to exist...
+        total_uv_channels = max(max(readwriter.unknown_bone_idxs_4, default=0), max(readwriter.unknown_bone_idxs_8, default=0))
+        if len(readwriter.unknown_bone_idxs_4) or len(readwriter.unknown_bone_idxs_8):
+            total_uv_channels += 1
         for idx in range(total_uv_channels):
             instance.user_channels[idx] = {}
         # Get the bits that are constant throughout the animation
@@ -55,6 +58,7 @@ class AnimInterface:
                 instance.locations[bone_idx][cumulative_frames] = value
             for bone_idx, value in zip(readwriter.animated_scales_bone_idxs, substructure.frame_0_scales):
                 instance.scales[bone_idx][cumulative_frames] = value
+
             for channel_idx, value in zip(readwriter.unknown_bone_idxs_8, substructure.unknown_data_4):
                 instance.user_channels[channel_idx][cumulative_frames] = value
 
