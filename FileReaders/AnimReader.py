@@ -282,18 +282,14 @@ class AnimReader(BaseRW):
         Same for whatever goes in unknown_data_7b - that other set of indices that are unknown
         """
         self.assert_file_pointer_now_at(self.setup_and_static_data_size)
-        num_to_read = max([self.num_uv_channels, self.max_val_1, self.max_val_2])
         tell = self.bytestream.tell()
         if self.bone_mask_bytes != 0:
-            self.header = list(self.header)
-            self.header.insert(20, self.bytestream.tell())
-
             rw_operator('bone_masks', 'b'*(self.num_bones))
             chunk_cleanup_operator(self.bytestream.tell(), 4)
-        # Suuuper hacky check. There should be a way to do this without referring back to the current position..?
-        if (self.bone_mask_bytes - (self.bytestream.tell() - tell)) > 0:
-            # NOT equal to 'num_to_read'
-            rw_operator('unknown_data_masks', 'b'*(self.bone_mask_bytes - (self.bytestream.tell() - tell)))
+
+        # This check feels dirty, but... welp, it works
+        if self.bone_mask_bytes > (self.bytestream.tell() - tell):
+            rw_operator('shader_uniform_channel_masks', 'b'*self.num_uv_channels)
             chunk_cleanup_operator(self.bytestream.tell(), 4)
 
         if self.bone_mask_bytes != 0:
