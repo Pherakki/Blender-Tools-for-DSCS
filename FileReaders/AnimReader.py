@@ -210,11 +210,8 @@ class AnimReader(BaseRW):
         chunk_cleanup_operator(self.static_pose_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('static_pose_scales_bone_idxs', self.static_pose_bone_scales_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.static_pose_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-
-        # Cleanup value is max element
-        maxval_op("max_val_1", "unknown_0x1C")
-        #chunk_cleanup_operator(self.unknown_0x1C * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_uv_channels))
         rw_operator('static_pose_shader_uniform_channels_idxs', self.static_pose_shader_uniform_channels_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.static_pose_shader_uniform_channels_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_uv_channels))
 
         rw_operator('animated_rotations_bone_idxs', self.animated_bone_rotations_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.animated_bone_rotations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
@@ -222,10 +219,8 @@ class AnimReader(BaseRW):
         chunk_cleanup_operator(self.animated_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('animated_scales_bone_idxs', self.animated_bone_scales_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.animated_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-
-        maxval_op("max_val_2", "unknown_0x24")
-        # chunk_cleanup_operator(self.unknown_0x24*2, 8, stepsize=2, bytevalue=struct.pack('H', summed_uv_parts))
         rw_operator('animated_shader_uniform_channels_idxs', self.animated_shader_uniform_channels_count * 'H', force_1d=True)
+        chunk_cleanup_operator(self.animated_shader_uniform_channels_count*2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_uv_channels))
 
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
