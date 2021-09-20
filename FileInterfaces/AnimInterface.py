@@ -123,7 +123,11 @@ class AnimInterface:
                 values = itertools.islice(user_channels, len(frames))  # Pop the next num_frames user channel data
                 for frame, value in zip(frames, values):
                     instance.user_channels[channel_idx][frame] = value
-            # assert len(list(masks)) == 0
+
+            # We should now have consumed all the keyframe bitvectors, so let's just check that is the case...
+            # If any masks are left over, they should just be padding bits required to fill their containing byte
+            for mask in masks:
+                assert all([item == '0' for item in mask]), f"Leftover keyframes bitvector was not padding: {mask}."
 
         # Recover quaternion signs lost during compression
         for bone_idx, rotations in instance.rotations.items():
