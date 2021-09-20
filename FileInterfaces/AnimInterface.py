@@ -34,8 +34,8 @@ class AnimInterface:
             instance.locations[idx] = {}
             instance.scales[idx] = {}
         # User channel set up will be prettier when you can figure out how many user channels are supposed to exist...
-        total_uv_channels = max(max(readwriter.unknown_bone_idxs_4, default=0), max(readwriter.unknown_bone_idxs_8, default=0))
-        if len(readwriter.unknown_bone_idxs_4) or len(readwriter.unknown_bone_idxs_8):
+        total_uv_channels = max(max(readwriter.static_pose_shader_uniform_channels_idxs, default=0), max(readwriter.animated_shader_uniform_channels_idxs, default=0))
+        if len(readwriter.static_pose_shader_uniform_channels_idxs) or len(readwriter.animated_shader_uniform_channels_idxs):
             total_uv_channels += 1
         for idx in range(total_uv_channels):
             instance.user_channels[idx] = {}
@@ -46,7 +46,7 @@ class AnimInterface:
             instance.locations[bone_idx][0] = location
         for bone_idx, scale in zip(readwriter.static_pose_scales_bone_idxs, readwriter.static_pose_bone_scales):
             instance.scales[bone_idx][0] = scale
-        for channel_idx, channel_data in zip(readwriter.unknown_bone_idxs_4, readwriter.unknown_data_4):
+        for channel_idx, channel_data in zip(readwriter.static_pose_shader_uniform_channels_idxs, readwriter.static_pose_shader_uniform_channels):
             instance.user_channels[channel_idx][0] = channel_data
 
         # Now add in the rotations, locations, and scales that change throughout the animation
@@ -59,7 +59,7 @@ class AnimInterface:
             for bone_idx, value in zip(readwriter.animated_scales_bone_idxs, substructure.frame_0_scales):
                 instance.scales[bone_idx][cumulative_frames] = value
 
-            for channel_idx, value in zip(readwriter.unknown_bone_idxs_8, substructure.unknown_data_4):
+            for channel_idx, value in zip(readwriter.animated_shader_uniform_channels_idxs, substructure.frame_0_shader_uniform_values):
                 instance.user_channels[channel_idx][cumulative_frames] = value
 
             # The keyframe rotations, locations, etc. for all bones are all concatenated together into one big list
@@ -78,7 +78,7 @@ class AnimInterface:
             rotations = iter(substructure.keyframed_rotations)
             locations = iter(substructure.keyframed_locations)
             scales = iter(substructure.keyframed_scales)
-            user_channels = iter(substructure.unknown_data_9)
+            user_channels = iter(substructure.keyframed_shader_uniform_values)
 
             # The benefit of doing this is that generators behave like a Queue. We can pop the next element off these
             # generators and never have to worry about keeping track of the state of each generator, because the
@@ -117,7 +117,7 @@ class AnimInterface:
                 values = itertools.islice(scales, len(frames))  # Pop the next num_frames scales
                 for frame, value in zip(frames, values):
                     instance.scales[bone_idx][frame] = value
-            for channel_idx, mask in zip(readwriter.unknown_bone_idxs_8, masks):
+            for channel_idx, mask in zip(readwriter.animated_shader_uniform_channels_idxs, masks):
                 frames = [j+cumulative_frames+1 for j, elem in enumerate(mask) if elem == '1']
                 values = itertools.islice(user_channels, len(frames))  # Pop the next num_frames user channel data
                 for frame, value in zip(frames, values):
@@ -183,11 +183,11 @@ class AnimInterface:
             readwriter.static_pose_bone_rotations_count = len(static_rots)
             readwriter.static_pose_bone_locations_count = len(static_locs)
             readwriter.static_pose_bone_scales_count = len(static_scls)
-            readwriter.unknown_0x1C = len(static_uvcs)
+            readwriter.static_pose_shader_uniform_channels_count = len(static_uvcs)
             readwriter.animated_bone_rotations_count = len(anim_rots)
             readwriter.animated_bone_locations_count = len(anim_locs)
             readwriter.animated_bone_scales_count = len(anim_scls)
-            readwriter.unknown_0x24 = len(anim_uvcs)
+            readwriter.animated_shader_uniform_channels_count = len(anim_uvcs)
             readwriter.padding_0x26 = 0
             readwriter.bone_mask_bytes = num_bones if len(blend_bones) else 0
 
@@ -214,21 +214,21 @@ class AnimInterface:
             readwriter.static_pose_rotations_bone_idxs = list(static_rots.keys())
             readwriter.static_pose_locations_bone_idxs = list(static_locs.keys())
             readwriter.static_pose_scales_bone_idxs = list(static_scls.keys())
-            readwriter.unknown_bone_idxs_4 = list(static_uvcs.keys())
+            readwriter.static_pose_shader_uniform_channels_idxs = list(static_uvcs.keys())
             readwriter.animated_rotations_bone_idxs = list(anim_rots.keys())
             readwriter.animated_locations_bone_idxs = list(anim_locs.keys())
             readwriter.animated_scales_bone_idxs = list(anim_scls.keys())
-            readwriter.unknown_bone_idxs_8 = list(anim_uvcs.keys())
+            readwriter.animated_shader_uniform_channels_idxs = list(anim_uvcs.keys())
 
             # Update the virtual pointer for section 1
             virtual_pointer += roundup(readwriter.static_pose_bone_rotations_count, 8)*2
             virtual_pointer += roundup(readwriter.static_pose_bone_locations_count, 4)*2
             virtual_pointer += roundup(readwriter.static_pose_bone_scales_count, 4)*2
-            virtual_pointer += roundup(readwriter.unknown_0x1C, 4)*2
+            virtual_pointer += roundup(readwriter.static_pose_shader_uniform_channels_count, 4) * 2
             virtual_pointer += roundup(readwriter.animated_bone_rotations_count, 4)*2
             virtual_pointer += roundup(readwriter.animated_bone_locations_count, 4)*2
             virtual_pointer += roundup(readwriter.animated_bone_scales_count, 4)*2
-            virtual_pointer += roundup(readwriter.unknown_0x24, 4)*2
+            virtual_pointer += roundup(readwriter.animated_shader_uniform_channels_count, 4) * 2
 
             virtual_pointer = roundup(virtual_pointer, 16)
 
@@ -236,7 +236,7 @@ class AnimInterface:
             readwriter.static_pose_bone_rotations = list(static_rots.values())
             readwriter.static_pose_bone_locations = list(static_locs.values())
             readwriter.static_pose_bone_scales = list(static_scls.values())
-            readwriter.unknown_data_4 = list(static_uvcs.values())
+            readwriter.static_pose_shader_uniform_channels = list(static_uvcs.values())
 
             # Update the virtual pointer and set pointers
             readwriter.rel_ptr_static_pose_bone_rotations += virtual_pointer
@@ -252,7 +252,7 @@ class AnimInterface:
             # No rounding for this section
 
             readwriter.rel_ptr_static_unknown_4 += virtual_pointer
-            virtual_pointer += len(readwriter.unknown_data_4)*4
+            virtual_pointer += len(readwriter.static_pose_shader_uniform_channels) * 4
             virtual_pointer = roundup(virtual_pointer, 16)
 
             # Now for the really tough bit
@@ -289,7 +289,7 @@ class AnimInterface:
                     bone_mask[bone_idx] = 0
                 readwriter.bone_masks = bone_mask
                 virtual_pointer = roundup(virtual_pointer, 4)
-                readwriter.unknown_data_masks = []  # Fix?
+                readwriter.shader_uniform_channel_masks = []  # Fix?
                 readwriter.bone_mask_bytes = n_mask_entries
 
                 virtual_pointer = roundup(virtual_pointer, 16)
@@ -308,22 +308,22 @@ class AnimInterface:
                 kf_chunk.frame_0_rotations_bytecount = chunk.initial_rotation_bytes
                 kf_chunk.frame_0_locations_bytecount = chunk.initial_location_bytes
                 kf_chunk.frame_0_scales_bytecount = chunk.initial_scale_bytes
-                kf_chunk.unknown_0x06 = chunk.initial_uvc_bytes
+                kf_chunk.frame_0_shader_uniform_channels_bytecount = chunk.initial_uvc_bytes
                 kf_chunk.keyframed_rotations_bytecount = chunk.later_rotation_bytes
                 kf_chunk.keyframed_locations_bytecount = chunk.later_location_bytes
                 kf_chunk.keyframed_scales_bytecount = chunk.later_scale_bytes
-                kf_chunk.unknown_0x0E = chunk.later_uvc_bytes
+                kf_chunk.keyframed_shader_uniform_channels_bytecount = chunk.later_uvc_bytes
 
                 # Data holders
                 kf_chunk.frame_0_rotations = chunk.initial_rotations
                 kf_chunk.frame_0_locations = chunk.initial_locations
                 kf_chunk.frame_0_scales = chunk.initial_scales
-                kf_chunk.unknown_data_4 = chunk.initial_uvcs
+                kf_chunk.frame_0_shader_uniform_values = chunk.initial_uvcs
                 kf_chunk.keyframes_in_use = chunk.total_bitvector
                 kf_chunk.keyframed_rotations = flatten_list(chunk.later_rotations)
                 kf_chunk.keyframed_locations = flatten_list(chunk.later_locations)
                 kf_chunk.keyframed_scales = flatten_list(chunk.later_scales)
-                kf_chunk.unknown_data_9 = flatten_list(chunk.later_uvcs)
+                kf_chunk.keyframed_shader_uniform_values = flatten_list(chunk.later_uvcs)
 
             # Just set the hack variables to 0
             readwriter.max_val_1 = 0

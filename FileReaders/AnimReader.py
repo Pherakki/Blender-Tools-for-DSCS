@@ -47,11 +47,11 @@ class AnimReader(BaseRW):
         self.static_pose_bone_rotations_count = None  # part 1 is 6x this count, counts bone idxs
         self.static_pose_bone_locations_count = None  # part 2 is 12x this count, counts bone idxs
         self.static_pose_bone_scales_count = None  # part 3 is 12x this count, counts bone idxs
-        self.unknown_0x1C = None  # part 4 is 4x this count, counts bone idxs
+        self.static_pose_shader_uniform_channels_count = None  # part 4 is 4x this count, counts shader uniform channels
         self.animated_bone_rotations_count = None  # part 1 of subreaders is 6x this count, counts bone idxs
         self.animated_bone_locations_count = None  # part 2 of subreaders is 12x this count,counts bone idxs
         self.animated_bone_scales_count = None  # part 3 of subreaders is 12x this count,counts bone idxs
-        self.unknown_0x24 = None  # part 4 of subreaders is 4x this count, counts bone idxs
+        self.animated_shader_uniform_channels_count = None  # part 4 of subreaders is 4x this count, counts shader uniform channels
         self.padding_0x26 = None  # Always 0
         self.bone_mask_bytes = None  # Specifies size of the bone mask
         self.abs_ptr_bone_mask = None
@@ -76,31 +76,28 @@ class AnimReader(BaseRW):
         self.abs_ptr_static_pose_bone_rotations = None
         self.abs_ptr_static_pose_bone_locations = None
         self.abs_ptr_static_pose_bone_scales = None
-        self.abs_ptr_static_unknown_4 = None
+        self.abs_ptr_static_shader_uniform_values = None
         self.num_uv_channels = num_uv_channels
 
         # Data holders
         self.static_pose_rotations_bone_idxs = None
         self.static_pose_locations_bone_idxs = None
         self.static_pose_scales_bone_idxs = None
-        self.unknown_bone_idxs_4 = None
+        self.static_pose_shader_uniform_channels_idxs = None
         self.animated_rotations_bone_idxs = None
         self.animated_locations_bone_idxs = None
         self.animated_scales_bone_idxs = None
-        self.unknown_bone_idxs_8 = None
+        self.animated_shader_uniform_channels_idxs = None
 
         self.static_pose_bone_rotations = None
         self.static_pose_bone_locations = None
         self.static_pose_bone_scales = None
-        self.unknown_data_4 = None
+        self.static_pose_shader_uniform_channels = None
         self.keyframe_chunks_ptrs = None
         self.keyframe_counts = None
         self.bone_masks = None
-        self.unknown_data_masks = None
+        self.shader_uniform_channel_masks = None
         self.keyframe_chunks = None
-        
-        self.max_val_1 = None
-        self.max_val_2 = None
 
     def read(self):
         self.read_write(self.read_buffer, self.read_raw, self.read_ascii, self.maxval_read, "read", self.prepare_read_op, self.cleanup_ragged_chunk_read)
@@ -117,7 +114,7 @@ class AnimReader(BaseRW):
         self.rw_initial_pose_bone_rotations(rw_operator_raw, chunk_cleanup_operator)
         self.rw_initial_pose_bone_locations(rw_operator, chunk_cleanup_operator)
         self.rw_initial_pose_bone_scales(rw_operator)
-        self.rw_unknown_4(rw_operator, chunk_cleanup_operator)
+        self.rw_initial_pose_shader_uniform_values(rw_operator, chunk_cleanup_operator)
         self.rw_keyframe_chunks_pointers(rw_operator)
         self.rw_keyframes_per_substructure(rw_operator, chunk_cleanup_operator)
         self.rw_blend_bones(rw_operator, chunk_cleanup_operator)
@@ -141,11 +138,11 @@ class AnimReader(BaseRW):
         rw_operator('static_pose_bone_rotations_count', 'H')
         rw_operator('static_pose_bone_locations_count', 'H')
         rw_operator('static_pose_bone_scales_count', 'H')
-        rw_operator('unknown_0x1C', 'H')
+        rw_operator('static_pose_shader_uniform_channels_count', 'H')
         rw_operator('animated_bone_rotations_count', 'H')
         rw_operator('animated_bone_locations_count', 'H')
         rw_operator('animated_bone_scales_count', 'H')
-        rw_operator('unknown_0x24', 'H')
+        rw_operator('animated_shader_uniform_channels_count', 'H')
         rw_operator('padding_0x26', 'H')
         self.assert_is_zero('padding_0x26')
 
@@ -171,7 +168,7 @@ class AnimReader(BaseRW):
         self.abs_ptr_static_pose_bone_scales = pos + self.rel_ptr_static_pose_bone_scales
         pos = self.bytestream.tell()
         rw_operator('rel_ptr_static_unknown_4', 'I')
-        self.abs_ptr_static_unknown_4 = pos + self.rel_ptr_static_unknown_4
+        self.abs_ptr_static_shader_uniform_values = pos + self.rel_ptr_static_unknown_4
 
         rw_operator('padding_0x48', 'I')
         rw_operator('padding_0x4C', 'I')
@@ -207,18 +204,17 @@ class AnimReader(BaseRW):
         # UnknownAnimSubstructure
         # Eighth is similar to #4 but in every UnknownAnimSubstructure
         """
-        summed_uv_parts = self.unknown_0x1C + self.unknown_0x24
         rw_operator('static_pose_rotations_bone_idxs', self.static_pose_bone_rotations_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.static_pose_bone_rotations_count * 2, 16, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('static_pose_locations_bone_idxs', self.static_pose_bone_locations_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.static_pose_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('static_pose_scales_bone_idxs', self.static_pose_bone_scales_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.static_pose_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('unknown_bone_idxs_4', self.unknown_0x1C*'H', force_1d=True)
 
         # Cleanup value is max element
         maxval_op("max_val_1", "unknown_0x1C")
         #chunk_cleanup_operator(self.unknown_0x1C * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_uv_channels))
+        rw_operator('static_pose_shader_uniform_channels_idxs', self.static_pose_shader_uniform_channels_count * 'H', force_1d=True)
 
         rw_operator('animated_rotations_bone_idxs', self.animated_bone_rotations_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.animated_bone_rotations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
@@ -226,10 +222,10 @@ class AnimReader(BaseRW):
         chunk_cleanup_operator(self.animated_bone_locations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('animated_scales_bone_idxs', self.animated_bone_scales_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.animated_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
-        rw_operator('unknown_bone_idxs_8', self.unknown_0x24*'H', force_1d=True)
 
         maxval_op("max_val_2", "unknown_0x24")
         # chunk_cleanup_operator(self.unknown_0x24*2, 8, stepsize=2, bytevalue=struct.pack('H', summed_uv_parts))
+        rw_operator('animated_shader_uniform_channels_idxs', self.animated_shader_uniform_channels_count * 'H', force_1d=True)
 
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
@@ -255,13 +251,12 @@ class AnimReader(BaseRW):
         self.assert_file_pointer_now_at(self.abs_ptr_static_pose_bone_scales)
         rw_operator('static_pose_bone_scales', 'fff' * self.static_pose_bone_scales_count)
 
-    def rw_unknown_4(self, rw_operator, chunk_cleanup_operator):
+    def rw_initial_pose_shader_uniform_values(self, rw_operator, chunk_cleanup_operator):
         """
         # 4 bytes assigned to each idx in unknown_bone_idxs_4
-        # Probably texture UVs
         """
-        self.assert_file_pointer_now_at(self.abs_ptr_static_unknown_4)
-        rw_operator('unknown_data_4', 'f'*self.unknown_0x1C, force_1d=True)
+        self.assert_file_pointer_now_at(self.abs_ptr_static_shader_uniform_values)
+        rw_operator('static_pose_shader_uniform_channels', 'f' * self.static_pose_shader_uniform_channels_count, force_1d=True)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
     def rw_keyframe_chunks_pointers(self, rw_operator):
@@ -313,7 +308,7 @@ class AnimReader(BaseRW):
         for i, (kfchunkreader, d5, d6) in enumerate(zip(self.keyframe_chunks, self.chunk_list(self.keyframe_chunks_ptrs, 3),
                                                         self.chunk_list(self.keyframe_counts, 2))):
             assert d5[0] == 0
-            scale_factor = (self.animated_bone_rotations_count + self.animated_bone_locations_count + self.animated_bone_scales_count + self.unknown_0x24) / 8
+            scale_factor = (self.animated_bone_rotations_count + self.animated_bone_locations_count + self.animated_bone_scales_count + self.animated_shader_uniform_channels_count) / 8
                         
             part5_size = int(np.ceil(scale_factor * d6[1]))
                   
@@ -350,22 +345,22 @@ class KeyframeChunk(BaseRW):
         self.frame_0_rotations_bytecount = None  # Size of part 1; divisible by 6
         self.frame_0_locations_bytecount = None  # Size of part 2; divisible by 12
         self.frame_0_scales_bytecount = None  # Size of part 3; divisible by 12 + enough bytes to make total so far divisible by 4
-        self.unknown_0x06 = None  # Size of part 4; divisible by 4
+        self.frame_0_shader_uniform_channels_bytecount = None  # Size of part 4; divisible by 4
         self.keyframed_rotations_bytecount = None  # Size of part 6; divisible by 6
         self.keyframed_locations_bytecount = None  # Size of part 7; divisible by 12
         self.keyframed_scales_bytecount = None  # Size of part 8; divisible by 12 + enough bytes to make total so far divisible by 4
-        self.unknown_0x0E = None  # Size of part 9; divisible by 4
+        self.keyframed_shader_uniform_channels_bytecount = None  # Size of part 9; divisible by 4
 
         # Data holders
         self.frame_0_rotations = None  # Contains 6 bytes per entry, dtype smallest-3 quaternion with uint15s. Count in parent header.
         self.frame_0_locations = None  # Contains 12 bytes per entry, dtype fff. Count in parent header.
         self.frame_0_scales = None  # Contains 12 bytes per entry, dtype fff. Count in parent header.
-        self.unknown_data_4 = None  # Contains 4 bytes per entry, dtype f(?). Count in parent header.
+        self.frame_0_shader_uniform_values = None  # Contains 4 bytes per entry, dtype f(?). Count in parent header.
         self.keyframes_in_use = None  # Bit-packed booleans stating which keyframes are in use
         self.keyframed_rotations = None  # Contains 6 bytes per entry, dtype smallest-3 quaternion with uint15s. Count in parent header.
         self.keyframed_locations = None  # Contains 12 bytes per entry, dtype fff. Count unknown.
         self.keyframed_scales = None  # Contains 12 bytes per entry, dtype fff. Count unknown.
-        self.unknown_data_9 = None  # Contains 4 bytes per entry, dtype f(?). Count unknown.
+        self.keyframed_shader_uniform_values = None  # Contains 4 bytes per entry, dtype f(?). Count unknown.
 
         # Utility variables
         self.bytes_read = 0
@@ -389,14 +384,14 @@ class KeyframeChunk(BaseRW):
         self.rw_frame_0_rotations(rw_operator_raw)
         self.rw_frame_0_locations(rw_operator)
         self.rw_frame_0_scales(rw_operator, cleanup_chunk_operator)
-        self.rw_part_4(rw_operator)
+        self.rw_frame_0_shader_uniform_values(rw_operator)
 
         self.rw_keyframes_in_use(rw_operator_raw)
 
         self.rw_keyframed_rotations(rw_operator_raw)
         self.rw_keyframed_locations(rw_operator)
         self.rw_keyframed_scales(rw_operator, cleanup_chunk_operator)
-        self.rw_part_9(rw_operator)
+        self.rw_keyframed_shader_uniform_values(rw_operator)
 
         cleanup_chunk_operator(self.bytestream.tell(), 16)
 
@@ -405,12 +400,12 @@ class KeyframeChunk(BaseRW):
         rw_operator('frame_0_rotations_bytecount', 'H')
         rw_operator('frame_0_locations_bytecount', 'H')
         rw_operator('frame_0_scales_bytecount', 'H')
-        rw_operator('unknown_0x06', 'H')
+        rw_operator('frame_0_shader_uniform_channels_bytecount', 'H')
 
         rw_operator('keyframed_rotations_bytecount', 'H')
         rw_operator('keyframed_locations_bytecount', 'H')
         rw_operator('keyframed_scales_bytecount', 'H')
-        rw_operator('unknown_0x0E', 'H')
+        rw_operator('keyframed_shader_uniform_channels_bytecount', 'H')
 
         self.bytes_read += 16
 
@@ -430,10 +425,10 @@ class KeyframeChunk(BaseRW):
 
         self.bytes_read += self.frame_0_scales_bytecount
 
-    def rw_part_4(self, rw_operator):
-        rw_operator('unknown_data_4', 'f'*(self.unknown_0x06 // 4), force_1d=True)
+    def rw_frame_0_shader_uniform_values(self, rw_operator):
+        rw_operator('frame_0_shader_uniform_values', 'f' * (self.frame_0_shader_uniform_channels_bytecount // 4), force_1d=True)
 
-        self.bytes_read += self.unknown_0x06
+        self.bytes_read += self.frame_0_shader_uniform_channels_bytecount
 
     def rw_keyframes_in_use(self, rw_operator_raw):
         """
@@ -460,9 +455,9 @@ class KeyframeChunk(BaseRW):
 
         self.bytes_read += self.keyframed_scales_bytecount
 
-    def rw_part_9(self, rw_operator):
-        rw_operator('unknown_data_9', 'f' * (self.unknown_0x0E//4), force_1d=True)
-        self.bytes_read += self.unknown_0x0E
+    def rw_keyframed_shader_uniform_values(self, rw_operator):
+        rw_operator('keyframed_shader_uniform_values', 'f' * (self.keyframed_shader_uniform_channels_bytecount // 4), force_1d=True)
+        self.bytes_read += self.keyframed_shader_uniform_channels_bytecount
 
     def interpret_keyframe_chunk(self):
         self.keyframes_in_use: bytes
@@ -471,7 +466,6 @@ class KeyframeChunk(BaseRW):
         self.frame_0_rotations = [deserialise_quaternion(elem) for elem in self.frame_0_rotations]
         self.frame_0_locations = self.chunk_list(self.frame_0_locations, 3)
         self.frame_0_scales = self.chunk_list(self.frame_0_scales, 3)
-
         if len(self.keyframes_in_use):
             self.keyframes_in_use = bytes_to_bits(self.keyframes_in_use)
             # Chop off padding bits
