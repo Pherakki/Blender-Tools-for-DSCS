@@ -71,6 +71,7 @@ class AnimInterface:
             # into generators using the built-in 'iter' function or the 'chunks' function defined at the bottom of the
             # file.
             if nframes != 0:
+                assert len(substructure.keyframes_in_use) % nframes == 0, f"{len(substructure.keyframes_in_use)} keyframes cannot be split into chunks of {nframes}."
                 masks = chunks(substructure.keyframes_in_use, nframes)
             else:
                 masks = []
