@@ -192,7 +192,7 @@ class AnimInterface:
             readwriter.animated_bone_scales_count = len(anim_scls)
             readwriter.animated_shader_uniform_channels_count = len(anim_uvcs)
             readwriter.padding_0x26 = 0
-            readwriter.bone_mask_bytes = num_bones if len(blend_bones) else 0
+            readwriter.bone_mask_bytes = None  # Calculate later
 
             # Fill in the pointers to the main data sections, just add in the offset for now
             # readwriter.abs_ptr_bone_mask is handled in the unused bone mask section
@@ -327,10 +327,6 @@ class AnimInterface:
                 kf_chunk.keyframed_locations = flatten_list(chunk.later_locations)
                 kf_chunk.keyframed_scales = flatten_list(chunk.later_scales)
                 kf_chunk.keyframed_shader_uniform_values = flatten_list(chunk.later_uvcs)
-
-            # Just set the hack variables to 0
-            readwriter.max_val_1 = 0
-            readwriter.max_val_2 = 0
 
             readwriter.write()
 
