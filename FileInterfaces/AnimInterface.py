@@ -135,7 +135,7 @@ class AnimInterface:
 
         return instance
 
-    def to_file(self, path, num_uv_channels, blend_bones=None):
+    def to_file(self, path, num_uv_channels, isBase):
         try:
             max_rotations = max([list(self.rotations[bone_idx].keys())[-1] if len(self.rotations[bone_idx].keys()) else 0 for bone_idx in self.rotations])
         except:
