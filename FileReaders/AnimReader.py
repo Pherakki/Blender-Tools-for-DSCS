@@ -282,13 +282,17 @@ class AnimReader(BaseRW):
         """
         self.assert_file_pointer_now_at(self.setup_and_static_data_size)
         tell = self.bytestream.tell()
-        there_are_shader_uniform_masks = 0 < (self.static_pose_shader_uniform_channels_count + self.animated_shader_uniform_channels_count) < self.num_uv_channels
+        there_are_shader_uniform_masks = (self.static_pose_shader_uniform_channels_count + self.animated_shader_uniform_channels_count) < self.num_uv_channels and self.num_uv_channels
         if self.bone_mask_bytes != 0:  # Equivalently, if any of the loc, rot, scl static + anim counts are < num_bones...
             rw_operator('bone_masks', 'b'*(self.num_bones), force_1d=True)
             chunk_cleanup_operator(self.bytestream.tell(), 4)
         # there_are_shader_uniform_masks = self.bone_mask_bytes > (self.bytestream.tell() - tell)
+        print("Shader masks", there_are_shader_uniform_masks)
+        print(self.static_pose_shader_uniform_channels_count, self.animated_shader_uniform_channels_count, self.num_uv_channels)
         if there_are_shader_uniform_masks:
+            print("Pre-read masks", self.shader_uniform_channel_masks)
             rw_operator('shader_uniform_channel_masks', 'b'*self.num_uv_channels, force_1d=True)
+            print("Post-read masks", self.shader_uniform_channel_masks)
             chunk_cleanup_operator(self.bytestream.tell(), 4)
 
         if self.bone_mask_bytes != 0:
