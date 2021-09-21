@@ -170,12 +170,10 @@ class AnimInterface:
             readwriter.always_16384 = 16384
 
             # Time to figure out how to organise the keyframes...
-            static_rots, anim_rots, blend_rots = split_keyframes_by_role(self.rotations)
-            static_locs, anim_locs, blend_locs = split_keyframes_by_role(self.locations)
-            static_scls, anim_scls, blend_scls = split_keyframes_by_role(self.scales)
-            static_uvcs, anim_uvcs, blend_uvcs = split_keyframes_by_role(self.user_channels)
-            if blend_bones is None:
-                blend_bones = blend_locs
+            static_rots, anim_rots, unused_rots = split_keyframes_by_role(self.rotations)
+            static_locs, anim_locs, unused_locs = split_keyframes_by_role(self.locations)
+            static_scls, anim_scls, unused_scls = split_keyframes_by_role(self.scales)
+            static_uvcs, anim_uvcs, unused_uvcs = split_keyframes_by_role(self.user_channels)
 
             # Sort the static bones into the correct order after adding malformed blend bones
             # Redundant?
@@ -197,7 +195,7 @@ class AnimInterface:
             readwriter.bone_mask_bytes = num_bones if len(blend_bones) else 0
 
             # Fill in the pointers to the main data sections, just add in the offset for now
-            # readwriter.abs_ptr_bone_mask is handled in the blend_bones section
+            # readwriter.abs_ptr_bone_mask is handled in the unused bone mask section
             readwriter.rel_ptr_keyframe_chunks_ptrs = - 0x30
             readwriter.rel_ptr_keyframe_chunks_counts = - 0x34
             readwriter.rel_ptr_static_pose_bone_rotations = - 0x38
@@ -281,7 +279,7 @@ class AnimInterface:
             virtual_pointer += 4 * len(chunk_holders)
             virtual_pointer = roundup(virtual_pointer, 16)
 
-            # Then blend bones
+            # Then register the unused bones
             readwriter.setup_and_static_data_size = virtual_pointer
             readwriter.abs_ptr_bone_mask = 0
             readwriter.bone_mask_bytes = 0
@@ -358,16 +356,16 @@ def chunks(lst, n):
 def split_keyframes_by_role(keyframe_set):
     statics = {}
     animated = {}
-    blend = []
+    unused = []
 
     for bone_idx, keyframes in keyframe_set.items():
         if len(keyframes) == 0:
-            blend.append(bone_idx)
+            unused.append(bone_idx)
         elif len(keyframes) == 1:
             statics[bone_idx] = list(keyframes.values())[0]
         else:
             animated[bone_idx] = keyframes
-    return statics, animated, blend
+    return statics, animated, unused
 
 
 def staticify_malformed_blend_bones(blend_rots, blend_locs, blend_scls):
