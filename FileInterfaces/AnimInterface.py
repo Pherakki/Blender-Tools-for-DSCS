@@ -175,6 +175,8 @@ class AnimInterface:
             static_scls, anim_scls, unused_scls = split_keyframes_by_role(self.scales)
             static_uvcs, anim_uvcs, unused_uvcs = split_keyframes_by_role(self.user_channels)
 
+            unused_bones = sorted(list(set(unused_rots).intersection(unused_locs).intersection(unused_scls)))
+
             # Sort the static bones into the correct order after adding malformed blend bones
             # Redundant?
             static_rots = {k: v for k, v in sorted(list(static_rots.items()), key=lambda x: x[0])}
@@ -283,19 +285,42 @@ class AnimInterface:
             readwriter.setup_and_static_data_size = virtual_pointer
             readwriter.abs_ptr_bone_mask = 0
             readwriter.bone_mask_bytes = 0
-            if len(blend_bones):
+            if isBase:
+                readwriter.bone_masks = None
+                readwriter.shader_uniform_channel_masks = None
+            elif not len(unused_bones) and not len(unused_uvcs):
+                readwriter.bone_masks = None
+                readwriter.shader_uniform_channel_masks = None
+            else:
+                # Mark the pointer...
                 readwriter.abs_ptr_bone_mask = virtual_pointer
+
+                # Now construct the unused bone mask
                 n_mask_entries = roundup(readwriter.num_bones, 4)
                 bone_mask = [-1 for _ in range(readwriter.num_bones)]
                 virtual_pointer += n_mask_entries
-                for bone_idx in blend_bones:
+                for bone_idx in unused_bones:
                     bone_mask[bone_idx] = 0
                 readwriter.bone_masks = bone_mask
                 virtual_pointer = roundup(virtual_pointer, 4)
-                readwriter.shader_uniform_channel_masks = []  # Fix?
-                readwriter.bone_mask_bytes = n_mask_entries
+                readwriter.bone_mask_bytes += n_mask_entries
 
+                # Now do the unused shader uniform mask
+                if len(unused_uvcs):
+                    n_shader_uniform_mask_entries = roundup(readwriter.num_uv_channels, 4)
+                    shader_uniform_mask = [-1 for _ in range(readwriter.num_uv_channels)]
+                    virtual_pointer += n_shader_uniform_mask_entries
+                    for shader_uniform_idx in unused_uvcs:
+                        shader_uniform_mask[shader_uniform_idx] = 0
+
+                    readwriter.shader_uniform_channel_masks = shader_uniform_mask
+                    virtual_pointer = roundup(virtual_pointer, 4)
+                    readwriter.bone_mask_bytes += n_shader_uniform_mask_entries
+
+                # Clean up the byte alignment
                 virtual_pointer = roundup(virtual_pointer, 16)
+                readwriter.bone_mask_bytes = roundup(readwriter.bone_mask_bytes, 16)
+
             # Finally, go back and do KF chunk pointers
             readwriter.keyframe_chunks_ptrs = []
             final_chunk_size = chunk_holders[-1].total_size
