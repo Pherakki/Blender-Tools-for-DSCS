@@ -309,7 +309,6 @@ class AnimInterface:
                     virtual_pointer += n_shader_uniform_mask_entries
                     for shader_uniform_idx in unused_uvcs:
                         shader_uniform_mask[shader_uniform_idx] = 0
-
                     readwriter.shader_uniform_channel_masks = shader_uniform_mask
                     virtual_pointer = roundup(virtual_pointer, 4)
                     readwriter.bone_mask_bytes += n_shader_uniform_mask_entries
