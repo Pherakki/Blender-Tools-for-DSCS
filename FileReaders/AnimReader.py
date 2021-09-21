@@ -278,22 +278,24 @@ class AnimReader(BaseRW):
 
     def rw_unused_channel_masks(self, rw_operator, chunk_cleanup_operator):
         """
-        Contains 0 or -1 for each bone: If 0, that bone isn't given any location data in the file
-        Same for whatever goes in unknown_data_7b - that other set of indices that are unknown
+        Contains 0 or -1 for each bone: If 0, that bone isn't given any animation data in the file
         """
         self.assert_file_pointer_now_at(self.setup_and_static_data_size)
         tell = self.bytestream.tell()
-        if self.bone_mask_bytes != 0:
-            rw_operator('bone_masks', 'b'*(self.num_bones))
+        there_are_shader_uniform_masks = 0 < (self.static_pose_shader_uniform_channels_count + self.animated_shader_uniform_channels_count) < self.num_uv_channels
+        if self.bone_mask_bytes != 0:  # Equivalently, if any of the loc, rot, scl static + anim counts are < num_bones...
+            rw_operator('bone_masks', 'b'*(self.num_bones), force_1d=True)
             chunk_cleanup_operator(self.bytestream.tell(), 4)
-
-        # This check feels dirty, but... welp, it works
-        if self.bone_mask_bytes > (self.bytestream.tell() - tell):
-            rw_operator('shader_uniform_channel_masks', 'b'*self.num_uv_channels)
+        # there_are_shader_uniform_masks = self.bone_mask_bytes > (self.bytestream.tell() - tell)
+        if there_are_shader_uniform_masks:
+            rw_operator('shader_uniform_channel_masks', 'b'*self.num_uv_channels, force_1d=True)
             chunk_cleanup_operator(self.bytestream.tell(), 4)
 
         if self.bone_mask_bytes != 0:
             chunk_cleanup_operator(self.bytestream.tell(), 16)
+
+        # Check that we've read everything we were supposed to and no more
+        self.assert_file_pointer_now_at(self.setup_and_static_data_size + self.bone_mask_bytes)
 
     def rw_keyframe_chunks(self, rw_method_name):
         for i, (kfchunkreader, d5, d6) in enumerate(zip(self.keyframe_chunks, self.chunk_list(self.keyframe_chunks_ptrs, 3),
@@ -468,7 +470,6 @@ class KeyframeChunk(BaseRW):
         self.keyframed_rotations = [deserialise_quaternion(elem) for elem in self.keyframed_rotations]
         self.keyframed_locations = self.chunk_list(self.keyframed_locations, 3)
         self.keyframed_scales = self.chunk_list(self.keyframed_scales, 3)
-        
 
     def reinterpret_keyframe_chunk(self):
         self.keyframes_in_use: str
