@@ -33,12 +33,9 @@ class AnimInterface:
             instance.rotations[idx] = {}
             instance.locations[idx] = {}
             instance.scales[idx] = {}
-        # User channel set up will be prettier when you can figure out how many user channels are supposed to exist...
-        total_uv_channels = max(max(readwriter.static_pose_shader_uniform_channels_idxs, default=0), max(readwriter.animated_shader_uniform_channels_idxs, default=0))
-        if len(readwriter.static_pose_shader_uniform_channels_idxs) or len(readwriter.animated_shader_uniform_channels_idxs):
-            total_uv_channels += 1
-        for idx in range(total_uv_channels):
+        for idx in range(num_uv_channels):
             instance.user_channels[idx] = {}
+
         # Get the bits that are constant throughout the animation
         for bone_idx, rotation in zip(readwriter.static_pose_rotations_bone_idxs, readwriter.static_pose_bone_rotations):
             instance.rotations[bone_idx][0] = rotation
