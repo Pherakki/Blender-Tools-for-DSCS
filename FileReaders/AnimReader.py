@@ -117,7 +117,7 @@ class AnimReader(BaseRW):
         self.rw_initial_pose_shader_uniform_values(rw_operator, chunk_cleanup_operator)
         self.rw_keyframe_chunks_pointers(rw_operator)
         self.rw_keyframes_per_substructure(rw_operator, chunk_cleanup_operator)
-        self.rw_blend_bones(rw_operator, chunk_cleanup_operator)
+        self.rw_unused_channel_masks(rw_operator, chunk_cleanup_operator)
         self.rw_keyframe_chunks(rw_method_name)
 
     def rw_header(self, rw_operator, rw_operator_ascii):
@@ -276,7 +276,7 @@ class AnimReader(BaseRW):
         rw_operator('keyframe_counts', 'HH' * self.num_keyframe_chunks)
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
-    def rw_blend_bones(self, rw_operator, chunk_cleanup_operator):
+    def rw_unused_channel_masks(self, rw_operator, chunk_cleanup_operator):
         """
         Contains 0 or -1 for each bone: If 0, that bone isn't given any location data in the file
         Same for whatever goes in unknown_data_7b - that other set of indices that are unknown
