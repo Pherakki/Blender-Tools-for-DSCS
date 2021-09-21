@@ -29,6 +29,7 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
     directory = os.path.join(*directory[:-1])
 
     # Always import the base anim, because it plays a special role in skeleton construction
+    # Also makes the pattern-matched anim load below simpler
     imported_animdata = {filename: AnimInterface.from_file(filepath + '.anim', imported_skeldata.num_uv_channels)}
     if import_anims:
         for afile in os.listdir(directory):
@@ -40,7 +41,9 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
             else:
                 matches_name_pattern = afile[:len(filename)] == filename
 
-            if afile[-4:] == 'anim' and matches_name_pattern and afile[:-4] != filename:
+            is_an_anim_file = afile[-4:] == 'anim'
+            is_a_base_animation = os.path.exists(afilepath[:-4] + "skel") and is_an_anim_file
+            if matches_name_pattern and not is_a_base_animation:
                 afile_name, afile_ext = os.path.splitext(afile)
                 print(afile)
                 imported_animdata[afile_name] = AnimInterface.from_file(afilepath, imported_skeldata.num_uv_channels)
