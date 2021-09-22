@@ -301,6 +301,10 @@ class AnimReader(BaseRW):
 
         self.keyframe_chunks_ptrs = self.chunk_list(self.keyframe_chunks_ptrs, 3)
         self.keyframe_counts = self.chunk_list(self.keyframe_counts, 2)
+        fix_integer_overflows_in_sorted_uint16s(self.keyframe_counts)
+        # In case there is a bug in here, hide it behind an if...
+        if self.keyframe_counts[-1][0] > 2**16 - 1:
+            self.total_frames = self.keyframe_counts[-1][0] + 1
 
     def reinterpret_animdata(self):
         self.static_pose_bone_rotations = [serialise_quaternion(elem) for elem in self.static_pose_bone_rotations]
@@ -309,7 +313,40 @@ class AnimReader(BaseRW):
         self.static_pose_bone_scales = self.flatten_list(self.static_pose_bone_scales)
 
         self.keyframe_chunks_ptrs = self.flatten_list(self.keyframe_chunks_ptrs)
+        # In case there is a bug in here, hide it behind an if...
+        if self.keyframe_counts[-1][0] > 2**16 - 1:
+            self.total_frames = self.keyframe_counts[-1][0] % (2**16) + 1
+        make_integer_overflows_for_sorted_uint16s(self.keyframe_counts)
         self.keyframe_counts = self.flatten_list(self.keyframe_counts)
+
+
+def fix_integer_overflows_in_sorted_uint16s(list_):
+    interval = 2**16
+    accumulator = 0
+    previous_frames = -1
+    for i, (cumulative_frames, _) in enumerate(list_):
+        accumulator += cumulative_frames < previous_frames
+        list_[i] = (cumulative_frames + interval*accumulator, _)
+        previous_frames = cumulative_frames
+
+
+def make_integer_overflows_for_sorted_uint16s(list_):
+    interval = 2**16
+    # To introduce integer overflows, we're gonna use modulo
+    # Modulo is expensive, so let's so a check first to figure out how many we actually need to modulo
+    division_idx = None
+    # First check if we can do an early exit, for the case where no overflows exist
+    if list_[-1][0] < interval:
+        return
+    # If there are overflows... let's figure out how many frames we don't have to spend expensive modulo ops on
+    for i, (cumulative_frames, _) in enumerate(list_):
+        if cumulative_frames > interval:
+            division_idx = i
+            break
+    # Now implement the overflow
+    if division_idx is not None:
+        for i, (cumulative_frames, _) in enumerate(list_[division_idx:]):
+            list_[i + division_idx] = (cumulative_frames % interval, _)
 
 
 class KeyframeChunk(BaseRW):
