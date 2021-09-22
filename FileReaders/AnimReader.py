@@ -100,17 +100,17 @@ class AnimReader(BaseRW):
         self.keyframe_chunks = None
 
     def read(self):
-        self.read_write(self.read_buffer, self.read_raw, self.read_ascii, self.maxval_read, "read", self.prepare_read_op, self.cleanup_ragged_chunk_read)
+        self.read_write(self.read_buffer, self.read_raw, self.read_ascii, "read", self.prepare_read_op, self.cleanup_ragged_chunk_read)
         self.interpret_animdata()
 
     def write(self):
         self.reinterpret_animdata()
-        self.read_write(self.write_buffer, self.write_raw, self.write_ascii, self.maxval_write, "write", lambda: None, self.cleanup_ragged_chunk_write)
+        self.read_write(self.write_buffer, self.write_raw, self.write_ascii, "write", lambda: None, self.cleanup_ragged_chunk_write)
 
-    def read_write(self, rw_operator, rw_operator_raw, rw_operator_ascii, maxval_op, rw_method_name, preparation_op, chunk_cleanup_operator):
+    def read_write(self, rw_operator, rw_operator_raw, rw_operator_ascii, rw_method_name, preparation_op, chunk_cleanup_operator):
         self.rw_header(rw_operator, rw_operator_ascii)
         preparation_op()
-        self.rw_bone_idx_lists(rw_operator, maxval_op, chunk_cleanup_operator)
+        self.rw_bone_idx_lists(rw_operator, chunk_cleanup_operator)
         self.rw_initial_pose_bone_rotations(rw_operator_raw, chunk_cleanup_operator)
         self.rw_initial_pose_bone_locations(rw_operator, chunk_cleanup_operator)
         self.rw_initial_pose_bone_scales(rw_operator)
@@ -177,25 +177,7 @@ class AnimReader(BaseRW):
         rw_operator('padding_0x58', 'I')
         rw_operator('padding_0x5C', 'I')
 
-    def maxval_read(self, val, key):
-        n2r = (8 - getattr(self, key)* 2 % 8) % 8
-        self.read_raw(val, n2r)
-
-        res_1 = struct.unpack('H' * (len(getattr(self, val)) // 2), getattr(self, val))
-        if len(res_1):
-            setattr(self, val, res_1[0])
-        else:
-            setattr(self, val, 0)
-
-    def maxval_write(self, val, key):
-        n2w = (8 - getattr(self, key) * 2 % 8) % 8
-        n2w //= 2
-        backup = getattr(self, val)
-        setattr(self, val, struct.pack('H'*n2w, *([backup]*n2w)))
-        self.write_raw(val, n2w*2)
-        setattr(self, val, backup)
-
-    def rw_bone_idx_lists(self, rw_operator, maxval_op, chunk_cleanup_operator):
+    def rw_bone_idx_lists(self, rw_operator, chunk_cleanup_operator):
         """
         # Eight lists of indices
         # First three are bone indices that correspond to entries in unknown_data_1-3
