@@ -280,12 +280,14 @@ class AnimReader(BaseRW):
     def rw_keyframe_chunks(self, rw_method_name):
         for i, (kfchunkreader, d5, d6) in enumerate(zip(self.keyframe_chunks, self.chunk_list(self.keyframe_chunks_ptrs, 3),
                                                         self.chunk_list(self.keyframe_counts, 2))):
-            assert d5[0] == 0
+            always_zero, chunk_length, chunk_pointer = d5
+            cumulative_frames, frames_in_chunk = d6
+            assert always_zero == 0
             scale_factor = (self.animated_bone_rotations_count + self.animated_bone_locations_count + self.animated_bone_scales_count + self.animated_shader_uniform_channels_count) / 8
-                        
-            part5_size = int(np.ceil(scale_factor * d6[1]))
+
+            part5_size = int(np.ceil(scale_factor * frames_in_chunk))
                   
-            kfchunkreader.initialise_variables(d5[-1], part5_size, d6[1])
+            kfchunkreader.initialise_variables(chunk_pointer, part5_size, frames_in_chunk)
             getattr(kfchunkreader, rw_method_name)()
 
     def prepare_read_op(self):
