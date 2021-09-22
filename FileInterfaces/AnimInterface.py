@@ -461,17 +461,14 @@ def adaptive_chunk_frames(rotation_frames, location_frames, scale_frames, uvc_fr
         bitvector_cost = roundup(bitvector_bitcost, 8) // 8
 
         total_chunk_cost = roundup(roundup(16 + first_frame_price + bitvector_cost + animation_cost, 4), 16)
-        if total_chunk_cost >= maximum_cost:
-            # animation_cost -= frame_costs[frame_idx]
-            # bitvector_bitcost -= bitvector_frame_cost
-            # bitvector_cost = roundup(bitvector_bitcost, 8) // 8
-            # total_chunk_cost = roundup(roundup(16 + first_frame_price + bitvector_cost + animation_cost, 4), 16)
 
+        exceeded_cost = total_chunk_cost >= maximum_cost
+        at_maximum_frames = frame_idx - cuts[-1] == 130  # Not sure if this limitation is necessary, implements 128 per chunk
+        if exceeded_cost or at_maximum_frames:
             assert frame_idx-1 != cuts[-1], "Frame {frame_idx} too expensive to convert to DSCS frame [requires {current_cost}/{maximum_cost} available bytes]. Reduce number of animated bones in this frame to export."
             cuts.append(frame_idx-1)
-            # Don't count this frame, since it will be replaced by the maximum
-            # cost as the new "frame 0" of the new chunk
-            # animation_cost = 0
+            # Don't count this frame, since it will be replaced by the maximum cost as the new "frame 0" of the new
+            # chunk
             bitvector_bitcost = 0
     cuts.append(num_frames)
 
