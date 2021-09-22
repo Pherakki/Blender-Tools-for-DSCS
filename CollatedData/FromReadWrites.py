@@ -42,8 +42,8 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
                 matches_name_pattern = afile[:len(filename)] == filename
 
             is_an_anim_file = afile[-4:] == 'anim'
-            is_a_base_animation = os.path.exists(afilepath[:-4] + "skel") and is_an_anim_file
-            if matches_name_pattern and not is_a_base_animation:
+            is_a_base_animation = os.path.exists(afilepath[:-4] + "skel")
+            if matches_name_pattern and not is_a_base_animation and is_an_anim_file:
                 afile_name, afile_ext = os.path.splitext(afile)
                 print(afile)
                 imported_animdata[afile_name] = AnimInterface.from_file(afilepath, imported_skeldata.num_uv_channels)
