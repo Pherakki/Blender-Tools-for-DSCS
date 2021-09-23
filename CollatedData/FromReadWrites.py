@@ -6,6 +6,8 @@ from .IntermediateFormat import IntermediateFormat
 from ..Utilities.Rotation import bone_matrix_from_rotation_location, quat_to_matrix, rotation_matrix_to_quat
 
 from ..Utilities.StringHashing import dscs_name_hash, int_to_BE_hex
+from ..Utilities.Exceptions import BadAnimationBoneCount, BadAnimationUVChannels
+
 
 import os
 import numpy as np
@@ -46,7 +48,12 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
             if matches_name_pattern and not is_a_base_animation and is_an_anim_file:
                 afile_name, afile_ext = os.path.splitext(afile)
                 print(afile)
-                imported_animdata[afile_name] = AnimInterface.from_file(afilepath, imported_skeldata.num_uv_channels)
+                try:
+                    imported_animdata[afile_name] = AnimInterface.from_file(afilepath, imported_skeldata)
+                except BadAnimationBoneCount:
+                    print("Encountered a conflicting bone count: probably not an animation for this skeleton.")
+                except BadAnimationUVChannels:
+                    print("Encountered a conflicting shader uniform channel count: probably not an animation for this skeleton.")
 
     images_directory = os.path.join(*os.path.split(filepath)[:-1], 'images')
     model_data = IntermediateFormat()
