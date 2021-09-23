@@ -68,8 +68,7 @@ class SkelInterface:
             readwriter.rel_ptr_bone_name_hashes = readwriter.rel_ptr_to_end_of_parent_bones_chunk + readwriter.num_bones * 4 - 4
             readwriter.unknown_rel_ptr_3 = readwriter.rel_ptr_bone_name_hashes + readwriter.num_uv_channels * 4 - 4
 
-            bytes_after_parent_bones_chunk = (readwriter.unknown_rel_ptr_3 + 40) - (
-                        readwriter.rel_ptr_to_end_of_parent_bones_chunk + 32) + len(readwriter.uv_channel_material_name_hashes)
+            bytes_after_parent_bones_chunk = 4*readwriter.num_bones + 8*readwriter.num_uv_channels
             bytes_after_parent_bones_chunk = roundup(bytes_after_parent_bones_chunk, 16)
 
             readwriter.total_bytes = readwriter.rel_ptr_to_end_of_parent_bones_chunk + bytes_after_parent_bones_chunk + 32
