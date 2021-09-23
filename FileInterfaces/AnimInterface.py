@@ -3,6 +3,7 @@ import numpy as np
 
 from ..FileReaders.AnimReader import AnimReader
 from ..Utilities.Interpolation import lerp, slerp
+from ..Utilities.Rounding import roundup
 
 
 class AnimInterface:
@@ -354,14 +355,6 @@ class AnimInterface:
 
 def flatten_list(lst):
     return [subitem for item in lst for subitem in item]
-
-
-def remaining_chunk_length(size, chunksize):
-    return (chunksize - (size % chunksize)) % chunksize
-
-
-def roundup(size, chunksize):
-    return size + remaining_chunk_length(size, chunksize)
 
 
 def chunks(lst, n):

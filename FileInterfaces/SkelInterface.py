@@ -1,6 +1,5 @@
 from ..FileReaders.SkelReader import SkelReader
-from ..Utilities.Rotation import rotation_matrix_to_quat
-import numpy as np
+from ..Utilities.Rounding import roundup
 
 
 class SkelInterface:
@@ -71,7 +70,7 @@ class SkelInterface:
 
             bytes_after_parent_bones_chunk = (readwriter.unknown_rel_ptr_3 + 40) - (
                         readwriter.rel_ptr_to_end_of_parent_bones_chunk + 32) + len(readwriter.uv_channel_material_name_hashes)
-            bytes_after_parent_bones_chunk += (16 - (bytes_after_parent_bones_chunk % 16))
+            bytes_after_parent_bones_chunk = roundup(bytes_after_parent_bones_chunk, 16)
 
             readwriter.total_bytes = readwriter.rel_ptr_to_end_of_parent_bones_chunk + bytes_after_parent_bones_chunk + 32
             readwriter.remaining_bytes_after_parent_bones_chunk = bytes_after_parent_bones_chunk
