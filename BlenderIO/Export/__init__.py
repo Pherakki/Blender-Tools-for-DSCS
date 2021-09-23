@@ -275,6 +275,7 @@ class ExportMediaVision(bpy.types.Operator):
                     else:
                         tex_idx = len(used_textures)
                         tex_names.append(texname)
+                        used_textures.append(node_tree.nodes[nm].image)
 
                     # Construct the additional, unknown data
                     extra_data = bmat.get(nm)
@@ -284,7 +285,6 @@ class ExportMediaVision(bpy.types.Operator):
                         extra_data = extra_data[1:]  # Chop off the texture idx
 
                     material.shader_uniforms[nm] = [tex_idx, *extra_data]
-                    used_textures.append(node_tree.nodes[nm].image)
 
             if 'CLUTSampler' not in node_names and 'ColorSampler' in node_names:
                 texname = 'placeholder_toon.img'
@@ -293,8 +293,8 @@ class ExportMediaVision(bpy.types.Operator):
                 else:
                     tex_idx = len(used_textures)
                     tex_names.append(texname)
+                    used_textures.append(DummyTexture(texname))
                 material.shader_uniforms['CLUTSampler'] = [tex_idx, 0, 0]
-                used_textures.append(DummyTexture(texname))
             if 'DiffuseColor' not in node_names:
                 material.shader_uniforms['DiffuseColor'] = [1., 1., 1., 1.]
 
@@ -503,6 +503,7 @@ class DummyTexture:
         self.name = name
         self.filepath = os.path.join(*((__file__.split(os.sep))[:-3]), 'Resources', name)
         self.filepath = normalise_abs_path(self.filepath)
+
 
 def get_all_nonempty_vertex_groups(mesh_obj):
     nonempty_vgs = set()
