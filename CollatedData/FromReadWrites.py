@@ -30,7 +30,7 @@ def generate_intermediate_format_from_files(filepath, platform, import_anims=Tru
 
     # Always import the base anim, because it plays a special role in skeleton construction
     # Also makes the pattern-matched anim load below simpler
-    imported_animdata = {filename: AnimInterface.from_file(filepath + '.anim', imported_skeldata.num_uv_channels)}
+    imported_animdata = {filename: AnimInterface.from_file(filepath + '.anim', imported_skeldata)}
     if import_anims:
         for afile in os.listdir(directory):
             afilepath = os.path.join(directory, afile)

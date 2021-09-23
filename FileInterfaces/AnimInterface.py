@@ -16,13 +16,11 @@ class AnimInterface:
         self.scales = {}
         self.user_channels = {}
 
-        self.num_uv_channels = None
-
     @classmethod
-    def from_file(cls, path, num_uv_channels):
+    def from_file(cls, path, sk):
         instance = cls()
         with open(path, 'rb') as F:
-            readwriter = AnimReader(F, num_uv_channels)
+            readwriter = AnimReader(F, sk)
             readwriter.read()
 
         # Only need to take the playback rate; duration can be calculated from this and the total number of frames
@@ -34,7 +32,7 @@ class AnimInterface:
             instance.rotations[idx] = {}
             instance.locations[idx] = {}
             instance.scales[idx] = {}
-        for idx in range(num_uv_channels):
+        for idx in range(sk.num_uv_channels):
             instance.user_channels[idx] = {}
 
         # Get the bits that are constant throughout the animation
@@ -133,7 +131,7 @@ class AnimInterface:
 
         return instance
 
-    def to_file(self, path, num_uv_channels, isBase):
+    def to_file(self, path, sk, isBase):
         try:
             max_rotations = max([list(self.rotations[bone_idx].keys())[-1] if len(self.rotations[bone_idx].keys()) else 0 for bone_idx in self.rotations])
         except:
@@ -156,7 +154,7 @@ class AnimInterface:
         num_bones = self.num_bones
 
         with open(path, 'wb') as F:
-            readwriter = AnimReader(F, num_uv_channels)
+            readwriter = AnimReader(F, sk)
             readwriter.filetype = '40AE'
             readwriter.animation_duration = (num_frames - 1)/self.playback_rate
             readwriter.playback_rate = self.playback_rate

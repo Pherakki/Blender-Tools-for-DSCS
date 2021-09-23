@@ -30,7 +30,7 @@ class AnimReader(BaseRW):
     1.  The fourth data type - other than rotations, locations, and bones - looks like it might be UV coord shifts
     """
 
-    def __init__(self, bytestream, num_uv_channels):
+    def __init__(self, bytestream, sk):
         super().__init__(bytestream)
 
         # Header variables
@@ -77,7 +77,7 @@ class AnimReader(BaseRW):
         self.abs_ptr_static_pose_bone_locations = None
         self.abs_ptr_static_pose_bone_scales = None
         self.abs_ptr_static_shader_uniform_values = None
-        self.num_uv_channels = num_uv_channels
+        self.num_uv_channels = sk.num_uv_channels
 
         # Data holders
         self.static_pose_rotations_bone_idxs = None
