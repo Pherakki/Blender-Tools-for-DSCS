@@ -263,14 +263,14 @@ class AnimReader(BaseRW):
         Contains 0 or -1 for each bone: If 0, that bone isn't given any animation data in the file
         """
         self.assert_file_pointer_now_at(self.setup_and_static_data_size)
-        there_are_shader_uniform_masks = (self.static_pose_shader_uniform_channels_count + self.animated_shader_uniform_channels_count) < self.num_uv_channels and self.num_uv_channels
-        if self.bone_mask_bytes != 0:  # Equivalently, if any of the loc, rot, scl static + anim counts are < num_bones...
+        there_are_bone_masks = self.bone_mask_bytes != 0
+        if there_are_bone_masks:  # Equivalently, if any of the loc, rot, scl static + anim counts are < num_bones...
             rw_operator('bone_masks', 'b'*(self.num_bones), force_1d=True)
             chunk_cleanup_operator(self.bytestream.tell(), 4)
-        if there_are_shader_uniform_masks:
+
             rw_operator('shader_uniform_channel_masks', 'b'*self.num_uv_channels, force_1d=True)
             chunk_cleanup_operator(self.bytestream.tell(), 4)
-
+            print(self.shader_uniform_channel_masks)
         if self.bone_mask_bytes != 0:
             chunk_cleanup_operator(self.bytestream.tell(), 16)
 
