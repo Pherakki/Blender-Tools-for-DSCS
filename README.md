@@ -67,7 +67,7 @@ Note: If you point the import function towards the unpacked game files, all the 
 2. Some exported animations may crash the game.
 
 ## Future Plans
-1. Finish the custom-channel animation feature.
+1. Find cause of occasional exported animation crash - may already be fixed?
 2. Readers for remaining filetypes: DETR, NAVI, NOTE, PHYS, SPRK
 3. [An external program that can assign shaders to models.](https://github.com/Pherakki/DSCSModelDataEditor) **Currently WIP** but under heavy development; the repository may not be kept up-to-date during this period.
 
