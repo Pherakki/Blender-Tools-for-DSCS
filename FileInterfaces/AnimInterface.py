@@ -281,10 +281,9 @@ class AnimInterface:
             readwriter.setup_and_static_data_size = virtual_pointer
             readwriter.abs_ptr_bone_mask = 0
             readwriter.bone_mask_bytes = 0
-            if isBase:
-                readwriter.bone_masks = None
-                readwriter.shader_uniform_channel_masks = None
-            elif not len(unused_bones) and not len(unused_uvcs):
+
+            # If it's a base animation, or there are no unused channels, no need for masks...
+            if isBase or (not len(unused_bones) and not len(unused_uvcs)):
                 readwriter.bone_masks = None
                 readwriter.shader_uniform_channel_masks = None
             else:
@@ -302,15 +301,14 @@ class AnimInterface:
                 readwriter.bone_mask_bytes += n_mask_entries
 
                 # Now do the unused shader uniform mask
-                if len(unused_uvcs):
-                    n_shader_uniform_mask_entries = roundup(readwriter.num_uv_channels, 4)
-                    shader_uniform_mask = [-1 for _ in range(readwriter.num_uv_channels)]
-                    virtual_pointer += n_shader_uniform_mask_entries
-                    for shader_uniform_idx in unused_uvcs:
-                        shader_uniform_mask[shader_uniform_idx] = 0
-                    readwriter.shader_uniform_channel_masks = shader_uniform_mask
-                    virtual_pointer = roundup(virtual_pointer, 4)
-                    readwriter.bone_mask_bytes += n_shader_uniform_mask_entries
+                n_shader_uniform_mask_entries = roundup(readwriter.num_uv_channels, 4)
+                shader_uniform_mask = [-1 for _ in range(readwriter.num_uv_channels)]
+                virtual_pointer += n_shader_uniform_mask_entries
+                for shader_uniform_idx in unused_uvcs:
+                    shader_uniform_mask[shader_uniform_idx] = 0
+                readwriter.shader_uniform_channel_masks = shader_uniform_mask
+                virtual_pointer = roundup(virtual_pointer, 4)
+                readwriter.bone_mask_bytes += n_shader_uniform_mask_entries
 
                 # Clean up the byte alignment
                 virtual_pointer = roundup(virtual_pointer, 16)
