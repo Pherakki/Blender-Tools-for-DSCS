@@ -2,6 +2,7 @@ import numpy as np
 import struct
 
 from .BaseRW import BaseRW
+from ..Utilities.Exceptions import BadAnimationBoneCount, BadAnimationUVChannels
 from ..Utilities.Rounding import roundup
 
 
@@ -79,6 +80,7 @@ class AnimReader(BaseRW):
         self.abs_ptr_static_pose_bone_scales = None
         self.abs_ptr_static_shader_uniform_values = None
         self.num_uv_channels = sk.num_uv_channels
+        self.sk_num_bones = sk.num_bones
 
         # Data holders
         self.static_pose_rotations_bone_idxs = None
@@ -135,6 +137,8 @@ class AnimReader(BaseRW):
         rw_operator('always_16384', 'H')  # Maybe this is the precision of the quaternions?
         self.assert_equal('always_16384', 16384)
         assert self.always_16384 == 16384, self.always_16384
+        if self.num_bones != self.sk_num_bones:
+            raise BadAnimationBoneCount("BadAnimationBoneCount")
 
         rw_operator('static_pose_bone_rotations_count', 'H')
         rw_operator('static_pose_bone_locations_count', 'H')
@@ -194,7 +198,10 @@ class AnimReader(BaseRW):
         rw_operator('static_pose_scales_bone_idxs', self.static_pose_bone_scales_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.static_pose_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('static_pose_shader_uniform_channels_idxs', self.static_pose_shader_uniform_channels_count * 'H', force_1d=True)
-        chunk_cleanup_operator(self.static_pose_shader_uniform_channels_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_uv_channels))
+        try:
+            chunk_cleanup_operator(self.static_pose_shader_uniform_channels_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_uv_channels))
+        except AssertionError as e:
+            raise BadAnimationUVChannels("BadAnimationUVChannels") from e
 
         rw_operator('animated_rotations_bone_idxs', self.animated_bone_rotations_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.animated_bone_rotations_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
@@ -203,7 +210,10 @@ class AnimReader(BaseRW):
         rw_operator('animated_scales_bone_idxs', self.animated_bone_scales_count * 'H', force_1d=True)
         chunk_cleanup_operator(self.animated_bone_scales_count * 2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_bones))
         rw_operator('animated_shader_uniform_channels_idxs', self.animated_shader_uniform_channels_count * 'H', force_1d=True)
-        chunk_cleanup_operator(self.animated_shader_uniform_channels_count*2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_uv_channels))
+        try:
+            chunk_cleanup_operator(self.animated_shader_uniform_channels_count*2, 8, stepsize=2, bytevalue=struct.pack('H', self.num_uv_channels))
+        except AssertionError as e:
+            raise BadAnimationUVChannels("BadAnimationUVChannels") from e
 
         chunk_cleanup_operator(self.bytestream.tell(), 16)
 
