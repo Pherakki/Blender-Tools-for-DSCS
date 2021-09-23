@@ -122,13 +122,13 @@ class SkelReader(BaseRW):
         rw_operator('padding_0x32', 'I')
         self.assert_is_zero("padding_0x32")
 
+        # Would be nice to refactor this to be in terms of the start of sections, but... it works...
         self.abs_ptr_bone_hierarchy_data = upcd_pos + self.rel_ptr_to_end_of_bone_hierarchy_data - (self.num_bone_hierarchy_data_lines * 16)
         self.abs_ptr_bone_defs = bonedefs_pos + self.rel_ptr_to_end_of_bone_defs - (self.num_bones * 12 * 4)
         self.abs_ptr_parent_bones = pcp_pos + self.rel_ptr_to_end_of_parent_bones - self.num_bones * 2
         self.abs_ptr_end_of_parent_bones_chunk = pb_chunk_ptr_pos + self.rel_ptr_to_end_of_parent_bones_chunk
         self.abs_ptr_bone_name_hashes = unk2_pos + self.rel_ptr_bone_name_hashes - self.num_bones * 4
         self.abs_ptr_unknown_3 = unk3_pos + self.unknown_rel_ptr_3 - self.num_uv_channels * 4
-
         self.assert_equal("total_bytes", self.abs_ptr_bone_name_hashes + self.remaining_bytes_after_parent_bones_chunk)
 
     def rw_bone_hierarchy(self, rw_operator):
@@ -158,12 +158,9 @@ class SkelReader(BaseRW):
 
     def rw_unknown_data_3(self, rw_operator):
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_3)
-        #bytes_to_read = self.unknown_0x0C * 4
-        # Looks like uint32s, no idea what these are for though.
         rw_operator('unknown_data_3', 'I' * self.num_uv_channels, force_1d=True)
 
     def rw_uv_channel_material_name_hashes(self, rw_operator_raw):
-        # ???
         rw_operator_raw('uv_channel_material_name_hashes', 4 * self.num_uv_channels)
 
     def interpret_skel_data(self):
