@@ -2,6 +2,7 @@ import numpy as np
 import struct
 
 from .BaseRW import BaseRW
+from ..Utilities.Rounding import roundup
 
 
 class AnimReader(BaseRW):
