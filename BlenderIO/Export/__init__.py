@@ -255,6 +255,8 @@ class ExportMediaVision(bpy.types.Operator):
         tex_names = []
         glfunc_to_id = flip_dict(id_to_glfunc)
         for bmat in used_materials:
+            assigned_default_shader = bmat.get('shader_hex') is None
+
             material = model_data.new_material()
             node_tree = bmat.node_tree
             material.name = bmat.name
@@ -286,7 +288,7 @@ class ExportMediaVision(bpy.types.Operator):
 
                     material.shader_uniforms[nm] = [tex_idx, *extra_data]
 
-            if 'CLUTSampler' not in node_names and 'ColorSampler' in node_names:
+            if assigned_default_shader:
                 texname = 'placeholder_toon.img'
                 if texname in tex_names:
                     tex_idx = tex_names.index(texname)
