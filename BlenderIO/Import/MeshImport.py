@@ -6,8 +6,9 @@ import numpy as np
 
 def set_mesh_vertex_attribute_labels(vert, mesh):
     attributes = set(list(vert.keys()))
-    mesh['export_tangent'] = 'Tangent' in attributes
-    mesh['export_binormal'] = 'Binormal' in attributes
+    mesh['export_normals'] = 'Normal' in attributes
+    mesh['export_tangents'] = 'Tangent' in attributes
+    mesh['export_binormals'] = 'Binormal' in attributes
 
 
 def import_meshes(parent_obj, filename, model_data, armature_name):
@@ -81,7 +82,7 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         modifier.object = bpy.data.objects[armature_name]
 
         mesh.validate(verbose=True)
-        set_mesh_vertex_attribute_labels(IF_mesh.vertices[0], mesh)
+        set_mesh_vertex_attribute_labels(IF_mesh.vertices[0], mesh_object)
         mesh.update()
 
     # Top-level unknown data
