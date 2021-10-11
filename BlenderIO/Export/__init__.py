@@ -15,7 +15,7 @@ from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, gene
 from ...Utilities.ActionDataRetrieval import get_action_data
 from ...Utilities.StringHashing import dscs_name_hash
 from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_options, glBlendFunc_options, glBlendEquationSeparate_options, glCullFace_options, glComparison_options
-from ...Utilities.Lists import flip_dict
+from ...Utilities.Lists import flip_dict, natural_sort
 
 from ...Utilities.Paths import normalise_abs_path
 
@@ -120,7 +120,9 @@ class ExportMediaVision(bpy.types.Operator):
 
     def export_meshes(self, parent_obj, model_data, used_materials):
         mat_names = []
-        for i, mesh_obj in enumerate(parent_obj.children[0].children):
+        # Natural sort meshes by name so they're exported in the same order as the outliner
+        sorted_meshes = natural_sort(parent_obj.children[0].children, accessor=lambda x: x.name)
+        for i, mesh_obj in enumerate(sorted_meshes):
             md = model_data.new_mesh()
             mesh = mesh_obj.data
 
