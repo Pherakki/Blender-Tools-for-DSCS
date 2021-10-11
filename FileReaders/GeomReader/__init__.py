@@ -310,7 +310,7 @@ class LightSource(BaseRW):
 
     def rw_header(self, rw_operator):
         rw_operator('bone_name_hash', 'I')
-        rw_operator('mode', 'H')  # 0 = DIRECTIONAL, 2 = AMBIENT, 3 = POINT, 4 = UNKNOWN: Fog?
+        rw_operator('mode', 'H')  # 0 = POINT, 2 = AMBIENT, 3 = DIRECTIONAL, 4 = UNKNOWN: Fog?
         rw_operator('light_id', 'H')  # Runs from 0 - 4
 
         rw_operator('intensity', 'f')
