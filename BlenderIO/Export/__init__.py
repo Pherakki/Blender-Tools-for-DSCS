@@ -144,6 +144,7 @@ class ExportMediaVision(bpy.types.Operator):
             if matname not in mat_names:
                 md.material_id = len(used_materials)
                 used_materials.append(mesh.materials[0])
+                mat_names.append(matname)
             else:
                 md.material_id = mat_names.index(matname)
 
