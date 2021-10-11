@@ -181,44 +181,48 @@ class ExportMediaVision(bpy.types.Operator):
         n_uvs = len(map_ids)
         n_colours = len(colour_map)
 
+        use_normals = mesh_obj.get("export_normals", True)
         use_tangents = mesh_obj.get("export_tangents", False)
         use_binormals = mesh_obj.get("export_binormals", False)
         map_name = map_ids[0] if len(map_ids) else 'dummy'
-        can_export_tangents = has_uvs and mesh.uv_layers.get(map_name) is not None and (use_tangents or use_binormals)
+        can_export_tangents = has_uvs and mesh.uv_layers.get(map_name) is not None and (use_normals and (use_tangents or use_binormals))
 
         if can_export_tangents:
             mesh.calc_tangents(uvmap=map_name)
 
-        def generating_function_notangents(lidx):
-            normal = tuple(round_to_sigfigs(mesh.loops[lidx].normal, 6))
-            uvs = tuple([tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids])
-            colour = tuple([tuple((mesh.vertex_colors[map_id].data.values()[lidx].color)) for map_id in colour_map])
+        # Will be overwritten by dynamic generator, this is just here to shut the damn IDE up
+        # def generating_function():
+        #     return {}
 
-            return tuple([normal, uvs, colour])
-
-        def generating_function_tangents(lidx):
-            data = generating_function_notangents(lidx)
-            normal = data[0]
-            tangent = round_to_sigfigs(mesh.loops[lidx].tangent, 6)
-            sign = mesh.loops[lidx].bitangent_sign
-            binormal = tuple(round_to_sigfigs(sign * np.cross(normal, tangent), 6))
-            return tuple([*data, tuple([*tangent, sign]), binormal])
-
-        tangent_attribs = []
+        # Dynamically generate the function source code to avoid insane if/else or func call overhead
+        func_src =       """def dynamic_generating_function(lidx, mesh, map_ids, colour_map, round_to_sigfigs, cross):\n"""
+        func_src +=      """    results = [tuple(), tuple(), tuple(), tuple(), tuple()]\n"""
+        if use_normals:
+            func_src +=  """    results[0] = (tuple(round_to_sigfigs(mesh.loops[lidx].normal, 6)),)\n"""
+        func_src +=     f"""    results[1] = tuple([tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids])\n"""
+        func_src +=     f"""    results[2] = tuple([tuple(mesh.vertex_colors[map_id].data.values()[lidx].color) for map_id in colour_map])\n"""
         if can_export_tangents:
-            generating_function = generating_function_tangents
-            if use_tangents:
-                tangent_attribs.append("Tangent")
-                if use_binormals:
-                    tangent_attribs.append("Binormal")
-            elif use_binormals:
-                # Should never *want* to do this, but let's not introduce a bug...!
-                tangent_attribs = ["dummy", "Binormal"]
-        else:
-            generating_function = generating_function_notangents
+            func_src += f"""    sign = mesh.loops[lidx].bitangent_sign\n"""
+            func_src += f"""    results[3] = ((*round_to_sigfigs(mesh.loops[lidx].tangent, 6), sign),)\n"""
+        if use_binormals and can_export_tangents:
+            func_src += f"""    results[4] = (tuple(round_to_sigfigs(sign * cross(results["Normal"], results["Tangent"]), 6)),)\n"""
+        func_src += """    return tuple(results)"""
+
+        # Compile and execute to define a new function called "generating_function"
+        func_src = compile(func_src, '', 'exec')
+        exec(func_src)
+        # Would like to just do this, but then exec doesn't put the function into the locals?!
+        # exec(func_src, {'mesh': mesh,
+        #                 'map_ids': map_ids,
+        #                 'colour_map': colour_map,
+        #                 'round_to_sigfigs': round_to_sigfigs,
+        #                 'np.cross': np.cross})
+
+        generating_function = locals()['dynamic_generating_function']
+
         for vert_idx, linked_loops in link_loops.items():
             vertex = mesh.vertices[vert_idx]
-            loop_datas = [generating_function(ll) for ll in linked_loops]
+            loop_datas = [generating_function(ll, mesh, map_ids, colour_map, round_to_sigfigs, np.cross) for ll in linked_loops]
             unique_values = list(set(loop_datas))
             for unique_value in unique_values:
                 loops_with_this_value = [linked_loops[i] for i, x in enumerate(loop_datas) if x == unique_value]
@@ -228,10 +232,11 @@ class ExportMediaVision(bpy.types.Operator):
                 group_weights = None if len(group_weights) == 0 else group_weights
 
                 vert = {'Position': vertex.co,
-                        'Normal': unique_value[0],
-                        **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], [*unique_value[1]])},
-                        **{key: value for key, value in zip(['Colour'], [*unique_value[2]])},
-                        **{key: value for key, value in zip(tangent_attribs, unique_value[3:])},
+                        **{key: value for key, value in zip(['Normal'], unique_value[0])},
+                        **{key: value for key, value in zip(['UV', 'UV2', 'UV3'], unique_value[1])},
+                        **{key: value for key, value in zip(['Colour'], unique_value[2])},
+                        **{key: value for key, value in zip(['Tangent'], unique_value[3])},
+                        **{key: value for key, value in zip(['Binormal'], unique_value[4])},
                         'WeightedBoneID': [group_map[grp.group] for grp in vertex.groups],
                         'BoneWeight': group_weights}
 
