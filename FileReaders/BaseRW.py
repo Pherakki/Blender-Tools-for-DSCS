@@ -59,7 +59,7 @@ class BaseRW:
             for subreader in lst:
                 subreader.unset_file_rw()
 
-    def unpack(self, dtype, endianness=None, force_1d=False):
+    def old_unpack(self, dtype, endianness=None, force_1d=False):
         """
         Takes a requested number of data types as a 'dtype' argument, adds up the number of bytes these data
         required to store them, then reads this number of bytes from the bytestream and interprets them as those
@@ -90,8 +90,46 @@ class BaseRW:
         self.header.append(result)
         return result
 
+    def unpack(self, dtype, endianness=None):
+        """
+        Takes a requested number of data types as a 'dtype' argument, adds up the number of bytes these data
+        required to store them, then reads this number of bytes from the bytestream and interprets them as those
+        data.
+
+        Arguments
+        ------
+        dtype -- a string of characters that correspond to data types in BaseRW.type_buffers.
+        endianness -- the data type endianness (default: self.endianness).
+
+        Returns
+        ------
+        The appropriate number of bytes from the bytestream interpreted as the requested data types.
+        """
+        if endianness is None:
+            endianness = self.endianness
+
+        buf = sum([self.type_buffers[dt] for dt in dtype])
+        result = struct.unpack(endianness + dtype, self.bytestream.read(buf))
+
+        return result
+
     def read_buffer(self, variable, dtype, endianness=None, force_1d=False):
-        val = self.unpack(dtype, endianness, force_1d)
+        """
+        deprecated
+        """
+        val = self.old_unpack(dtype, endianness, force_1d)
+        setattr(self, variable, val)
+
+    def read_single(self, variable, dtype, endianness=None):
+        val = self.unpack(dtype, endianness)[0]
+        setattr(self, variable, val)
+
+    def read_list(self, variable, dtype, endianness=None):
+        val = self.unpack(dtype, endianness)
+        setattr(self, variable, val)
+
+    def read_listoflists(self, variable, dtype, item_size, endianness=None):
+        val = self.chunk_list(self.unpack(dtype, endianness), item_size)
         setattr(self, variable, val)
 
     def read_ascii(self, variable, num_bytes=None):
@@ -110,11 +148,29 @@ class BaseRW:
         return struct.pack(endianness + dtype, *value)
 
     def write_buffer(self, variable, dtype, endianness=None, force_1d=False):
+        """
+        deprecated
+        """
         val = getattr(self, variable)
         # If it's not a tuple/list/, turn it into a tuple
         if not (hasattr(val, '__len__') and not isinstance(val, str)):
             val = (val,)
         to_write = self.pack(val, dtype, endianness)
+        self.bytestream.write(to_write)
+
+    def write_single(self, variable, dtype, endianness=None):
+        val = getattr(self, variable)
+        to_write = self.pack((val,), dtype, endianness)
+        self.bytestream.write(to_write)
+
+    def write_list(self, variable, dtype, endianness=None):
+        val = getattr(self, variable)
+        to_write = self.pack(val, dtype, endianness)
+        self.bytestream.write(to_write)
+
+    def write_listoflists(self, variable, dtype, item_size, endianness=None):
+        val = getattr(self, variable)
+        to_write = self.pack(self.flatten_list(val), dtype, endianness)
         self.bytestream.write(to_write)
 
     def write_ascii(self, variable, num_bytes=None):
@@ -129,44 +185,6 @@ class BaseRW:
             assert len(val) == num_bytes, "String to write is not equal to the number of bytes."
         self.bytestream.write(val)
 
-    def decode_data_as(self, buf, data, endianness=None):
-        """
-        Interprets an input byte-string 'data' as a list of data types specified by 'buf'.
-
-        Inputs
-        ------
-        buf -- a data type represented by a character known to the struct package
-        data -- a string of bytes
-        endianness -- whether to use little-endian (<) or big-endian (>) endianness. Default: self.endianness
-
-        Returns
-        ------
-        A tuple containing the bytestring 'data' interpreted as the type specified by 'buf'.
-        """
-        assert len(buf) == 1, "decode_data_as takes a single data type as the 'buf' argument."
-        if endianness is None:
-            endianness = self.endianness
-        dtype = buf * (len(data) // self.type_buffers[buf])
-        return struct.unpack(endianness + dtype, data)
-
-    def decode_data_as_chunks(self, buf, data, chunksize, endianness=None):
-        """
-        Interprets an input byte-string 'data' as a list of data types specified by 'buf', and splits it into a list
-        with 'chunksize' elements per sub-list.
-
-        Inputs
-        ------
-        buf -- a data type represented by a character known to the struct package
-        data -- a string of bytes
-        chunksize -- the size of each sub-list
-        endianness -- whether to use little-endian (<) or big-endian (>) endianness. Default: self.endianness
-
-        Returns
-        ------
-        A 2D list with sublists of size 'chunksize', containing bytes interpreted as the type specified by 'buf'.
-        """
-        lst = self.decode_data_as(buf, data, endianness)
-        return self.chunk_list(lst, chunksize)
 
     def cleanup_ragged_chunk_read(self, position, chunksize, stepsize=1, bytevalue=b'\x00'):
         """
