@@ -148,6 +148,10 @@ class SkelReader(BaseRW):
         rw_operator('parent_bones', 'h'*self.num_bones, force_1d=True)
 
     def rw_unknown_data_1(self, rw_operator):
+        """
+        No idea what this one is..!
+        Seems to differentiate uniforms, cameras, ..?
+        """
         #self.assert_file_pointer_now_at()
         rw_operator('unknown_data_1', 'B' * self.num_uv_channels, force_1d=True)
 
@@ -157,6 +161,10 @@ class SkelReader(BaseRW):
         rw_operator_raw('bone_name_hashes', bytes_to_read)
 
     def rw_unknown_data_3(self, rw_operator):
+        """
+        This is an array offset: (shader key * 16) + array_index.
+        E.g. to access DiffuseColor item 1, the required value is (0x33 * 16) + 0x01 = 0x331
+        """
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_3)
         rw_operator('unknown_data_3', 'I' * self.num_uv_channels, force_1d=True)
 
