@@ -142,6 +142,7 @@ class LightSource:
     def __init__(self):
         self.bone_name = None
         self.mode = None
+        self.light_id = None
         self.intensity = None
         self.unknown_fog_param = None
         self.red = None

@@ -198,6 +198,7 @@ def add_lights(model_data, imported_lightdata):
         target_bone_hash = int_to_BE_hex(light.bone_name_hash)
         model_light.bone_name = model_data.bone_name_hashes.get(target_bone_hash, 'Fog')
         model_light.mode = light.mode
+        model_light.light_id = light.light_id
         model_light.intensity = light.intensity
         model_light.unknown_fog_param = light.unknown_fog_param
         model_light.red = light.red
