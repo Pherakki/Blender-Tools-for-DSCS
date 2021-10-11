@@ -281,7 +281,6 @@ class AnimReader(BaseRW):
 
             rw_operator('shader_uniform_channel_masks', 'b'*self.num_uv_channels, force_1d=True)
             chunk_cleanup_operator(self.bytestream.tell(), 4)
-            print(self.shader_uniform_channel_masks)
         if self.bone_mask_bytes != 0:
             chunk_cleanup_operator(self.bytestream.tell(), 16)
 
