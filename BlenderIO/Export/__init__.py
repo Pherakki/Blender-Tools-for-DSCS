@@ -471,6 +471,7 @@ def round_to_sigfigs(x, p):
 
 
 def extract_rest_pose_from_base_animation(bone_names, parent_bones, base_animation, bind_pose_matrices):
+    """Might have issues with animations that have 0 scale..?"""
     curve_defaults = {'rotation_quaternion': [1., 0., 0., 0.],
                       'location': [0., 0., 0.],
                       'scale': [1., 1., 1.],
@@ -497,6 +498,8 @@ def extract_rest_pose_from_base_animation(bone_names, parent_bones, base_animati
             # Shift from local space to model-space
             rpm = np.dot(bm, transform_matrix)
             rloc, rquat, rscale = decompose_matrix(rpm, WXYZ=False)
+            if np.isnan(rquat[0]):
+                rquat = [0., 0., 0., 0.5]
             rest_pose.append([rquat, [*rloc, 1.], [*rscale, 1.]])
     return rest_pose
 
