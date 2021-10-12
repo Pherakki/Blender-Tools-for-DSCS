@@ -67,3 +67,8 @@ def XYZ_eulers_to_quat(eulers, WXYZ=False):
     z = cphi * ctheta * spsi - sphi * stheta * cpsi
 
     return np.roll([x, y, z, w], shift=WXYZ)
+
+
+def normalise_quaternion(quat):
+    magnitude = np.dot(quat, quat)
+    return quat / (magnitude**.5)
