@@ -27,6 +27,7 @@ class ExportMediaVision(bpy.types.Operator):
     platform: None
     export_mode: None
     img_to_dds: None
+    flip_uvs: None
 
     def export_file(self, context, filepath):
         # Grab the parent object
@@ -130,6 +131,13 @@ class ExportMediaVision(bpy.types.Operator):
             face_link_loops = self.generate_face_link_loops(mesh)
             export_verts, export_faces, vgroup_verts, vgroup_wgts = self.split_verts_by_loop_data(mesh_obj, link_loops, face_link_loops, model_data)
 
+            if self.flip_uvs:
+                for key in ['UV', 'UV2', 'UV3']:
+                    if key in export_verts[0]:
+                        for vert in export_verts:
+                            u, v = vert[key]
+                            vert[key] = (u, 1. - v)
+
             md.vertices = export_verts
             for j, face in enumerate(export_faces):
                 assert len(face) == 3, f"Polygon {j} is not a triangle."
@@ -211,12 +219,7 @@ class ExportMediaVision(bpy.types.Operator):
         # Compile and execute to define a new function called "generating_function"
         func_src = compile(func_src, '', 'exec')
         exec(func_src)
-        # Would like to just do this, but then exec doesn't put the function into the locals?!
-        # exec(func_src, {'mesh': mesh,
-        #                 'map_ids': map_ids,
-        #                 'colour_map': colour_map,
-        #                 'round_to_sigfigs': round_to_sigfigs,
-        #                 'np.cross': np.cross})
+
 
         generating_function = locals()['dynamic_generating_function']
 
@@ -617,6 +620,11 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         description="Exports textures that have an 'img' extension with a 'dds' extension."
     )
 
+    flip_uvs: BoolProperty(
+        name="Flip UVs",
+        description="Invert the exported UV coordinates."
+    )
+
 
 class ExportMegido(ExportMediaVision, ExportHelper):
     bl_idname = 'export_file.export_megido'
@@ -634,4 +642,9 @@ class ExportMegido(ExportMediaVision, ExportHelper):
     img_to_dds: BoolProperty(
         name="IMG->DDS File Extension",
         description="Exports textures that have an 'img' extension with a 'dds' extension."
+    )
+
+    flip_uvs: BoolProperty(
+        name="Flip UVs",
+        description="Invert the exported UV coordinates."
     )
