@@ -3,7 +3,7 @@ from ..FileInterfaces.SkelInterface import SkelInterface
 from ..FileInterfaces.GeomInterface import GeomInterface
 from ..FileInterfaces.AnimInterface import AnimInterface
 from .IntermediateFormat import IntermediateFormat
-from ..Utilities.Rotation import bone_matrix_from_rotation_location, quat_to_matrix, rotation_matrix_to_quat
+from ..Utilities.Rotation import normalise_quaternion, quat_to_matrix, rotation_matrix_to_quat
 
 from ..Utilities.StringHashing import dscs_name_hash, int_to_BE_hex
 from ..Utilities.Exceptions import BadAnimationBoneCount, BadAnimationUVChannels
