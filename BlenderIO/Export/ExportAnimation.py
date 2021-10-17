@@ -31,12 +31,25 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
             print(f"NLA track \'{nla_track.name}\' has {len(strips)} strips; must have one strip ONLY to export.")
             continue
 
+        ad = model_data.new_anim(nla_track.name)
+
         nla_strip = strips[0]
 
+        # Get the shader uniform animations
+        ad.uv_data = {}
+        curr_idx = 0
+        while nla_strip.action.get(f"uv_data_frames_{curr_idx}") is not None:
+            ad.uv_data[curr_idx] = {frame: value for frame, value in zip(nla_strip.action.get(f"uv_data_frames_{curr_idx}", []),
+                                                                         nla_strip.action.get(f"uv_data_values_{curr_idx}", []))}
+            curr_idx += 1
+
+        # Now prepare to integerise all animation frames
         animation_data = get_action_data(nla_strip.action, curve_defaults)
+        animation_uv_data = ad.uv_data
+
         # Normalise the smallest distance between frames to 1 to allow more accurate integerisation
-        smallest_frame_delta = get_smallest_frame_delta(animation_data)
-        stretch_frame_indices_by_factor(animation_data, 1./smallest_frame_delta)
+        smallest_frame_delta = get_smallest_frame_delta(animation_data, animation_uv_data)
+        stretch_frame_indices_by_factor(animation_data, animation_uv_data, 1./smallest_frame_delta)
 
         # Integerise any float frame indices
         for bone_idx, animation_bone_data in animation_data.items():
@@ -44,9 +57,10 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
                                                           [curve_defaults['rotation_quaternion'], curve_defaults['location'], curve_defaults['scale']],
                                                           [slerp, lerp, lerp]):
                 channel_data = animation_bone_data[curve_type]
-                animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)
-
-        ad = model_data.new_anim(nla_track.name)
+                #animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)
+                animation_data[bone_idx][curve_type] = snap_frame_indices_to_integers(channel_data)
+        for shader_channel_idx, channel_data in animation_uv_data.items():
+            animation_uv_data[shader_channel_idx] = snap_frame_indices_to_integers(channel_data)
 
         fps = 24. / (nla_strip.scale * smallest_frame_delta)
         ad.playback_rate = fps
@@ -66,13 +80,7 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
             subdata = fetch_subdata(data, bone_name, strip_single_frame_transforms, required_scales, curve_defaults, out_transforms, 'scale')
             ad.add_scale_fcurve(bone_idx, list(subdata.keys()), list(subdata.values()))
 
-        # Do this properly later
-        ad.uv_data = {}
-        curr_idx = 0
-        while nla_strip.action.get(f"uv_data_frames_{curr_idx}") is not None:
-            ad.uv_data[curr_idx] = {frame: value for frame, value in zip(nla_strip.action.get(f"uv_data_frames_{curr_idx}", []),
-                                                                         nla_strip.action.get(f"uv_data_values_{curr_idx}", []))}
-            curr_idx += 1
+        ad.uv_data = animation_uv_data
 
 
 def fetch_subdata(data, bone_name, strip_single_frame_transforms, required_subtransforms, curve_defaults, out_transforms, fetch_string):
@@ -85,8 +93,10 @@ def fetch_subdata(data, bone_name, strip_single_frame_transforms, required_subtr
     return subdata
 
 
-def get_smallest_frame_delta(animation_data):
+def get_smallest_frame_delta(animation_data, animation_uv_data):
     smallest_frame_delta = np.inf
+
+    # First do animation data
     for bone_name, group in animation_data.items():
         for curve_type, curve_data in group.items():
             frame_indices = np.array(list(curve_data.keys()))
@@ -94,12 +104,22 @@ def get_smallest_frame_delta(animation_data):
                 continue
             min_diff = np.min(frame_indices[1:] - frame_indices[:-1])
             smallest_frame_delta = np.min((smallest_frame_delta, min_diff))
+
+    # Now do shader channel data
+    for shader_channel_idx, curve_data in animation_uv_data.items():
+        frame_indices = np.array(list(curve_data.keys()))
+        if len(frame_indices) < 2:
+            continue
+        min_diff = np.min(frame_indices[1:] - frame_indices[:-1])
+        smallest_frame_delta = np.min((smallest_frame_delta, min_diff))
+
+    # Return
     if smallest_frame_delta == np.inf:
         smallest_frame_delta = 1.
     return smallest_frame_delta
 
 
-def stretch_frame_indices_by_factor(animation_data, factor):
+def stretch_frame_indices_by_factor(animation_data, animation_uv_data, factor):
     for bone_name, group in animation_data.items():
         for curve_type, curve_data in group.items():
             # curve_data is a dict...
@@ -109,12 +129,23 @@ def stretch_frame_indices_by_factor(animation_data, factor):
             curve_data.clear()
             for idx, value in frame_data:
                 curve_data[idx*factor] = value
+    for shader_channel_idx, curve_data in animation_uv_data.items():
+        frame_data = list(curve_data.items())
+        curve_data.clear()
+        for idx, value in frame_data:
+            curve_data[idx * factor] = value
+
+
+def snap_frame_indices_to_integers(animation_channel):
+    return {int(key): value for key, value in animation_channel.items()}
 
 
 def integerise_frame_indices(animation_channel, frame_default, interpolation_function, debug_output=False):
     """
     Integerise frame indices by rounding up all non-integer frames, and then interpolating between the two
     nearest-neighbour frames to each rounded-up frame using the input interpolation function.
+    BUGGED: consider the indices & values [0, 1, 20.01, 21.01]: [0, 0, 0, 1]...
+    Going to interpolate to ~[0, 0, .99, 1]
     """
     if not len(animation_channel):
         return {}
