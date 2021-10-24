@@ -168,8 +168,9 @@ class MeshReaderBase(BaseRW):
         self.vertex_data = b''.join(reinterpreted_vertices)
 
     @classmethod
-    def vertex_component_factory(cls, vtype, normalise, num_elements, dtype, always_20, data_start_ptr):
-        assert always_20 == 20, f"Vertex always_20 was {always_20}, not 20."
+    def vertex_component_factory(cls, vtype, normalise, num_elements, dtype, vertex_attr_value, data_start_ptr):
+        assert vertex_attr_value == cls.get_vertex_attribute_value(), \
+            f"Vertex vertex_attr_value was {vertex_attr_value}, not {cls.get_vertex_attribute_value()}."
         vtype_name = cls.vertex_types[vtype]
         vertex_dtype = cls.get_vertex_dtypes()[dtype]
         vcomp = cls.get_vertex_attrib_dict()[(vtype_name, num_elements, vertex_dtype)](data_start_ptr, normalise)
@@ -179,8 +180,8 @@ class MeshReaderBase(BaseRW):
     @classmethod
     def vertex_component_data_factory(cls, vertex_component):
         return (cls.reverse_vertex_types[vertex_component.vertex_type], vertex_component.flag,
-                vertex_component.num_elements, cls.get_reverse_vertex_dtypes()[vertex_component.vertex_dtype], 20,
-                vertex_component.data_start_ptr)
+                vertex_component.num_elements, cls.get_reverse_vertex_dtypes()[vertex_component.vertex_dtype],
+                cls.get_vertex_attribute_value(), vertex_component.data_start_ptr)
 
     def interpret_mesh_data(self):
         self.vertex_components = [self.vertex_component_factory(*data) for data in self.chunk_list(self.vertex_components, 6)]
@@ -210,6 +211,10 @@ class MeshReaderBase(BaseRW):
         raise NotImplementedError
 
     @staticmethod
+    def get_vertex_attribute_value():
+        raise NotImplementedError
+
+    @staticmethod
     def get_vertex_component_type():
         raise NotImplementedError
 
@@ -236,6 +241,10 @@ class MeshReaderPC(MeshReaderBase):
         return {4: 'Triangles', 5: 'TriangleStrips'}
 
     @staticmethod
+    def get_vertex_attribute_value():
+        return 20
+
+    @staticmethod
     def get_vertex_attrib_dict():
         return vertex_components_from_defn_dscs
 
@@ -256,6 +265,10 @@ class MeshReaderPS4(MeshReaderBase):
         return {4: 'Triangles', 0: 'TriangleStrips'}
 
     @staticmethod
+    def get_vertex_attribute_value():
+        return 0
+
+    @staticmethod
     def get_vertex_attrib_dict():
         return vertex_components_from_defn_dscs
 
@@ -274,6 +287,10 @@ class MeshReaderMegido(MeshReaderBase):
     @staticmethod
     def get_polygon_type_defs():
         return {4: 'Triangles', 5: 'TriangleStrips'}
+
+    @staticmethod
+    def get_vertex_attribute_value():
+        return 20
 
     @staticmethod
     def get_vertex_attrib_dict():
