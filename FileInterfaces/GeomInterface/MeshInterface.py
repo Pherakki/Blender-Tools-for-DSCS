@@ -41,6 +41,10 @@ class MeshInterface:
 
         self.unknown_data = {}
 
+        self.mesh_centre = None
+        self.bounding_box_lengths = None
+        self.bounding_sphere_radius = None
+
     @classmethod
     def from_subfile(cls, meshReader):
         interface = cls()
@@ -103,16 +107,22 @@ class MeshInterface:
         meshReader.padding_0x48 = 0
         meshReader.bounding_sphere_radius = self.bounding_sphere_radius
 
-        vertices = np.array([v['Position'] for v in self.vertices])
-        minvs = np.min(vertices, axis=0)
-        maxvs = np.max(vertices, axis=0)
-        maxrad = np.max(np.sum(vertices**2, axis=1))
-        assert np.sum(vertices**2, axis=1).shape == (len(vertices),), f"{vertices.shape}, {np.sum(vertices**2, axis=1).shape}"  # Check that I got the summation axis right
-        meshReader.bounding_sphere_radius = maxrad**.5
-        assert len(maxvs) == 3
+        if self.mesh_centre is None:
+            vertices = np.array([v['Position'] for v in self.vertices])
+            minvs = np.min(vertices, axis=0)
+            maxvs = np.max(vertices, axis=0)
+            mesh_centre = (maxvs + minvs) / 2
+            maxrad = np.max(np.sum((vertices-mesh_centre)**2, axis=1))
+            assert np.sum(vertices**2, axis=1).shape == (len(vertices),), f"{vertices.shape}, {np.sum(vertices**2, axis=1).shape}"  # Check that I got the summation axis right
+            meshReader.bounding_sphere_radius = maxrad**.5
+            assert len(maxvs) == 3
 
-        meshReader.mesh_centre = (maxvs + minvs) / 2
-        meshReader.bounding_box_lengths = (maxvs - minvs) / 2
+            meshReader.mesh_centre = mesh_centre
+            meshReader.bounding_box_lengths = (maxvs - minvs) / 2
+        else:
+            meshReader.bounding_sphere_radius = self.bounding_sphere_radius
+            meshReader.mesh_centre = self.mesh_centre
+            meshReader.bounding_box_lengths = self.bounding_box_lengths
         return virtual_pos
 
 

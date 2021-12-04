@@ -16,6 +16,9 @@ class GeomInterface:
         self.inverse_bind_pose_matrices = []
         self.unknown_footer_data = []
 
+        self.geom_centre = None
+        self.geom_bounding_box_lengths = None
+
     def add_mesh(self):
         interface = MeshInterface()
         self.meshes.append(interface)
@@ -75,8 +78,12 @@ class GeomInterface:
                 maxvs = np.zeros(3)
             assert len(maxvs) == 3
 
-            geomReader.geom_centre = (maxvs + minvs) / 2
-            geomReader.geom_bounding_box_lengths = (maxvs - minvs) / 2
+            if self.geom_centre is None:
+                geomReader.geom_centre = (maxvs + minvs) / 2
+                geomReader.geom_bounding_box_lengths = (maxvs - minvs) / 2
+            else:
+                geomReader.geom_centre = self.geom_centre
+                geomReader.geom_bounding_box_lengths = self.geom_bounding_box_lengths
             geomReader.padding_0x2C = 0
 
             # This generates the mesh and material subreaders that we can then populate
