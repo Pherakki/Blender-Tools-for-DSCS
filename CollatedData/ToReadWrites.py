@@ -1,3 +1,6 @@
+import os
+import numpy as np
+
 from ..FileInterfaces.NameInterface import NameInterface
 from ..FileInterfaces.SkelInterface import SkelInterface
 from ..FileInterfaces.GeomInterface import GeomInterface
@@ -5,17 +8,16 @@ from ..FileInterfaces.AnimInterface import AnimInterface
 
 from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names
 from ..Utilities.StringHashing import dscs_name_hash
-
-import os
+from ..Utilities.Matrices import get_total_transform_matrix
 
 
 def generate_files_from_intermediate_format(filepath, model_data, platform='PC', animation_only=False):
     file_folder = os.path.join(*os.path.split(filepath)[:-1])
 
+    sk = make_skelinterface(filepath, model_data, not animation_only)
     if not animation_only:
         make_nameinterface(filepath, model_data)
-        make_geominterface(filepath, model_data, platform)
-    sk = make_skelinterface(filepath, model_data, not animation_only)
+        make_geominterface(filepath, model_data, sk, platform)
 
     for animation_name in model_data.animations:
         make_animreader(file_folder, model_data, animation_name, os.path.splitext(os.path.split(filepath)[-1])[0], sk)
@@ -46,9 +48,28 @@ def make_skelinterface(filepath, model_data, export=True):
     return skelInterface
 
 
-def make_geominterface(filepath, model_data, platform):
+def get_transformed_vertices(gi_mesh, transforms, switch_idx=2):
+    if "WeightedBoneID" in gi_mesh.vertices[0]:
+        transformed_vertices = np.array([np.zeros(3)] * len(gi_mesh.vertices))
+        transformed_vertices[switch_idx, 2] = transformed_vertices[2, switch_idx]
+        for i, vertex in enumerate(gi_mesh.vertices):
+            bone_ids = vertex["WeightedBoneID"]
+            bone_weights = vertex["BoneWeight"]
+            vertex_transform = np.sum([weight * transforms[gi_mesh.vertex_group_bone_idxs[_id]] for _id, weight in
+                                       zip(bone_ids, bone_weights)], axis=0)
+            transformed_vertices[i] = np.dot(vertex_transform, [*vertex["Position"], 1])[:3]
+    else:
+        transformed_vertices = np.array([vertex["Position"] for vertex in gi_mesh.vertices])
+    return transformed_vertices
+
+
+def make_geominterface(filepath, model_data, sk, platform):
     geomInterface = GeomInterface()
 
+    bone_matrices = [get_total_transform_matrix(i, {p: c for p, c in sk.parent_bones}, sk.rest_pose) for i in range(sk.num_bones)]
+    transforms = [np.dot(transform, ibpm) for transform, ibpm in zip(bone_matrices, model_data.skeleton.inverse_bind_pose_matrices)]
+
+    all_vertices = []
     geomInterface.meshes = []
     for mesh in model_data.meshes:
         gi_mesh = geomInterface.add_mesh()
@@ -65,6 +86,37 @@ def make_geominterface(filepath, model_data, platform):
         gi_mesh.vertices = mesh.vertices
         gi_mesh.polygons = [p.indices for p in mesh.polygons]
         gi_mesh.material_id = mesh.material_id
+
+        transformed_vertices = list(get_transformed_vertices(gi_mesh, transforms))
+
+        is_billboard = False  # Fix by (presumably) asking the shader hex if it's a billboard... figure that out later
+        if is_billboard:
+            transformed_vertices.extend(list(get_transformed_vertices(gi_mesh, transforms, 0)))
+            transformed_vertices.extend(list(get_transformed_vertices(gi_mesh, transforms, 1)))
+        transformed_vertices = np.array(transformed_vertices)
+
+        minvs = np.min(transformed_vertices, axis=0)
+        maxvs = np.max(transformed_vertices, axis=0)
+        assert len(maxvs) == 3
+        assert np.sum(transformed_vertices ** 2, axis=1).shape == (len(transformed_vertices),), f"{transformed_vertices.shape}, {np.sum(transformed_vertices ** 2, axis=1).shape}"  # Check that I got the summation axis right
+
+        gi_mesh.mesh_centre = (maxvs + minvs) / 2
+        gi_mesh.bounding_box_lengths = (maxvs - minvs) / 2
+
+        bind_vertices = np.array([vertex["Position"] for vertex in gi_mesh.vertices])
+        maxrad = np.max(np.sum((bind_vertices - gi_mesh.mesh_centre) ** 2, axis=1))
+
+        gi_mesh.bounding_sphere_radius = maxrad ** .5
+
+        all_vertices.extend(transformed_vertices)
+
+
+    minvs = np.min(all_vertices, axis=0)
+    maxvs = np.max(all_vertices, axis=0)
+    mesh_centre = (maxvs + minvs) / 2
+
+    geomInterface.mesh_centre = mesh_centre
+    geomInterface.bounding_box_lengths = (maxvs - minvs) / 2
 
     geomInterface.material_data = []
     for mat in model_data.materials:
