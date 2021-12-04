@@ -41,6 +41,8 @@ def import_animations(armature_name, model_data):
                                                                     [elem[i] for elem in location_data.values]) for x in
                                                     co])
                     fc.group = actiongroup
+                    for k in fc.keyframe_points:
+                        k.interpolation = "LINEAR"
                     fc.lock = True
                     fcs.append(fc)
                 for fc in fcs:
@@ -57,6 +59,8 @@ def import_animations(armature_name, model_data):
                                                                     [elem[i] for elem in scale_data.values]) for x in
                                                     co])
                     fc.group = actiongroup
+                    for k in fc.keyframe_points:
+                        k.interpolation = "LINEAR"
                     fc.lock = True
                     fcs.append(fc)
                 for fc in fcs:
