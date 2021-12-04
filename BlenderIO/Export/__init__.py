@@ -203,23 +203,25 @@ class ExportMediaVision(bpy.types.Operator):
         #     return {}
 
         # Dynamically generate the function source code to avoid insane if/else or func call overhead
+        sigfigs = 3
         func_src =       """def dynamic_generating_function(lidx, mesh, map_ids, colour_map, round_to_sigfigs, cross):\n"""
         func_src +=      """    results = [tuple(), tuple(), tuple(), tuple(), tuple()]\n"""
         if use_normals:
-            func_src +=  """    results[0] = (tuple(round_to_sigfigs(mesh.loops[lidx].normal, 6)),)\n"""
+            func_src += f"""    results[0] = (tuple(round_to_sigfigs(mesh.loops[lidx].normal, {sigfigs})),)\n"""
         func_src +=     f"""    results[1] = tuple([tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids])\n"""
         func_src +=     f"""    results[2] = tuple([tuple(mesh.vertex_colors[map_id].data.values()[lidx].color) for map_id in colour_map])\n"""
         if can_export_tangents:
             func_src += f"""    sign = mesh.loops[lidx].bitangent_sign\n"""
-            func_src += f"""    results[3] = ((*round_to_sigfigs(mesh.loops[lidx].tangent, 6), sign),)\n"""
+            func_src += f"""    results[3] = ((*round_to_sigfigs(mesh.loops[lidx].tangent, {sigfigs}), sign),)\n"""
         if use_binormals and can_export_tangents:
-            func_src += f"""    results[4] = (tuple(round_to_sigfigs(sign * cross(results["Normal"], results["Tangent"]), 6)),)\n"""
+            func_src += f"""    normal = results[0][0]"""
+            func_src += f"""    tangent = results[3][0][:3]"""
+            func_src += f"""    results[4] = (tuple(round_to_sigfigs(sign * cross(normal, tangent), {sigfigs})),)\n"""
         func_src += """    return tuple(results)"""
 
         # Compile and execute to define a new function called "generating_function"
         func_src = compile(func_src, '', 'exec')
         exec(func_src)
-
 
         generating_function = locals()['dynamic_generating_function']
 
