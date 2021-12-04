@@ -214,8 +214,8 @@ class ExportMediaVision(bpy.types.Operator):
             func_src += f"""    sign = mesh.loops[lidx].bitangent_sign\n"""
             func_src += f"""    results[3] = ((*round_to_sigfigs(mesh.loops[lidx].tangent, {sigfigs}), sign),)\n"""
         if use_binormals and can_export_tangents:
-            func_src += f"""    normal = results[0][0]"""
-            func_src += f"""    tangent = results[3][0][:3]"""
+            func_src += f"""    normal = results[0][0]\n"""
+            func_src += f"""    tangent = results[3][0][:3]\n"""
             func_src += f"""    results[4] = (tuple(round_to_sigfigs(sign * cross(normal, tangent), {sigfigs})),)\n"""
         func_src += """    return tuple(results)"""
 
