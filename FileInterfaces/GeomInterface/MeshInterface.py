@@ -60,6 +60,10 @@ class MeshInterface:
         interface.unknown_data['bb'] = meshReader.bounding_box_lengths
         interface.unknown_data['bbc'] = meshReader.mesh_centre
 
+        interface.bounding_box_lengths = meshReader.bounding_box_lengths
+        interface.mesh_centre = meshReader.mesh_centre
+        interface.bounding_sphere_radius = meshReader.bounding_sphere_radius
+
         return interface
 
     def to_subfile(self, meshReader, virtual_pos, platform):

@@ -54,6 +54,9 @@ class GeomInterface:
         new_interface.inverse_bind_pose_matrices = readwriter.inverse_bind_pose_matrices
         new_interface.unknown_footer_data = readwriter.unknown_footer_data
 
+        new_interface.geom_centre = readwriter.geom_centre
+        new_interface.geom_bounding_box_lengths = readwriter.geom_bounding_box_lengths
+
         return new_interface
 
     def to_file(self, path, platform):
