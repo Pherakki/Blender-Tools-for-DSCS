@@ -1,5 +1,6 @@
 import bpy
 from mathutils import Vector, Matrix
+import array
 
 import numpy as np
 
@@ -42,12 +43,27 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         loop_data = [IF_mesh.vertices[map_of_loops_to_model_verts[loop_idx]] for loop_idx in range(n_loops)]
 
         # Assign normals
+        # Works thanks to this stackexchange answer https://blender.stackexchange.com/a/75957
+        # which a few of these comments below are also taken from
         if 'Normal' in IF_mesh.vertices[0]:
+            mesh.create_normals_split()
+            for face in mesh.polygons:
+                face.use_smooth = True  # loop normals have effect only if smooth shading ?
+
+            # Set loop normals
             loop_normals = [Vector(l["Normal"]) for l in loop_data]
-            mesh_object.data.normals_split_custom_set(loop_normals)
-            #mesh.create_normals_split()
-            #mesh.loops.foreach_set("normal", [subitem for item in loop_normals for subitem in item])
-        mesh.use_auto_smooth = True
+            mesh.loops.foreach_set("normal", [subitem for item in loop_normals for subitem in item])
+
+            mesh.validate(clean_customdata=False)  # important to not remove loop normals here!
+            mesh.update()
+
+            clnors = array.array('f', [0.0] * (len(mesh.loops) * 3))
+            mesh.loops.foreach_get("normal", clnors)
+
+            mesh.polygons.foreach_set("use_smooth", [True] * len(mesh.polygons))
+            mesh.normals_split_custom_set(tuple(zip(*(iter(clnors),) * 3)))
+            # mesh.normals_split_custom_set(loop_normals)
+            mesh.use_auto_smooth = True
 
         # Assign materials
         material_name = model_data.materials[IF_mesh.material_id].name
@@ -81,7 +97,7 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
         modifier = mesh_object.modifiers.new(name="Armature", type="ARMATURE")
         modifier.object = bpy.data.objects[armature_name]
 
-        mesh.validate(verbose=True)
+        mesh.validate(verbose=True, clean_customdata=False)
         set_mesh_vertex_attribute_labels(IF_mesh.vertices[0], mesh_object)
         mesh.update()
 
