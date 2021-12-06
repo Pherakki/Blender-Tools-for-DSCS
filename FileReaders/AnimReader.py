@@ -294,9 +294,7 @@ class AnimReader(BaseRW):
             cumulative_frames, frames_in_chunk = d6
             assert always_zero == 0
             scale_factor = (self.animated_bone_rotations_count + self.animated_bone_locations_count + self.animated_bone_scales_count + self.animated_shader_uniform_channels_count) / 8
-
             part5_size = int(np.ceil(scale_factor * frames_in_chunk))
-                  
             kfchunkreader.initialise_variables(chunk_pointer, part5_size, frames_in_chunk)
             getattr(kfchunkreader, rw_method_name)()
 
@@ -407,7 +405,6 @@ class KeyframeChunk(BaseRW):
         self.rw_frame_0_locations(rw_operator)
         self.rw_frame_0_scales(rw_operator, cleanup_chunk_operator)
         self.rw_frame_0_shader_uniform_values(rw_operator)
-
         self.rw_keyframes_in_use(rw_operator_raw)
 
         self.rw_keyframed_rotations(rw_operator_raw)
