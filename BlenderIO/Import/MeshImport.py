@@ -61,8 +61,15 @@ def import_meshes(parent_obj, filename, model_data, armature_name):
             mesh.loops.foreach_get("normal", clnors)
 
             mesh.polygons.foreach_set("use_smooth", [True] * len(mesh.polygons))
+            # This line is pretty smart (came from the stackoverflow answer)
+            # 1. Creates three copies of the same iterator over clnors
+            # 2. Splats those three copies into a zip
+            # 3. Each iteration of the zip now calls the iterator three times, meaning that three consecutive elements
+            #    are popped off
+            # 4. Turn that triplet into a tuple
+            # In this way, a flat list is iterated over in triplets without wasting memory by copying the whole list
             mesh.normals_split_custom_set(tuple(zip(*(iter(clnors),) * 3)))
-            # mesh.normals_split_custom_set(loop_normals)
+
             mesh.use_auto_smooth = True
 
         # Assign materials
