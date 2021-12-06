@@ -528,6 +528,7 @@ def generate_keyframe_chunks_entry_data(keyframes):
 def strip_and_validate(keyframes, chunksizes, method):
     reduced_chunks, bitvectors, initial_values, final_values = generate_keyframe_chunks_entry_data(keyframes)
     already_handled_chunks = []
+
     for chunk_idx, (reduced_chunk, bitvector, initial_pair, final_pair) in enumerate(zip(reduced_chunks, bitvectors, initial_values, final_values)):
         if chunk_idx in already_handled_chunks:
             continue
@@ -554,6 +555,8 @@ def strip_and_validate(keyframes, chunksizes, method):
                 if iter_initial_pair is not None:
                     interp_end = iter_initial_pair
                     break
+            if interp_end is None:
+                interp_end = interp_origin
 
             # Now, for every chunk we've identified as missing a first frame in the range where the data we've picked
             # out is applicable, do that generation
@@ -570,6 +573,7 @@ def strip_and_validate(keyframes, chunksizes, method):
                 bitvectors[skipped_chunk_idx] = '1' + bitvectors[skipped_chunk_idx][1:]
                 reduced_chunks[skipped_chunk_idx] = [interpolated_frame_data, *reduced_chunks[skipped_chunk_idx]]
                 already_handled_chunks.extend(skipped_chunks)
+
 
     return reduced_chunks, bitvectors
 
@@ -599,7 +603,7 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
 
     # The above is done so that the frames can be easily chunked by this function:
     rotations, locations, scales, uvcs, chunksizes = adaptive_chunk_frames(rotations, locations, scales, uvcs, num_frames)
-
+        
     # And now we can iterate through the chunks and strip out the None values, and save the results
     # We also might need to perform some interpolation inside these functions in order to satisfy the requirements of
     # the DSCS animation format
