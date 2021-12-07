@@ -74,7 +74,7 @@ class ExportMediaVision(bpy.types.Operator):
                               strip_single_frame_transforms=False,
                               required_transforms={})
 
-        generate_files_from_intermediate_format(filepath, model_data, self.platform, animation_only=self.export_mode=="Animation")
+        generate_files_from_intermediate_format(filepath, model_data, parent_obj.name, self.platform, animation_only=self.export_mode=="Animation")
 
     def find_armatures(self, parent_object):
         armatures = [item for item in parent_object.children if item.type == "ARMATURE"]

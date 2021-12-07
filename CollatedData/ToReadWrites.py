@@ -11,7 +11,7 @@ from ..Utilities.StringHashing import dscs_name_hash
 from ..Utilities.Matrices import get_total_transform_matrix
 
 
-def generate_files_from_intermediate_format(filepath, model_data, platform='PC', animation_only=False):
+def generate_files_from_intermediate_format(filepath, model_data, model_name, platform='PC', animation_only=False):
     file_folder = os.path.join(*os.path.split(filepath)[:-1])
 
     sk = make_skelinterface(filepath, model_data, not animation_only)
@@ -20,7 +20,7 @@ def generate_files_from_intermediate_format(filepath, model_data, platform='PC',
         make_geominterface(filepath, model_data, sk, platform)
 
     for animation_name in model_data.animations:
-        make_animreader(file_folder, model_data, animation_name, os.path.splitext(os.path.split(filepath)[-1])[0], sk)
+        make_animreader(file_folder, model_data, animation_name, model_name, sk)
 
 
 def make_nameinterface(filepath, model_data):
