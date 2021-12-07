@@ -8,7 +8,7 @@ from bpy.props import BoolProperty, EnumProperty
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
 from ...FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
-from .ExportAnimation import export_animations
+from .ExportAnimation import export_animations, create_blank_anim
 from ..DSCSBlenderUtils import find_selected_model
 
 from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, generate_transform_delta, decompose_matrix, generate_transform_matrix
@@ -40,7 +40,7 @@ class ExportMediaVision(bpy.types.Operator):
         export_folder, filename = os.path.split(filepath)
 
         armature = self.find_armatures(parent_obj)
-        base_anim = armature.animation_data.nla_tracks[parent_obj.name]
+        base_anim = armature.animation_data.nla_tracks.get(parent_obj.name, None)
         if self.export_mode == "Modelling" or self.export_mode == "QA":
             export_images_folder = os.path.join(export_folder, 'images')
             os.makedirs(export_images_folder, exist_ok=True)
@@ -52,7 +52,7 @@ class ExportMediaVision(bpy.types.Operator):
 
             used_materials = []
             used_textures = []
-            self.export_skeleton(armature, base_anim.strips[0].action, model_data)
+            self.export_skeleton(armature, None if base_anim is None else base_anim.strips[0].action, model_data)
             self.export_meshes(parent_obj, model_data, used_materials)
             self.export_materials(model_data, used_materials, used_textures)
             self.export_textures(used_textures, model_data, export_images_folder)
@@ -62,11 +62,14 @@ class ExportMediaVision(bpy.types.Operator):
         # The first frame of the base animation becomes the rest pose
         # Strip out any transforms in the base animation that are only for the first frame: DSCS will get this from
         # the rest pose, allowing us to make the animation files smaller
-        transforms_not_in_base = {'location': [], 'rotation_quaternion': [], 'scale': []}
-        export_animations([base_anim], model_data,
-                          strip_single_frame_transforms=True,
-                          required_transforms={},
-                          out_transforms=transforms_not_in_base)
+        if base_anim is None:
+            create_blank_anim(model_data, parent_obj.name)
+        else:
+            transforms_not_in_base = {'location': [], 'rotation_quaternion': [], 'scale': []}
+            export_animations([base_anim], model_data,
+                              strip_single_frame_transforms=True,
+                              required_transforms={},
+                              out_transforms=transforms_not_in_base)
 
         if self.export_mode == "Animation" or self.export_mode == "QA":
             overlay_anims = [track for track in armature.animation_data.nla_tracks if track.name != parent_obj.name]
@@ -110,8 +113,11 @@ class ExportMediaVision(bpy.types.Operator):
             model_data.skeleton.inverse_bind_pose_matrices.append(np.linalg.inv(np.array(bone.matrix_local)))
 
         parent_bones = {c: p for c, p in model_data.skeleton.bone_relations}
-        model_data.skeleton.rest_pose = extract_rest_pose_from_base_animation(model_data.skeleton.bone_names, parent_bones, base_animation,
-                                                                              [np.array(bone.matrix_local) for bone in armature.data.bones])
+        if base_animation is None:
+            model_data.skeleton.rest_pose = matrices_to_rest_pose(model_data.skeleton.bone_names, parent_bones, [np.array(bone.matrix_local) for bone in armature.data.bones])
+        else:
+            model_data.skeleton.rest_pose = extract_rest_pose_from_base_animation(model_data.skeleton.bone_names, parent_bones, base_animation,
+                                                                                  [np.array(bone.matrix_local) for bone in armature.data.bones])
 
         # Get the unknown data
         model_data.skeleton.unknown_data['unknown_0x0C'] = armature.get('unknown_0x0C', 0)
@@ -473,6 +479,18 @@ def round_to_sigfigs(x, p):
     x_positive = np.where(np.isfinite(x) & (x != 0), np.abs(x), 10**(p-1))
     mags = 10 ** (p - 1 - np.floor(np.log10(x_positive)))
     return np.round(x * mags) / mags
+
+
+def matrices_to_rest_pose(bone_names, parent_bones, bind_pose_matrices):
+    rest_pose = []
+    for i, bone_name in enumerate(bone_names):
+        bm = calculate_bone_matrix_relative_to_parent(i, parent_bones, bind_pose_matrices)
+        # Shift from local space to model-space
+        rloc, rquat, rscale = decompose_matrix(bm, WXYZ=False)
+        if np.isnan(rquat[0]):
+            rquat = [0., 0., 0., 0.5]
+        rest_pose.append([rquat, [*rloc, 1.], [*rscale, 1.]])
+    return rest_pose
 
 
 def extract_rest_pose_from_base_animation(bone_names, parent_bones, base_animation, bind_pose_matrices):

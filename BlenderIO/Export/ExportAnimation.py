@@ -3,6 +3,15 @@ from ...Utilities.ActionDataRetrieval import get_action_data
 from ...Utilities.Interpolation import produce_interpolation_method_dict, lerp, slerp
 
 
+def create_blank_anim(model_data, anim_name):
+    ad = model_data.new_anim(anim_name)
+    for bone_idx, bone_name in enumerate(model_data.skeleton.bone_names):
+        ad.add_rotation_fcurve(bone_idx, [], [])
+        ad.add_location_fcurve(bone_idx, [], [])
+        ad.add_scale_fcurve(bone_idx, [], [])
+    ad.uv_data = {}
+
+
 def export_animations(nla_tracks, model_data, strip_single_frame_transforms, required_transforms, out_transforms=None):
     """
     Main entry point to the animation export functionality.
