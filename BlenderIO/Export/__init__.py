@@ -553,10 +553,12 @@ def get_all_nonempty_vertex_groups(mesh_obj):
 
 
 def validate_blender_data(parent_obj):
+    bpy.context.view_layer.objects.active = None
     armature = parent_obj.children[0]
     meshes = armature.children
     check_vertex_group_counts(meshes)
     check_vertex_weight_counts(meshes)
+    bpy.context.view_layer.objects.active = None
 
 
 def check_vertex_group_counts(mesh_objs):
@@ -568,7 +570,10 @@ def check_vertex_group_counts(mesh_objs):
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action='DESELECT')
         for mesh in bad_meshes:
-            mesh.select = True
+            try:
+                mesh.select = True
+            except:
+                mesh.select_set(True)
         to_print = []
         for i, mesh_obj in enumerate(bad_meshes):
             nonempties = get_all_nonempty_vertex_groups(mesh_obj)
@@ -600,12 +605,17 @@ def check_vertex_weight_counts(mesh_objs):
             all_bad_vertices.append(bad_vertices)
 
     if len(bad_meshes):
+        bpy.context.view_layer.objects.active = bad_meshes[0]
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_mode(type='VERT')
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action='DESELECT')
-        bad_meshes[0].select = True
+        try:
+            bad_meshes[0].select = True
+        except Exception as e:
+            bad_meshes[0].select_set(True)
+
         bad_vertex_counts = [len(bvs) for bvs in all_bad_vertices]
         for bv in all_bad_vertices[0]:
             bv.select = True
