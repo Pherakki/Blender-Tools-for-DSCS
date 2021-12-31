@@ -553,11 +553,13 @@ def get_all_nonempty_vertex_groups(mesh_obj):
 
 
 def validate_blender_data(parent_obj):
+    bpy.ops.object.select_all(action='DESELECT')
     bpy.context.view_layer.objects.active = None
     armature = parent_obj.children[0]
     meshes = armature.children
     check_vertex_group_counts(meshes)
     check_vertex_weight_counts(meshes)
+    bpy.ops.object.select_all(action='DESELECT')
     bpy.context.view_layer.objects.active = None
 
 
@@ -570,10 +572,7 @@ def check_vertex_group_counts(mesh_objs):
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action='DESELECT')
         for mesh in bad_meshes:
-            try:
-                mesh.select = True
-            except:
-                mesh.select_set(True)
+            mesh.select_set(True)
         to_print = []
         for i, mesh_obj in enumerate(bad_meshes):
             nonempties = get_all_nonempty_vertex_groups(mesh_obj)
@@ -611,14 +610,14 @@ def check_vertex_weight_counts(mesh_objs):
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action='DESELECT')
-        try:
-            bad_meshes[0].select = True
-        except Exception as e:
-            bad_meshes[0].select_set(True)
+        bad_meshes[0].select_set(True)
 
         bad_vertex_counts = [len(bvs) for bvs in all_bad_vertices]
         for bv in all_bad_vertices[0]:
-            bv.select = True
+            try:
+                bv.select = True
+            except:
+                bv.select_set(True)
         bpy.ops.object.mode_set(mode="EDIT")
         newline = '\n'
         raise Exception(f"The following meshes have vertices included in more than 4 vertex groups:\n"
