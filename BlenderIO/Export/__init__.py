@@ -602,9 +602,16 @@ def check_vertex_weight_counts(mesh_objs):
         if len(bad_vertices):
             bad_meshes.append(mesh_obj)
             all_bad_vertices.append(bad_vertices)
-
     if len(bad_meshes):
-        bpy.context.view_layer.objects.active = bad_meshes[0]
+        try:
+            bpy.context.view_layer.objects.active = bad_meshes[0]
+        except Exception as e:
+            res = f"{e} "
+            res += " ||| "
+            res += " ".join([f"{mob}" for mob in mesh_objs])
+            res += " ||| "
+            res += " ".join([f"{mob}" for mob in bad_meshes])
+            raise Exception(res)
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_mode(type='VERT')
         bpy.ops.mesh.select_all(action='DESELECT')
