@@ -19,6 +19,7 @@ class ImportMediaVision(bpy.types.Operator):
     import_mode = None
     img_to_dds = None
     use_custom_nodes = None
+    merge_vertices = None
 
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
@@ -31,7 +32,7 @@ class ImportMediaVision(bpy.types.Operator):
         bpy.context.collection.objects.link(parent_obj)
         import_skeleton(parent_obj, armature_name, model_data)
         import_materials(model_data, self.img_to_dds, self.use_custom_nodes)
-        import_meshes(parent_obj, filename, model_data, armature_name)
+        import_meshes(parent_obj, filename, model_data, armature_name, self.merge_vertices)
         import_cameras(parent_obj, model_data)
         import_lights(parent_obj, model_data)
         add_rest_pose_to_base_anim(filename, model_data)
@@ -111,6 +112,12 @@ class ImportDSCS(ImportMediaVision, ImportHelper):
         default=True
     )
 
+    merge_vertices: BoolProperty(
+        name="Merge Vertices",
+        description="Merge the OpenGL vertices (which look like duplicates in Blender) to Blender vertices.",
+        default=True
+    )
+
 
 class ImportMegido(ImportMediaVision, ImportHelper):
     bl_idname = 'import_file.import_megido'
@@ -141,5 +148,11 @@ class ImportMegido(ImportMediaVision, ImportHelper):
     use_custom_nodes: BoolProperty(
         name="Emulate Materials",
         description="Create a material node tree to partially emulate Media.Vision rendering.",
+        default=True
+    )
+
+    merge_vertices: BoolProperty(
+        name="Merge Vertices",
+        description="Merge the OpenGL vertices (which look like duplicates in Blender) to Blender vertices.",
         default=True
     )

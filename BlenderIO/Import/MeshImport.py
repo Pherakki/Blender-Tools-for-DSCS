@@ -12,11 +12,11 @@ def set_mesh_vertex_attribute_labels(vert, mesh):
     mesh['export_binormals'] = 'Binormal' in attributes
 
 
-def import_meshes(parent_obj, filename, model_data, armature_name):
+def import_meshes(parent_obj, filename, model_data, armature_name, merge_vertices):
     for i, IF_mesh in enumerate(model_data.meshes):
         faces = [poly.indices for poly in IF_mesh.polygons]
 
-        new_verts, new_tris, new_facevert_to_old_facevert_map = merge_opengl_vertices(IF_mesh.vertices, faces)
+        new_verts, new_tris, new_facevert_to_old_facevert_map = merge_opengl_vertices(IF_mesh.vertices, faces, merge_vertices)
         vert_positions = [np.array(v.position) for v in new_verts]
 
         # Init mesh
@@ -128,7 +128,7 @@ class BlenderVertexInfo:
         self.weights = weights
 
 
-def merge_opengl_vertices(vertices, triangles):
+def merge_opengl_vertices(vertices, triangles, merge_vertices):
     """
     Given a list of input vertices and polygons, merge vertices with the same position attribute with face normals
     within 90 degrees of the normal of the best-fitting plane of the centres of all faces associated with that position.
@@ -138,76 +138,87 @@ def merge_opengl_vertices(vertices, triangles):
     a list of triangles mapped to the new vertices,
     a map of (new_face_idx, new_vert_idx) to (old_face_idx, old_vert_idx)
     """
-    # First get all vertex-face pairs
-    # We plan to merge some of these into Blender vertices (i.e. collections of OpenGL vertices with the same position)
-    # However, we need to ensure that e.g. vertices making up faces with opposite normals don't get merged unless they
-    # form a boundary of the polygon
-    # So in this process, we'll also calculate the face normals and centres
-    # NOTE: THIS WILL DROP ANY LOOSE VERTICES!!!
-    loop_candidates = []
-    for triangle_idx, triangle in enumerate(triangles):
-        vert_positions = [vertices[vert_idx]['Position'] for vert_idx in triangle]
-        edge_1 = vert_positions[1] - vert_positions[0]
-        edge_2 = vert_positions[2] - vert_positions[1]
-        face_normal = np.cross(edge_1, edge_2)
-        face_centre = np.mean(vert_positions, axis=0)
-        for vert_idx in triangle:
-            loop_candidates.append(LoopCandidate(vert_idx, triangle_idx, face_normal, face_centre, vertices[vert_idx]))
-    # Now, loop over the loop candidates and collect them by position
-    # We'll split these collections by face normals after the collections have been populated
-    # Can this list be 'consumed' element-by-element by popping elements off the front to waste less memory?
-    grouped_loop_candidates = {}
-    for loop_candidate in loop_candidates:
-        pos = tuple(loop_candidate.data['Position'])
-        if pos not in grouped_loop_candidates:
-            grouped_loop_candidates[pos] = []
-        grouped_loop_candidates[pos].append(loop_candidate)
+    if merge_vertices:
+        # First get all vertex-face pairs
+        # We plan to merge some of these into Blender vertices (i.e. collections of OpenGL vertices with the same position)
+        # However, we need to ensure that e.g. vertices making up faces with opposite normals don't get merged unless they
+        # form a boundary of the polygon
+        # So in this process, we'll also calculate the face normals and centres
+        # NOTE: THIS WILL DROP ANY LOOSE VERTICES!!!
+        loop_candidates = []
+        for triangle_idx, triangle in enumerate(triangles):
+            vert_positions = [vertices[vert_idx]['Position'] for vert_idx in triangle]
+            edge_1 = vert_positions[1] - vert_positions[0]
+            edge_2 = vert_positions[2] - vert_positions[1]
+            face_normal = np.cross(edge_1, edge_2)
+            face_centre = np.mean(vert_positions, axis=0)
+            for vert_idx in triangle:
+                loop_candidates.append(LoopCandidate(vert_idx, triangle_idx, face_normal, face_centre, vertices[vert_idx]))
+        # Now, loop over the loop candidates and collect them by position
+        # We'll split these collections by face normals after the collections have been populated
+        # Can this list be 'consumed' element-by-element by popping elements off the front to waste less memory?
+        grouped_loop_candidates = {}
+        for loop_candidate in loop_candidates:
+            pos = tuple(loop_candidate.data['Position'])
+            if pos not in grouped_loop_candidates:
+                grouped_loop_candidates[pos] = []
+            grouped_loop_candidates[pos].append(loop_candidate)
 
-    # Now build the final list of unique loops going into each vertex - these will form the basis of the Blender loops
-    new_vertices = []
-    old_facevert_to_new_vert = {}
-    for position, candidate_group in grouped_loop_candidates.items():
-        start_idx = len(new_vertices)
-        group_1 = []
-        group_2 = []
-        all_centres = np.array([candidate_loop.face_centre for candidate_loop in candidate_group])
-        # Now find the plane closest to all the face centres
-        # We'll store this as the associated covector; i.e. the plane normal
-        plane_basis = np.linalg.svd((all_centres - np.mean(all_centres, axis=0)).T)[0]
-        covector = plane_basis[:, -1]
-        # This covector defines a plane of separation we can use to split the candidate loops into two groups: aligned
-        # with and anti-aligned with the plane of separation normal
-        # Basically, if we have two surfaces directly on top of each other but with opposite normals,
-        # this technique will allow us to separate which loop candidates should go into the "upper" surface and which
-        # should go into the "lower" surface
-        for old_facevertex in candidate_group:
-            test_normal = old_facevertex.face_normal
-            (group_1 if np.dot(covector, test_normal) >= 0 else group_2).append(old_facevertex)
+        # Now build the final list of unique loops going into each vertex - these will form the basis of the Blender loops
+        new_vertices = []
+        old_facevert_to_new_vert = {}
+        for position, candidate_group in grouped_loop_candidates.items():
+            start_idx = len(new_vertices)
+            group_1 = []
+            group_2 = []
+            all_centres = np.array([candidate_loop.face_centre for candidate_loop in candidate_group])
+            # Now find the plane closest to all the face centres
+            # We'll store this as the associated covector; i.e. the plane normal
+            plane_basis = np.linalg.svd((all_centres - np.mean(all_centres, axis=0)).T)[0]
+            covector = plane_basis[:, -1]
+            # This covector defines a plane of separation we can use to split the candidate loops into two groups: aligned
+            # with and anti-aligned with the plane of separation normal
+            # Basically, if we have two surfaces directly on top of each other but with opposite normals,
+            # this technique will allow us to separate which loop candidates should go into the "upper" surface and which
+            # should go into the "lower" surface
+            for old_facevertex in candidate_group:
+                test_normal = old_facevertex.face_normal
+                (group_1 if np.dot(covector, test_normal) >= 0 else group_2).append(old_facevertex)
 
-        # Ensure that group 1 will always have at least one element in it
-        if len(group_2) > len(group_1):
-            group_1, group_2 = group_2, group_1
-        # Assume that all loops are weighted the same - no support for non-manifold data yet
-        new_vertices.append(BlenderVertexInfo(position, group_1[0].data["WeightedBoneID"], group_1[0].data["BoneWeight"]))
-        for old_facevert in group_1:
-            old_facevert_to_new_vert[(old_facevert.face_id, old_facevert.vert_id)] = start_idx
-        if len(group_2):
-            new_vertices.append(BlenderVertexInfo(position, group_2[0].data["WeightedBoneID"], group_2[0].data["BoneWeight"]))
-            for old_facevert in group_2:
-                old_facevert_to_new_vert[(old_facevert.face_id, old_facevert.vert_id)] = start_idx + 1
+            # Ensure that group 1 will always have at least one element in it
+            if len(group_2) > len(group_1):
+                group_1, group_2 = group_2, group_1
+            # Assume that all loops are weighted the same - no support for non-manifold data yet
+            new_vertices.append(BlenderVertexInfo(position, group_1[0].data["WeightedBoneID"], group_1[0].data["BoneWeight"]))
+            for old_facevert in group_1:
+                old_facevert_to_new_vert[(old_facevert.face_id, old_facevert.vert_id)] = start_idx
+            if len(group_2):
+                new_vertices.append(BlenderVertexInfo(position, group_2[0].data["WeightedBoneID"], group_2[0].data["BoneWeight"]))
+                for old_facevert in group_2:
+                    old_facevert_to_new_vert[(old_facevert.face_id, old_facevert.vert_id)] = start_idx + 1
 
-    # Now we can generate some new triangles based on our merged vertices
-    new_triangles = []
-    new_facevert_to_old_facevert_map = {}
-    for face_id, triangle in enumerate(triangles):
-        new_triangle = []
-        for vert_id in triangle:
-            new_vert_id = old_facevert_to_new_vert[(face_id, vert_id)]
-            new_triangle.append(new_vert_id)
-            new_facevert_to_old_facevert_map[(face_id, new_vert_id)] = (face_id, vert_id)
-        new_triangles.append(new_triangle)
 
-    return new_vertices, new_triangles, new_facevert_to_old_facevert_map
+        # Now we can generate some new triangles based on our merged vertices
+        new_triangles = []
+        new_facevert_to_old_facevert_map = {}
+        for face_id, triangle in enumerate(triangles):
+            new_triangle = []
+            for vert_id in triangle:
+                new_vert_id = old_facevert_to_new_vert[(face_id, vert_id)]
+                new_triangle.append(new_vert_id)
+                new_facevert_to_old_facevert_map[(face_id, new_vert_id)] = (face_id, vert_id)
+            new_triangles.append(new_triangle)
+
+        return new_vertices, new_triangles, new_facevert_to_old_facevert_map
+    else:
+        new_vertices = []
+        for vert in vertices:
+            new_vertices.append(BlenderVertexInfo(vert['Position'], vert["WeightedBoneID"], vert["BoneWeight"]))
+        new_facevert_to_old_facevert_map = {}
+        for face_id, triangle in enumerate(triangles):
+            for vert_id in triangle:
+                new_facevert_to_old_facevert_map[(face_id, vert_id)] = (face_id, vert_id)
+        return new_vertices, triangles, new_facevert_to_old_facevert_map
 
 
 def make_vertex_groups(blender_vert_infos, local_idx_to_bone_idx_map):
