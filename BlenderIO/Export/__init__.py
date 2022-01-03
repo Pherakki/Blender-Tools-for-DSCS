@@ -103,6 +103,7 @@ class ExportMediaVision(bpy.types.Operator):
 
     def export_skeleton(self, armature, base_animation, model_data):
         bone_name_list = [bone.name for bone in armature.data.bones]
+
         for i, bone in enumerate(armature.data.bones):
             name = bone.name
             parent_bone = bone.parent
@@ -111,14 +112,13 @@ class ExportMediaVision(bpy.types.Operator):
             model_data.skeleton.bone_names.append(name)
             model_data.skeleton.bone_relations.append([i, parent_id])
             model_data.skeleton.inverse_bind_pose_matrices.append(np.linalg.inv(np.array(bone.matrix_local)))
-
+        
         parent_bones = {c: p for c, p in model_data.skeleton.bone_relations}
         if base_animation is None:
             model_data.skeleton.rest_pose = matrices_to_rest_pose(model_data.skeleton.bone_names, parent_bones, [np.array(bone.matrix_local) for bone in armature.data.bones])
         else:
             model_data.skeleton.rest_pose = extract_rest_pose_from_base_animation(model_data.skeleton.bone_names, parent_bones, base_animation,
                                                                                   [np.array(bone.matrix_local) for bone in armature.data.bones])
-
         # Get the unknown data
         model_data.skeleton.unknown_data['unknown_0x0C'] = armature.get('unknown_0x0C', 0)
         model_data.skeleton.unknown_data['unknown_data_1'] = armature.get('unknown_data_1', [])
@@ -524,6 +524,8 @@ def extract_rest_pose_from_base_animation(bone_names, parent_bones, base_animati
             if np.isnan(rquat[0]):
                 rquat = [0., 0., 0., 0.5]
             rest_pose.append([rquat, [*rloc, 1.], [*rscale, 1.]])
+        else:
+            rest_pose.append([[0., 0., 0., 1.], [0., 0., 0., 1.], [1., 1., 1., 1.]])
     return rest_pose
 
 
