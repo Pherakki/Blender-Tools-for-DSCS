@@ -620,6 +620,7 @@ def check_vertex_weight_counts(mesh_objs):
         bad_meshes[0].select_set(True)
 
         bad_vertex_counts = [len(bvs) for bvs in all_bad_vertices]
+        print(all_bad_vertices)  # For some reason, some verts don't decide to get selected without this...
         for bv in all_bad_vertices[0]:
             try:
                 bv.select = True
