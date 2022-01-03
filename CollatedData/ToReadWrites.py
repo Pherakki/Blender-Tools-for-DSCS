@@ -13,7 +13,7 @@ from ..Utilities.Matrices import get_total_transform_matrix
 
 def generate_files_from_intermediate_format(filepath, model_data, model_name, platform='PC', animation_only=False):
     file_folder = os.path.join(*os.path.split(filepath)[:-1])
-
+        
     sk = make_skelinterface(filepath, model_data, not animation_only)
     if not animation_only:
         make_nameinterface(filepath, model_data)
@@ -36,10 +36,10 @@ def make_skelinterface(filepath, model_data, export=True):
     skelInterface.num_uv_channels = model_data.skeleton.unknown_data.get('unknown_0x0C', 0)
     skelInterface.parent_bones = model_data.skeleton.bone_relations
     skelInterface.rest_pose = model_data.skeleton.rest_pose
-
-    skelInterface.unknown_data_1 = model_data.skeleton.unknown_data.get('unknown_data_1', [0]*skelInterface.num_uv_channels)
+    
+    skelInterface.unknown_data_1 = list(model_data.skeleton.unknown_data.get('unknown_data_1', [0]*skelInterface.num_uv_channels))
     skelInterface.bone_name_hashes = [bytes.fromhex(dscs_name_hash(bone_name)) for bone_name in model_data.skeleton.bone_names]
-    skelInterface.unknown_data_3 = model_data.skeleton.unknown_data.get('unknown_data_3', [0]*skelInterface.num_uv_channels)
+    skelInterface.unknown_data_3 = list(model_data.skeleton.unknown_data.get('unknown_data_3', [0]*skelInterface.num_uv_channels))
     skelInterface.uv_channel_material_name_hashes = model_data.skeleton.unknown_data.get('unknown_data_4', [0]*skelInterface.num_uv_channels)
 
     if export:
