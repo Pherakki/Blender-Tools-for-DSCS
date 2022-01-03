@@ -43,36 +43,6 @@ def import_meshes(parent_obj, filename, model_data, armature_name, merge_vertice
 
         loop_data = [IF_mesh.vertices[map_of_loops_to_model_verts[loop_idx]] for loop_idx in range(n_loops)]
 
-        # Assign normals
-        # Works thanks to this stackexchange answer https://blender.stackexchange.com/a/75957
-        # which a few of these comments below are also taken from
-        if 'Normal' in IF_mesh.vertices[0]:
-            mesh.create_normals_split()
-            for face in mesh.polygons:
-                face.use_smooth = True  # loop normals have effect only if smooth shading ?
-
-            # Set loop normals
-            loop_normals = [Vector(l["Normal"]) for l in loop_data]
-            mesh.loops.foreach_set("normal", [subitem for item in loop_normals for subitem in item])
-
-            mesh.validate(clean_customdata=False)  # important to not remove loop normals here!
-            mesh.update()
-
-            clnors = array.array('f', [0.0] * (len(mesh.loops) * 3))
-            mesh.loops.foreach_get("normal", clnors)
-
-            mesh.polygons.foreach_set("use_smooth", [True] * len(mesh.polygons))
-            # This line is pretty smart (came from the stackoverflow answer)
-            # 1. Creates three copies of the same iterator over clnors
-            # 2. Splats those three copies into a zip
-            # 3. Each iteration of the zip now calls the iterator three times, meaning that three consecutive elements
-            #    are popped off
-            # 4. Turn that triplet into a tuple
-            # In this way, a flat list is iterated over in triplets without wasting memory by copying the whole list
-            mesh.normals_split_custom_set(tuple(zip(*(iter(clnors),) * 3)))
-
-            mesh.use_auto_smooth = True
-
         # Assign materials
         material_name = model_data.materials[IF_mesh.material_id].name
         active_material = bpy.data.materials[material_name]
@@ -105,10 +75,41 @@ def import_meshes(parent_obj, filename, model_data, armature_name, merge_vertice
         modifier = mesh_object.modifiers.new(name="Armature", type="ARMATURE")
         modifier.object = bpy.data.objects[armature_name]
 
+        # Assign normals
+        # Works thanks to this stackexchange answer https://blender.stackexchange.com/a/75957
+        # which a few of these comments below are also taken from
+        # Do this LAST because it can remove some loops
+        if 'Normal' in IF_mesh.vertices[0]:
+            mesh.create_normals_split()
+            for face in mesh.polygons:
+                face.use_smooth = True  # loop normals have effect only if smooth shading ?
+
+            # Set loop normals
+            loop_normals = [Vector(l["Normal"]) for l in loop_data]
+            mesh.loops.foreach_set("normal", [subitem for item in loop_normals for subitem in item])
+
+            mesh.validate(clean_customdata=False)  # important to not remove loop normals here!
+            mesh.update()
+
+            clnors = array.array('f', [0.0] * (len(mesh.loops) * 3))
+            mesh.loops.foreach_get("normal", clnors)
+
+            mesh.polygons.foreach_set("use_smooth", [True] * len(mesh.polygons))
+            # This line is pretty smart (came from the stackoverflow answer)
+            # 1. Creates three copies of the same iterator over clnors
+            # 2. Splats those three copies into a zip
+            # 3. Each iteration of the zip now calls the iterator three times, meaning that three consecutive elements
+            #    are popped off
+            # 4. Turn that triplet into a tuple
+            # In this way, a flat list is iterated over in triplets without wasting memory by copying the whole list
+            mesh.normals_split_custom_set(tuple(zip(*(iter(clnors),) * 3)))
+
+            mesh.use_auto_smooth = True
+
         mesh.validate(verbose=True, clean_customdata=False)
         set_mesh_vertex_attribute_labels(IF_mesh.vertices[0], mesh_object)
         mesh.update()
-
+        
     # Top-level unknown data
     parent_obj['unknown_footer_data'] = model_data.unknown_data['unknown_footer_data']
 
@@ -155,6 +156,7 @@ def merge_opengl_vertices(vertices, triangles, merge_vertices):
             face_centre = np.mean(vert_positions, axis=0)
             for vert_idx in triangle:
                 loop_candidates.append(LoopCandidate(vert_idx, triangle_idx, face_normal, face_centre, vertices[vert_idx]))
+
         # Now, loop over the loop candidates and collect them by position
         # We'll split these collections by face normals after the collections have been populated
         # Can this list be 'consumed' element-by-element by popping elements off the front to waste less memory?
@@ -189,6 +191,7 @@ def merge_opengl_vertices(vertices, triangles, merge_vertices):
             # Ensure that group 1 will always have at least one element in it
             if len(group_2) > len(group_1):
                 group_1, group_2 = group_2, group_1
+
             # Assume that all loops are weighted the same - no support for non-manifold data yet
             new_vertices.append(BlenderVertexInfo(position, group_1[0].data["WeightedBoneID"], group_1[0].data["BoneWeight"]))
             for old_facevert in group_1:
@@ -197,7 +200,6 @@ def merge_opengl_vertices(vertices, triangles, merge_vertices):
                 new_vertices.append(BlenderVertexInfo(position, group_2[0].data["WeightedBoneID"], group_2[0].data["BoneWeight"]))
                 for old_facevert in group_2:
                     old_facevert_to_new_vert[(old_facevert.face_id, old_facevert.vert_id)] = start_idx + 1
-
 
         # Now we can generate some new triangles based on our merged vertices
         new_triangles = []
