@@ -27,10 +27,11 @@ def import_meshes(parent_obj, filename, model_data, armature_name, merge_vertice
         mesh_object.data.from_pydata(vert_positions, [], new_tris)
         bpy.context.collection.objects.link(mesh_object)
 
+
         # Get the loop data
         n_loops = len(mesh.loops)
         map_of_loops_to_model_verts = {}
-        map_of_model_verts_to_blender_verts = {}
+        # map_of_model_verts_to_blender_verts = {}
         for new_poly_idx, poly in enumerate(mesh.polygons):
             for loop_idx in poly.loop_indices:
                 assert loop_idx not in map_of_loops_to_model_verts, "Loop already exists!"
@@ -38,7 +39,7 @@ def import_meshes(parent_obj, filename, model_data, armature_name, merge_vertice
                 # Take only the vert id from the old (face_id, vert_id) pair
                 old_vert_idx = new_facevert_to_old_facevert_map[(new_poly_idx, new_vert_idx)][1]
                 map_of_loops_to_model_verts[loop_idx] = old_vert_idx
-                map_of_model_verts_to_blender_verts[old_vert_idx] = new_vert_idx
+                # map_of_model_verts_to_blender_verts[old_vert_idx] = new_vert_idx
 
         loop_data = [IF_mesh.vertices[map_of_loops_to_model_verts[loop_idx]] for loop_idx in range(n_loops)]
 
