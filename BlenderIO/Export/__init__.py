@@ -143,6 +143,8 @@ class ExportMediaVision(bpy.types.Operator):
             lnorms_zero = [tuple(normal) == zero_vec for normal in loop_normals]
             if (not mesh.has_custom_normals or any(lnorms_zero) or force_recalc_normals) and not force_not_recalc_normals:
                 print(f"Recalculating normals on mesh {i}...")
+                if not mesh.has_custom_normals:
+                    mesh.create_normals_split()
                 mesh.calc_normals_split()
                 res = []
                 for j, iszero in enumerate(lnorms_zero):
