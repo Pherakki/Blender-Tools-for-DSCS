@@ -683,11 +683,11 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
     )
 
     recalc_normal_mode: EnumProperty(
-        name="Recalculate Normals",
+        name="Recalc Normals",
         description="Policy for recalculating normals.",
-        items=[("As Required", "As Required", "Recalculates normals for meshes with invalid loop normals.", "", 0),
-               ("Always", "Always", "Recalculates loop normals for every mesh.", "", 1),
-               ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero.", "", 2)])
+        items=[("As Required", "As Required", "Recalculates normals for meshes with invalid loop normals", "", 0),
+               ("Always", "Always", "Recalculates loop normals for every mesh", "", 1),
+               ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero", "", 2)])
 
 
 class ExportMegido(ExportMediaVision, ExportHelper):
@@ -714,8 +714,8 @@ class ExportMegido(ExportMediaVision, ExportHelper):
     )
 
     recalc_normal_mode: EnumProperty(
-        name="Recalculate Normals",
+        name="Recalc Normals",
         description="Policy for recalculating normals.",
-        items=[("As Required", "As Required", "Recalculates normals for meshes with invalid loop normals.", "", 0),
-               ("Always", "Always", "Recalculates loop normals for every mesh.", "", 1),
-               ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero.", "", 2)])
+        items=[("As Required", "As Required", "Recalculates normals for meshes with invalid loop normals", "", 0),
+               ("Always", "Always", "Recalculates loop normals for every mesh", "", 1),
+               ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero", "", 2)])
