@@ -109,7 +109,7 @@ def import_meshes(parent_obj, filename, model_data, armature_name, merge_vertice
         mesh.validate(verbose=True, clean_customdata=False)
         set_mesh_vertex_attribute_labels(IF_mesh.vertices[0], mesh_object)
         mesh.update()
-        
+
     # Top-level unknown data
     parent_obj['unknown_footer_data'] = model_data.unknown_data['unknown_footer_data']
 
