@@ -41,7 +41,7 @@ class ExportMediaVision(bpy.types.Operator):
         export_folder, filename = os.path.split(filepath)
 
         armature = self.find_armatures(parent_obj)
-        base_anim = armature.animation_data.nla_tracks.get(parent_obj.name, None)
+        base_anim = armature.animation_data.nla_tracks.get("base", None)
         if self.export_mode == "Modelling" or self.export_mode == "QA":
             export_images_folder = os.path.join(export_folder, 'images')
             os.makedirs(export_images_folder, exist_ok=True)
@@ -64,21 +64,21 @@ class ExportMediaVision(bpy.types.Operator):
         # Strip out any transforms in the base animation that are only for the first frame: DSCS will get this from
         # the rest pose, allowing us to make the animation files smaller
         if base_anim is None:
-            create_blank_anim(model_data, parent_obj.name)
+            create_blank_anim(model_data, filename)
         else:
             transforms_not_in_base = {'location': [], 'rotation_quaternion': [], 'scale': []}
-            export_animations([base_anim], model_data,
+            export_animations([base_anim], model_data, filename,
                               strip_single_frame_transforms=True,
                               required_transforms={},
                               out_transforms=transforms_not_in_base)
 
         if self.export_mode == "Animation" or self.export_mode == "QA":
-            overlay_anims = [track for track in armature.animation_data.nla_tracks if track.name != parent_obj.name]
-            export_animations(overlay_anims, model_data,
+            overlay_anims = [track for track in armature.animation_data.nla_tracks if track.name != "base"]
+            export_animations(overlay_anims, model_data, filename,
                               strip_single_frame_transforms=False,
                               required_transforms={})
 
-        generate_files_from_intermediate_format(filepath, model_data, parent_obj.name, self.platform, animation_only=self.export_mode=="Animation")
+        generate_files_from_intermediate_format(filepath, model_data, filename, self.platform, animation_only=self.export_mode=="Animation")
 
     def find_armatures(self, parent_object):
         armatures = [item for item in parent_object.children if item.type == "ARMATURE"]

@@ -1,14 +1,18 @@
 import bpy
 
 
-def import_animations(armature_name, model_data):
+def import_animations(name_prefix, armature_name, model_data):
     model_armature = bpy.data.objects[armature_name]
     model_armature.animation_data_create()
     bpy.context.view_layer.objects.active = model_armature
     bpy.ops.object.mode_set(mode="POSE")
 
     for animation_name, animation_data in list(model_data.animations.items())[::-1]:
-        action = bpy.data.actions.new(animation_name)
+        if animation_name == name_prefix:
+            use_name = "base"
+        else:
+            use_name = animation_name[len(name_prefix):]
+        action = bpy.data.actions.new(use_name)
 
         for rotation_data, location_data, scale_data, bone_name in zip(animation_data.rotations.values(),
                                                                        animation_data.locations.values(),

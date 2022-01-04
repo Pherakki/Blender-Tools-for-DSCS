@@ -12,7 +12,7 @@ def create_blank_anim(model_data, anim_name):
     ad.uv_data = {}
 
 
-def export_animations(nla_tracks, model_data, strip_single_frame_transforms, required_transforms, out_transforms=None):
+def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_transforms, required_transforms, out_transforms=None):
     """
     Main entry point to the animation export functionality.
 
@@ -40,7 +40,9 @@ def export_animations(nla_tracks, model_data, strip_single_frame_transforms, req
             print(f"NLA track \'{nla_track.name}\' has {len(strips)} strips; must have one strip ONLY to export.")
             continue
 
-        ad = model_data.new_anim(nla_track.name)
+        if nla_track.name == "base": anim_name = name_prefix
+        else:                        anim_name = name_prefix + nla_track.name
+        ad = model_data.new_anim(anim_name)
 
         nla_strip = strips[0]
 
