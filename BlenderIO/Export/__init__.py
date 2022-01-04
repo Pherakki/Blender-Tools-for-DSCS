@@ -4,6 +4,7 @@ import os
 import shutil
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import BoolProperty, EnumProperty
+from mathutils import Vector
 
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
@@ -127,11 +128,28 @@ class ExportMediaVision(bpy.types.Operator):
 
     def export_meshes(self, parent_obj, model_data, used_materials):
         mat_names = []
+        force_recalc_normals = self.recalc_normal_mode == 1
+        force_not_recalc_normals = self.recalc_normal_mode == 2
+
         # Natural sort meshes by name so they're exported in the same order as the outliner
         sorted_meshes = natural_sort(parent_obj.children[0].children, accessor=lambda x: x.name)
         for i, mesh_obj in enumerate(sorted_meshes):
             md = model_data.new_mesh()
             mesh = mesh_obj.data
+
+            # Deal with any zero vectors
+            zero_vec = (0., 0., 0.)
+            loop_normals = [l.normal for l in mesh.loops]
+            lnorms_zero = [tuple(normal) == zero_vec for normal in loop_normals]
+            if (not mesh.has_custom_normals or any(lnorms_zero) or force_recalc_normals) and not force_not_recalc_normals:
+                print(f"Recalculating normals on mesh {i}...")
+                mesh.calc_normals_split()
+                res = []
+                for j, iszero in enumerate(lnorms_zero):
+                    res.append(mesh.loops[j].normal if iszero else loop_normals[j])
+                mesh.normals_split_custom_set(res)
+                print(f"Done.")
+                assert all([tuple(l.normal) != zero_vec for l in mesh.loops]), f"Blender screwed up recalculating the split normals on mesh {mesh_obj.name}. Try to set some custom split normals yourself to resolve the issue."
 
             link_loops = self.generate_link_loops(mesh)
             face_link_loops = self.generate_face_link_loops(mesh)
@@ -664,6 +682,13 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         description="Invert the exported UV coordinates."
     )
 
+    recalc_normal_mode: EnumProperty(
+        name="Recalculate Normals",
+        description="Policy for recalculating normals.",
+        items=[("As Required", "As Required", "Recalculates normals for meshes with invalid loop normals.", "", 0),
+               ("Always", "Always", "Recalculates loop normals for every mesh.", "", 1),
+               ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero.", "", 2)])
+
 
 class ExportMegido(ExportMediaVision, ExportHelper):
     bl_idname = 'export_file.export_megido'
@@ -687,3 +712,10 @@ class ExportMegido(ExportMediaVision, ExportHelper):
         name="Flip UVs",
         description="Invert the exported UV coordinates."
     )
+
+    recalc_normal_mode: EnumProperty(
+        name="Recalculate Normals",
+        description="Policy for recalculating normals.",
+        items=[("As Required", "As Required", "Recalculates normals for meshes with invalid loop normals.", "", 0),
+               ("Always", "Always", "Recalculates loop normals for every mesh.", "", 1),
+               ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero.", "", 2)])
