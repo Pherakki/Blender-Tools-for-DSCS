@@ -9,10 +9,10 @@ def import_animations(name_prefix, armature_name, model_data):
 
     for animation_name, animation_data in list(model_data.animations.items())[::-1]:
         if animation_name == name_prefix:
-            use_name = "base"
+            track_name = "base"
         else:
-            use_name = animation_name[len(name_prefix):]
-        action = bpy.data.actions.new(use_name)
+            track_name = animation_name[len(name_prefix):]
+        action = bpy.data.actions.new(animation_name)
 
         for rotation_data, location_data, scale_data, bone_name in zip(animation_data.rotations.values(),
                                                                        animation_data.locations.values(),
@@ -80,7 +80,7 @@ def import_animations(name_prefix, armature_name, model_data):
 
         model_armature.animation_data.action = action
         track = model_armature.animation_data.nla_tracks.new()
-        track.name = action.name
+        track.name = track_name
         track.mute = True
         nla_strip = track.strips.new(action.name, action.frame_range[0], action)
         nla_strip.scale = 24 / animation_data.playback_rate
