@@ -398,7 +398,7 @@ class ExportMediaVision(bpy.types.Operator):
 
     def export_textures(self, used_textures, model_data, export_images_folder):
         used_texture_names = [tex.name for tex in used_textures]
-        used_texture_paths = [tex.filepath for tex in used_textures]
+        used_texture_paths = [os.path.normpath(tex.filepath) for tex in used_textures]
         for texture, texture_path in zip(used_texture_names, used_texture_paths):
             tex = model_data.new_texture()
             tex.name = os.path.splitext(texture)[0]
