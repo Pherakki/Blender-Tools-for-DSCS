@@ -199,12 +199,14 @@ class ExportMediaVision(bpy.types.Operator):
                 face_link_loops[loop_idx] = face.index
         return face_link_loops
 
-    def fetch_data(self, obj, element, dsize, sigfigs):
+    def fetch_data(self, obj, element, sigfigs):
+        dsize = len(getattr(obj[0], element))
         data = array.array('f', [0.0] * (len(obj) * dsize))
         obj.foreach_get(element, data)
         return [tuple(round_to_sigfigs(datum, sigfigs)) for datum in zip(*(iter(data),) * dsize)]
 
-    def fetch_tangent(self, obj, dsize, sigfigs):
+    def fetch_tangent(self, obj, sigfigs):
+        dsize = len(getattr(obj[0], "tangent"))
         data = array.array('f', [0.0] * (len(obj) * dsize))
         obj.foreach_get("tangent", data)
 
@@ -241,14 +243,14 @@ class ExportMediaVision(bpy.types.Operator):
 
         # Extract normals
         if use_normals:
-            normals = [(elem,) for elem in self.fetch_data(mesh.loops, "normal", 3, sigfigs)]
+            normals = [(elem,) for elem in self.fetch_data(mesh.loops, "normal", sigfigs)]
         else:
             normals = [tuple()]*nloops
 
         # Extract UVs
         UV_data = [None]*n_uvs
         for i, map_id in enumerate(map_ids):
-            UV_data[i] = self.fetch_data(mesh.uv_layers[map_id].data, "uv", 2, sigfigs)
+            UV_data[i] = self.fetch_data(mesh.uv_layers[map_id].data, "uv", sigfigs)
         if len(UV_data):
             UV_data = [tuple(elems) for elems in zip(*UV_data)]
         else:
@@ -257,7 +259,7 @@ class ExportMediaVision(bpy.types.Operator):
         # Extract colours
         col_data = [None]*n_colours
         for i, map_id in enumerate(colour_map):
-            col_data[i] = self.fetch_data(mesh.vertex_colors[map_id].data, "color", 3, sigfigs)
+            col_data[i] = self.fetch_data(mesh.vertex_colors[map_id].data, "color", sigfigs)
         if len(col_data):
             col_data = [tuple(elems) for elems in zip(*col_data)]
         else:
@@ -265,7 +267,7 @@ class ExportMediaVision(bpy.types.Operator):
 
         # Extract tangents
         if can_export_tangents:
-            tangents = [(elem,) for elem in self.fetch_tangent(mesh.loops, 3, sigfigs)]
+            tangents = [(elem,) for elem in self.fetch_tangent(mesh.loops, sigfigs)]
         else:
             tangents = [tuple()]*nloops
 
