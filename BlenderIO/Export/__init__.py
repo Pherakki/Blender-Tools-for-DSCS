@@ -1,10 +1,11 @@
-import bpy
+import array
 import numpy as np
 import os
 import shutil
+
+import bpy
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import BoolProperty, EnumProperty
-from mathutils import Vector
 
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
@@ -156,7 +157,6 @@ class ExportMediaVision(bpy.types.Operator):
             link_loops = self.generate_link_loops(mesh)
             face_link_loops = self.generate_face_link_loops(mesh)
             export_verts, export_faces, vgroup_verts, vgroup_wgts = self.split_verts_by_loop_data(mesh_obj, link_loops, face_link_loops, model_data)
-
             if self.flip_uvs:
                 for key in ['UV', 'UV2', 'UV3']:
                     if key in export_verts[0]:
@@ -200,6 +200,19 @@ class ExportMediaVision(bpy.types.Operator):
                 face_link_loops[loop_idx] = face.index
         return face_link_loops
 
+    def fetch_data(self, obj, element, dsize, sigfigs):
+        data = array.array('f', [0.0] * (len(obj) * dsize))
+        obj.foreach_get(element, data)
+        return [tuple(round_to_sigfigs(datum, sigfigs)) for datum in zip(*(iter(data),) * dsize)]
+
+    def fetch_tangent(self, obj, dsize, sigfigs):
+        data = array.array('f', [0.0] * (len(obj) * dsize))
+        obj.foreach_get("tangent", data)
+
+        signs = array.array('f', [0.0] * (len(obj)))
+        obj.foreach_get("bitangent_sign", data)
+        return [(*round_to_sigfigs(datum, sigfigs), sign) for datum, sign in zip(zip(*(iter(data),) * dsize), signs)]
+
     def split_verts_by_loop_data(self, mesh_obj, link_loops, face_link_loops, model_data):
         mesh = mesh_obj.data
         has_uvs = len(mesh.uv_layers) > 0
@@ -224,39 +237,59 @@ class ExportMediaVision(bpy.types.Operator):
         if can_export_tangents:
             mesh.calc_tangents(uvmap=map_name)
 
-        # Will be overwritten by dynamic generator, this is just here to shut the damn IDE up
-        # def generating_function():
-        #     return {}
-
-        # Dynamically generate the function source code to avoid insane if/else or func call overhead
         sigfigs = 3
-        func_src =       """def dynamic_generating_function(lidx, mesh, map_ids, colour_map, round_to_sigfigs, cross):\n"""
-        func_src +=      """    results = [tuple(), tuple(), tuple(), tuple(), tuple()]\n"""
+        nloops = len(mesh.loops)
+
+        # Extract normals
         if use_normals:
-            func_src += f"""    results[0] = (tuple(round_to_sigfigs(mesh.loops[lidx].normal, {sigfigs})),)\n"""
-        func_src +=     f"""    results[1] = tuple([tuple(mesh.uv_layers[map_id].data.values()[lidx].uv) for map_id in map_ids])\n"""
-        func_src +=     f"""    results[2] = tuple([tuple(mesh.vertex_colors[map_id].data.values()[lidx].color) for map_id in colour_map])\n"""
+            normals = [(elem,) for elem in self.fetch_data(mesh.loops, "normal", 3, sigfigs)]
+        else:
+            normals = [tuple()]*nloops
+
+        # Extract UVs
+        UV_data = [None]*n_uvs
+        for i, map_id in enumerate(map_ids):
+            UV_data[i] = self.fetch_data(mesh.uv_layers[map_id].data, "uv", 2, sigfigs)
+        if len(UV_data):
+            UV_data = [tuple(elems) for elems in zip(*UV_data)]
+        else:
+            UV_data = [tuple()]*nloops
+
+        # Extract colours
+        col_data = [None]*n_colours
+        for i, map_id in enumerate(colour_map):
+            col_data[i] = self.fetch_data(mesh.vertex_colors[map_id].data, "color", 3, sigfigs)
+        if len(col_data):
+            col_data = [tuple(elems) for elems in zip(*col_data)]
+        else:
+            col_data = [tuple()]*nloops
+
+        # Extract tangents
         if can_export_tangents:
-            func_src += f"""    sign = mesh.loops[lidx].bitangent_sign\n"""
-            func_src += f"""    results[3] = ((*round_to_sigfigs(mesh.loops[lidx].tangent, {sigfigs}), sign),)\n"""
+            tangents = [(elem,) for elem in self.fetch_tangent(mesh.loops, 3, sigfigs)]
+        else:
+            tangents = [tuple()]*nloops
+
+        # Calculate binormals
         if use_binormals and can_export_tangents:
-            func_src += f"""    normal = results[0][0]\n"""
-            func_src += f"""    tangent = results[3][0][:3]\n"""
-            func_src += f"""    results[4] = (tuple(round_to_sigfigs(sign * cross(normal, tangent), {sigfigs})),)\n"""
-        func_src += """    return tuple(results)"""
+            bitangents = [(tuple(round_to_sigfigs(tangent[0][3] * np.cross(normal, tangent[0][:3]), sigfigs)),) for normal, tangent in zip(normals, tangents)]
+        else:
+            bitangents = [tuple()]*nloops
 
-        # Compile and execute to define a new function called "generating_function"
-        func_src = compile(func_src, '', 'exec')
-        exec(func_src)
-
-        generating_function = locals()['dynamic_generating_function']
+        # Make loop -> unique value lookup maps
+        loop_idx_to_key = [key for key in (zip(normals, UV_data, col_data, tangents, bitangents))]
+        unique_val_map = {key: i for i, key in enumerate(list(set(loop_idx_to_key)))}
+        loop_idx_to_unique_key = {i: unique_val_map[key] for i, key in enumerate(loop_idx_to_key)}
 
         for vert_idx, linked_loops in link_loops.items():
             vertex = mesh.vertices[vert_idx]
-            loop_datas = [generating_function(ll, mesh, map_ids, colour_map, round_to_sigfigs, np.cross) for ll in linked_loops]
-            unique_values = list(set(loop_datas))
-            for unique_value in unique_values:
-                loops_with_this_value = [linked_loops[i] for i, x in enumerate(loop_datas) if x == unique_value]
+
+            unique_ids = {i: [] for i in list(set(loop_idx_to_unique_key[ll] for ll in linked_loops))}
+            for ll in linked_loops:
+                unique_ids[loop_idx_to_unique_key[ll]].append(ll)
+            unique_values = [(loop_idx_to_key[lids[0]], lids) for id_, lids in unique_ids.items()]
+
+            for unique_value, loops_with_this_value in unique_values:
                 group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups]
                 group_bone_ids = None if len(group_bone_ids) == 0 else group_bone_ids
                 group_weights = [grp.weight for grp in vertex.groups]
@@ -285,9 +318,7 @@ class ExportMediaVision(bpy.types.Operator):
                             vgroup_wgts[group_bone_id] = []
                         vgroup_verts[group_bone_id].append(n_verts)
                         vgroup_wgts[group_bone_id].append(weight)
-
         faces = [list(face_verts.values()) for face_verts in faces]
-
         return exported_vertices, faces, vgroup_verts, vgroup_wgts
 
     def export_materials(self, model_data, used_materials, used_textures):
