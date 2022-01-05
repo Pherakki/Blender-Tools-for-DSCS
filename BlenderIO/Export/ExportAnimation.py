@@ -45,6 +45,9 @@ def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_tr
         ad = model_data.new_anim(anim_name)
 
         nla_strip = strips[0]
+        if nla_strip.action is None:
+            print(f"NLA track \'{nla_track.name}\' has no action on its strip; must have an action set to export.")
+            continue
 
         # Get the shader uniform animations
         ad.uv_data = {}
