@@ -152,7 +152,6 @@ class ExportMediaVision(bpy.types.Operator):
                     res.append(mesh.loops[j].normal if iszero else loop_normals[j])
                 mesh.normals_split_custom_set(res)
                 print(f"Done.")
-                assert all([tuple(l.normal) != zero_vec for l in mesh.loops]), f"Blender screwed up recalculating the split normals on mesh {mesh_obj.name}. Try to set some custom split normals yourself to resolve the issue."
 
             link_loops = self.generate_link_loops(mesh)
             face_link_loops = self.generate_face_link_loops(mesh)
