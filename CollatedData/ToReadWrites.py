@@ -164,6 +164,16 @@ def make_geominterface(filepath, model_data, sk, platform):
     geomInterface.to_file(filepath + '.geom', platform)
 
 
+def validate_anim_data(fcurve):
+    use_frames = fcurve.frames
+    use_values = fcurve.values
+    if len(use_frames):
+        if use_frames[0] != 0:
+            use_frames = [0, *use_frames]
+            use_values = [use_values[0], *use_values]
+    return {k: v for k, v in zip(use_frames, use_values)}
+
+
 def make_animreader(file_folder, model_data, animation_name, base_name, sk):
     anim_interface = AnimInterface()
     animation = model_data.animations[animation_name]
@@ -172,15 +182,15 @@ def make_animreader(file_folder, model_data, animation_name, base_name, sk):
     anim_interface.num_bones = sk.num_bones
 
     for bone_idx, fcurve in animation.rotations.items():
-        data = {k: v for k, v in zip(fcurve.frames, fcurve.values)}
+        data = validate_anim_data(fcurve)
         anim_interface.rotations[bone_idx] = data
 
     for bone_idx, fcurve in animation.locations.items():
-        data = {k: v for k, v in zip(fcurve.frames, fcurve.values)}
+        data = validate_anim_data(fcurve)
         anim_interface.locations[bone_idx] = data
 
     for bone_idx, fcurve in animation.scales.items():
-        data = {k: v for k, v in zip(fcurve.frames, fcurve.values)}
+        data = validate_anim_data(fcurve)
         anim_interface.scales[bone_idx] = data
 
     # Do this properly later
