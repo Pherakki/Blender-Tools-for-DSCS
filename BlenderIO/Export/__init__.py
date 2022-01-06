@@ -238,7 +238,7 @@ class ExportMediaVision(bpy.types.Operator):
         if can_export_tangents:
             mesh.calc_tangents(uvmap=map_name)
 
-        sigfigs = 3
+        sigfigs = 4
         nloops = len(mesh.loops)
 
         # Extract normals
@@ -250,7 +250,7 @@ class ExportMediaVision(bpy.types.Operator):
         # Extract UVs
         UV_data = [None]*n_uvs
         for i, map_id in enumerate(map_ids):
-            UV_data[i] = self.fetch_data(mesh.uv_layers[map_id].data, "uv", sigfigs)
+            UV_data[i] = self.fetch_data(mesh.uv_layers[map_id].data, "uv", sigfigs+2)
         if len(UV_data):
             UV_data = [tuple(elems) for elems in zip(*UV_data)]
         else:
