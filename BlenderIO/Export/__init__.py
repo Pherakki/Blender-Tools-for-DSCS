@@ -215,6 +215,7 @@ class ExportMediaVision(bpy.types.Operator):
         return [(*round_to_sigfigs(datum, sigfigs), sign) for datum, sign in zip(zip(*(iter(data),) * dsize), signs)]
 
     def split_verts_by_loop_data(self, mesh_obj, link_loops, face_link_loops, model_data):
+        print(">>> Splitting", mesh_obj)
         mesh = mesh_obj.data
         has_uvs = len(mesh.uv_layers) > 0
 
@@ -436,11 +437,12 @@ class ExportMediaVision(bpy.types.Operator):
             tex.name = os.path.splitext(texture)[0]
             if texture_path is not None:
                 try:
-                    texture_stem, texture_ext = os.path.splitext(texture)
+                    _, texture_filename = os.path.split(texture_path)
+                    texture_stem, texture_ext = os.path.splitext(texture_filename)
                     if self.img_to_dds and texture_ext == ".img":
                         use_texture = texture_stem + ".dds"
                     else:
-                        use_texture = texture
+                        use_texture = texture_filename
                     shutil.copy2(texture_path,
                                  os.path.join(export_images_folder, use_texture))
                 except shutil.SameFileError:
