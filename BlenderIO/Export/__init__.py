@@ -36,12 +36,11 @@ class ExportMediaVision(bpy.types.Operator):
         parent_obj = find_selected_model()
         assert parent_obj.mode == 'OBJECT', f"Current mode is {parent_obj.mode}; ensure that Object Mode is selected before attempting to export."
         assert parent_obj.type == 'EMPTY', f"Top-level object \"{parent_obj.name}\" is not an empty axis object."
-        validate_blender_data(parent_obj)
+        armature, meshes = validate_blender_data(parent_obj)
 
         model_data = IntermediateFormat()
         export_folder, filename = os.path.split(filepath)
 
-        armature = self.find_armatures(parent_obj)
         base_anim = armature.animation_data.nla_tracks.get("base", None)
         if self.export_mode == "Modelling" or self.export_mode == "QA":
             export_images_folder = os.path.join(export_folder, 'images')
@@ -55,11 +54,11 @@ class ExportMediaVision(bpy.types.Operator):
             used_materials = []
             used_textures = []
             self.export_skeleton(armature, None if base_anim is None else base_anim.strips[0].action, model_data)
-            self.export_meshes(parent_obj, model_data, used_materials)
+            self.export_meshes(meshes, model_data, used_materials)
             self.export_materials(model_data, used_materials, used_textures)
             self.export_textures(used_textures, model_data, export_images_folder)
-            self.export_cameras(self.find_cameras(parent_obj), model_data)
-            self.export_lights(self.find_lights(parent_obj), model_data)
+            self.export_cameras(find_cameras(parent_obj), model_data)
+            self.export_lights(find_lights(parent_obj), model_data)
 
         # The first frame of the base animation becomes the rest pose
         # Strip out any transforms in the base animation that are only for the first frame: DSCS will get this from
@@ -80,28 +79,6 @@ class ExportMediaVision(bpy.types.Operator):
                               required_transforms={})
 
         generate_files_from_intermediate_format(filepath, model_data, filename, self.platform, animation_only=self.export_mode=="Animation")
-
-    def find_armatures(self, parent_object):
-        armatures = [item for item in parent_object.children if item.type == "ARMATURE"]
-        if len(armatures) == 1:
-            armature = armatures[0]
-        elif len(armatures) > 1:
-            print("!!! WARNING !!!")
-            print("! More than one armature detected under the object \'{parent_object.name}\':")
-            print("!", ", ".join([arm.name for arm in armatures]))
-            print(f"! Using {armatures[0].name}")
-            print("!!! WARNING !!!")
-            armature = armatures[0]
-        else:
-            assert 0, f"No armature objects found under the axis object \'{parent_object.name}\'."
-
-        return armature
-
-    def find_cameras(self, parent_object):
-        return [item for item in parent_object.children if item.type == "CAMERA"]
-
-    def find_lights(self, parent_object):
-        return [item for item in parent_object.children if item.type == "LIGHT"]
 
     def export_skeleton(self, armature, base_animation, model_data):
         bone_name_list = [bone.name for bone in armature.data.bones]
@@ -127,13 +104,13 @@ class ExportMediaVision(bpy.types.Operator):
         model_data.skeleton.unknown_data['unknown_data_3'] = armature.get('unknown_data_3', [])
         model_data.skeleton.unknown_data['unknown_data_4'] = armature.get('unknown_data_4', [])
 
-    def export_meshes(self, parent_obj, model_data, used_materials):
+    def export_meshes(self, meshes, model_data, used_materials):
         mat_names = []
         force_recalc_normals = self.recalc_normal_mode == 1
         force_not_recalc_normals = self.recalc_normal_mode == 2
 
         # Natural sort meshes by name so they're exported in the same order as the outliner
-        sorted_meshes = natural_sort(parent_obj.children[0].children, accessor=lambda x: x.name)
+        sorted_meshes = natural_sort(meshes, accessor=lambda x: x.name)
         for i, mesh_obj in enumerate(sorted_meshes):
             md = model_data.new_mesh()
             mesh = mesh_obj.data
@@ -182,7 +159,7 @@ class ExportMediaVision(bpy.types.Operator):
                 md.material_id = mat_names.index(matname)
 
             md.unknown_data['meshflags'] = 1  # Support this later... # mesh_obj.get('unknown_0x31', 1)
-            md.name_hash = mesh_obj.get('name_hash', dscs_name_hash(parent_obj.name))
+            md.name_hash = mesh_obj.get('name_hash', dscs_name_hash(mesh_obj.name))
 
     def generate_link_loops(self, mesh):
         link_loops = {}
@@ -495,7 +472,7 @@ class ExportMediaVision(bpy.types.Operator):
                 lgt.mode = 2
                 light_name = "AmbientLamp"
                 light_id = 99
-            elif light.mode == "SUN":
+            elif light.type == "SUN":
                 lgt.mode = 3
                 light_id = type_counts[1]
                 light_name = "DirLamp" + str(light_id).rjust(2, '0')
@@ -611,12 +588,43 @@ def get_all_nonempty_vertex_groups(mesh_obj):
 def validate_blender_data(parent_obj):
     bpy.ops.object.select_all(action='DESELECT')
     bpy.context.view_layer.objects.active = None
-    armature = parent_obj.children[0]
-    meshes = armature.children
+    armature = find_armatures(parent_obj)
+    meshes = find_meshes(armature)
     check_vertex_group_counts(meshes)
     check_vertex_weight_counts(meshes)
     bpy.ops.object.select_all(action='DESELECT')
     bpy.context.view_layer.objects.active = None
+
+    return armature, meshes
+
+
+def find_armatures(parent_object):
+    armatures = [item for item in parent_object.children if item.type == "ARMATURE"]
+    if len(armatures) == 1:
+        armature = armatures[0]
+    elif len(armatures) > 1:
+        print("!!! WARNING !!!")
+        print("! More than one armature detected under the object \'{parent_object.name}\':")
+        print("!", ", ".join([arm.name for arm in armatures]))
+        print(f"! Using {armatures[0].name}")
+        print("!!! WARNING !!!")
+        armature = armatures[0]
+    else:
+        assert 0, f"No armature objects found under the axis object \'{parent_object.name}\'."
+
+    return armature
+
+
+def find_meshes(armature_obj):
+    return [item for item in armature_obj.children if item.type == "MESH"]
+
+
+def find_cameras(parent_object):
+    return [item for item in parent_object.children if item.type == "CAMERA"]
+
+
+def find_lights(parent_object):
+    return [item for item in parent_object.children if item.type == "LIGHT"]
 
 
 def check_vertex_group_counts(mesh_objs):
