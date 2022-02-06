@@ -110,9 +110,12 @@ def make_geominterface(filepath, model_data, sk, platform):
 
         all_vertices.extend(transformed_vertices)
 
-
-    minvs = np.min(all_vertices, axis=0)
-    maxvs = np.max(all_vertices, axis=0)
+    if len(all_vertices):
+        minvs = np.min(all_vertices, axis=0)
+        maxvs = np.max(all_vertices, axis=0)
+    else:
+        minvs = np.zeros(3)
+        maxvs = np.zeros(3)
     mesh_centre = (maxvs + minvs) / 2
 
     geomInterface.mesh_centre = mesh_centre
