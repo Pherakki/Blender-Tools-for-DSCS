@@ -17,9 +17,9 @@ class PhysReader(BaseRW):
         self.offset_3 = 0
         self.offset_4 = 0
 
-        self.bone_defs = []
-        self.collider_def_ptrs = []
-        self.collider_defs = []
+        self.ragdolls = []
+        self.collider_ptrs = []
+        self.colliders = []
         self.material_names_offset = None
         self.bone_names_offset = None
 
@@ -50,28 +50,27 @@ class PhysReader(BaseRW):
         rw_operator("bone_names_offset", "Q")
 
         init_structs()
-        self.rw_bone_defs(rw_operator, rw_method ,)
+        self.rw_ragdolls(rw_method)
         chunk_cleanup(self.bytestream.tell(), 0x08)
-        self.rw_collider_defs(rw_operator, rw_method)
+        self.rw_colliders(rw_operator, rw_method)
         self.assert_file_pointer_now_at(self.material_names_offset)
         rw_operator_raw("material_names", 0x40 *self.material_names_count)
         self.assert_file_pointer_now_at(self.bone_names_offset)
         rw_operator_raw("bone_names", 0x40 *self.bone_names_count)
 
-
     def init_structs(self):
-        self.bone_defs = [RagdollEntry(self.bytestream) for _ in range(self.ragdoll_count)]
-        self.collider_defs = [ColliderData(self.bytestream) for _ in range(self.collider_count)]
+        self.ragdolls = [RagdollEntry(self.bytestream) for _ in range(self.ragdoll_count)]
+        self.colliders = [ColliderData(self.bytestream) for _ in range(self.collider_count)]
 
-    def rw_bone_defs(self, rw_operator, rw_method):
+    def rw_ragdolls(self, rw_method):
         self.assert_file_pointer_now_at(self.ragdolls_offset)
-        for phys_bone in self.bone_defs:
+        for phys_bone in self.ragdolls:
             getattr(phys_bone, rw_method)()
 
-    def rw_collider_defs(self, rw_operator, rw_method):
+    def rw_colliders(self, rw_operator, rw_method):
         self.assert_file_pointer_now_at(self.colliders_offset)
-        rw_operator("collider_def_ptrs", "Q" *self.collider_count, force_1d=True)
-        for ptr, coldata in zip(self.collider_def_ptrs, self.collider_defs):
+        rw_operator("collider_ptrs", "Q" *self.collider_count, force_1d=True)
+        for ptr, coldata in zip(self.collider_ptrs, self.colliders):
             self.assert_file_pointer_now_at(ptr)
             getattr(coldata, rw_method)()
 
@@ -147,19 +146,18 @@ class ColliderData(BaseRW):
     def read(self):
         self.read_buffer("filetype", "Q")
         if self.filetype == 0:
-            self.data = SimpleColliderData(self.bytestream)
+            self.data = SimpleCollider(self.bytestream)
         elif self.filetype == 2:
-            self.data = ComplexColliderData(self.bytestream)
+            self.data = ComplexCollider(self.bytestream)
         self.data.read()
-
 
     def write(self):
         self.write_buffer("filetype", "Q")
         if self.filetype == 0:
-            if type(self.data) != SimpleColliderData:
+            if type(self.data) != SimpleCollider:
                 raise Exception(f"Collider filetype is {self.filetype}, but data type is {type(self.data)}.")
         elif self.filetype == 2:
-            if type(self.data) != ComplexColliderData:
+            if type(self.data) != ComplexCollider:
                 raise Exception(f"Collider filetype is {self.filetype}, but data type is {type(self.data)}.")
         self.data.write()
 
@@ -168,7 +166,7 @@ class ColliderData(BaseRW):
         self.data.print()
 
 
-class SimpleColliderData(BaseRW):
+class SimpleCollider(BaseRW):
     """
     A simple cuboid collider, defined only by the bounding box corners.
     Sits at the position dictated by the Ragdoll entry it is attached to.
@@ -192,7 +190,7 @@ class SimpleColliderData(BaseRW):
         rw_operator("flag", "I")
 
 
-class ComplexColliderData(BaseRW):
+class ComplexCollider(BaseRW):
     def __init__(self, bytestream):
         super().__init__(bytestream)
         self.vertex_count = 0
@@ -202,23 +200,23 @@ class ComplexColliderData(BaseRW):
 
         self.triangles_offset = 0
         self.vertex_positions_offset = 0
-        self.offset_3 = 0
-        self.offset_4 = 0
+        self.submesh_material_indices_offset = 0
+        self.submesh_bone_indices_offset = 0
 
         self.triangle_indices = None
         self.vertex_positions = None
-        self.data_block_3 = None
-        self.data_block_3_pad = 0
-        self.data_block_4 = None
-        self.data_block_4_pad = 0
+        self.submesh_material_indices = None
+        self.submesh_material_indices_pad = 0
+        self.submesh_bone_indices = None
+        self.submesh_bone_indices_pad = 0
 
     def print(self):
         print(self.vertex_count, self.triangle_count, self.unknown_coord_1, self.unknown_coord_2)
-        print(self.triangles_offset, self.vertex_positions_offset, self.offset_3, self.offset_4)
-        print(self.triangle_indices)
-        print(self.vertex_positions)
-        print(self.data_block_3)
-        print(self.data_block_4)
+        #print(self.triangles_offset, self.vertex_positions_offset, self.offset_3, self.offset_4)
+        #print(self.triangle_indices)
+        #print(self.vertex_positions)
+        print(self.submesh_material_indices)
+        print(self.submesh_bone_indices)
 
     def read(self):
         self.read_write(self.read_buffer)
@@ -235,23 +233,25 @@ class ComplexColliderData(BaseRW):
         rw_operator("unknown_coord_2", "fff")
         rw_operator("triangles_offset", "Q")
         rw_operator("vertex_positions_offset", "Q")
-        rw_operator("offset_3", "Q")
-        rw_operator("offset_4", "Q")
+        rw_operator("submesh_material_indices_offset", "Q")
+        rw_operator("submesh_bone_indices_offset", "Q")
 
         self.assert_file_pointer_now_at(self.triangles_offset)
         rw_operator("triangle_indices", "I"*self.triangle_count*3)
         self.assert_file_pointer_now_at(self.vertex_positions_offset)
         rw_operator("vertex_positions", "f"*self.vertex_count*3)
 
-        rw_operator("data_block_3", "h"*self.triangle_count)
+        self.assert_file_pointer_now_at(self.submesh_material_indices_offset)
+        rw_operator("submesh_material_indices", "h"*self.triangle_count)
         if (self.triangle_count % 2):
-            rw_operator("data_block_3_pad", "H")
-            self.assert_equal("data_block_3_pad", 0)
+            rw_operator("submesh_material_indices_pad", "H")
+            self.assert_equal("submesh_material_indices_pad", 0)
 
-        rw_operator("data_block_4", "h"*self.triangle_count)
+        self.assert_file_pointer_now_at(self.submesh_bone_indices_offset)
+        rw_operator("submesh_bone_indices", "h"*self.triangle_count)
         if (self.triangle_count % 2):
-            rw_operator("data_block_4_pad", "H")
-            self.assert_equal("data_block_4_pad", 0)
+            rw_operator("submesh_bone_indices_pad", "H")
+            self.assert_equal("submesh_bone_indices_pad", 0)
 
     def interpret_mesh_collider_data(self):
         self.triangle_indices = self.chunk_list(self.triangle_indices, 3)
