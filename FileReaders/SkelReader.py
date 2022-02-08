@@ -1,5 +1,4 @@
 from .BaseRW import BaseRW
-import numpy as np
 
 
 class SkelReader(BaseRW):
