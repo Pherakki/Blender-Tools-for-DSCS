@@ -96,16 +96,20 @@ class RagdollEntry(BaseRW):
         super().__init__(bytestream)
 
         # Variables that appear in the file header
+        # Get the scaled quaternion by doing:
+        #  1) Convert bone quaternion to rotation matrix
+        #  2) Multiply rotation matrix by scale matrix
+        #  3) Covert back to quaternion without normalising
         self.position = None
+        self.scaled_quaternion = None
         self.unknown_3vec = None
-        self.unknown_4vec = None
         self.unknown_float = 0
         self.collider_id = 0
         self.unknown_flag = 0
         self.ragdoll_name = None
 
     def print(self):
-        print(self.position, self.unknown_3vec, self.unknown_4vec, self.unknown_float, self.collider_id, self.unknown_flag, self.ragdoll_name)
+        print(self.position, self.scaled_quaternion, self.unknown_3vec, self.unknown_float, self.collider_id, self.unknown_flag, self.ragdoll_name)
 
 
     def read(self):
@@ -118,8 +122,8 @@ class RagdollEntry(BaseRW):
 
     def read_write(self, rw_operator, rw_operator_raw):
         rw_operator("position", "fff")
+        rw_operator("scaled_quaternion", "ffff")
         rw_operator("unknown_3vec", "fff")
-        rw_operator("unknown_4vec", "ffff")
         rw_operator("unknown_float", "f")
         rw_operator("collider_id", "I")
         rw_operator("unknown_flag", "I")
