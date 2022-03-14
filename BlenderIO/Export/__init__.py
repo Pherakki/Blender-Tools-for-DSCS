@@ -774,8 +774,8 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
     vweights_adjust: EnumProperty(
         name="Fix Vertex Weights",
         description="Policy for post-processing Vertex Weights.",
-        items=[("FitToWeights", "Adjust Shader", "Calculates the shader name that should be correctly aligned with the Vertex Weights on each mesh. This will generate additional materials where required. Some generated shader names may not exist in the game data, which will require them to be written by you. Meshes with non-existent shaders will not render in-game.", "", 0),
-               (          None,          "None", "Does not apply any post-processing to the Vertex Weights. This is very likely to result in graphical issues.", "", 1)]
+        items=[("FitToWeights", "Adjust Shader", "Calculates the shader name that should be correctly aligned with the Vertex Weights on each mesh. This will generate additional materials where required. Some generated shader names may not exist in the game data, which will require them to be written by you. Meshes with non-existent shaders will not render in-game", "", 0),
+               (        "None",          "None", "Does not apply any post-processing to the Vertex Weights. This is very likely to result in graphical issues", "", 1)]
     )
 
     vweight_floor: FloatProperty(
