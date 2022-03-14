@@ -129,7 +129,7 @@ def make_geominterface(filepath, model_data, sk, platform, vweights_adjust):
         gi_mat.shader_hex = mat.shader_hex
         gi_mat.enable_shadows = mat.enable_shadows
 
-        gi_mat.shader_uniforms = {key: shader_uniforms_from_names[key](value) for key, value in mat.shader_uniforms.items()}
+        gi_mat.shader_uniforms = {key: shader_uniforms_from_names[key](list(value)) for key, value in mat.shader_uniforms.items()}
         gi_mat.unknown_material_components = mat.unknown_data['unknown_material_components']
 
     # Fix weight paddings
