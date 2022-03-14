@@ -736,7 +736,8 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         description="Policy for recalculating normals.",
         items=[("As Required", "As Required", "Recalculates normals for meshes with invalid loop normals", "", 0),
                ("Always", "Always", "Recalculates loop normals for every mesh", "", 1),
-               ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero", "", 2)])
+               ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero", "", 2)]
+    )
 
     vweights_adjust: EnumProperty(
         name="Fix Vertex Weights",
