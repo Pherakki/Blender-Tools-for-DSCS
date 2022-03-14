@@ -363,15 +363,15 @@ class ExportMediaVision(bpy.types.Operator):
             for key in shader_uniforms_vp_fp_from_names.keys():
                 if bmat.get(key) is not None:
                     data = bmat.get(key)
-                    if not hasattr(data, "__iter__"):
-                        data = [data]
-
                     try:
-                        data = [float(elem) for elem in data]
+                        if hasattr(data, "__len__"):
+                            data = [float(elem) for elem in data]
+                        else:
+                            data = [float(data)]
+
+                        material.shader_uniforms[key] = data
                     except Exception as e:
                         raise TypeError(f"Shader Uniform value \"{key}\" cannot be interpreted as a list of floats: {data}") from e
-
-                    material.shader_uniforms[key] = data
 
             #########################
             # EXPORT OPENGL OPTIONS #
