@@ -382,42 +382,52 @@ class ExportMediaVision(bpy.types.Operator):
             data = bmat.get("glBlendFunc")
             if data is not None:
                 fglBlendFunc_options = flip_dict(glBlendFunc_options)
-                out[glfunc_to_id["glBlendFunc"]] = [fglBlendFunc_options[data[0]], fglBlendFunc_options[data[1]], 0, 0]
+                param_1 = self.errorhandle_opengl_get("glBlendFunc", data[0], fglBlendFunc_options)
+                param_2 = self.errorhandle_opengl_get("glBlendFunc", data[1], fglBlendFunc_options)
+
+                out[glfunc_to_id["glBlendFunc"]] = [param_1, param_2, 0, 0]
 
             data = bmat.get("glBlendEquationSeparate")
             if data is not None:
                 fglBlendEquationSeparate_options = flip_dict(glBlendEquationSeparate_options)
-                out[glfunc_to_id["glBlendEquationSeparate"]] = [fglBlendEquationSeparate_options[data], 0, 0, 0]
+                param_1 = self.errorhandle_opengl_get("glBlendEquationSeparate", data, fglBlendEquationSeparate_options)
+                out[glfunc_to_id["glBlendEquationSeparate"]] = [param_1, 0, 0, 0]
 
             data = bmat.get("GL_BLEND")
             if data is not None:
                 fglEnable_options = flip_dict(glEnable_options)
-                out[glfunc_to_id["GL_BLEND"]] = [fglEnable_options[data], 0, 0, 0]
+                param_1 = self.errorhandle_opengl_get("GL_BLEND", data, fglEnable_options)
+                out[glfunc_to_id["GL_BLEND"]] = [param_1, 0, 0, 0]
 
             data = bmat.get("glCullFace")
             if data is not None:
                 fglCullFace_options = flip_dict(glCullFace_options)
-                out[glfunc_to_id["glCullFace"]] = [fglCullFace_options[data], 0, 0, 0]
+                param_1 = self.errorhandle_opengl_get("glCullFace", data, fglCullFace_options)
+                out[glfunc_to_id["glCullFace"]] = [param_1, 0, 0, 0]
 
             data = bmat.get("glDepthFunc")
             if data is not None:
                 fglComparison_options = flip_dict(glComparison_options)
-                out[glfunc_to_id["glDepthFunc"]] = [fglComparison_options[data], 0, 0, 0]
+                param_1 = self.errorhandle_opengl_get("glDepthFunc", data, fglComparison_options)
+                out[glfunc_to_id["glDepthFunc"]] = [param_1, 0, 0, 0]
 
             data = bmat.get("glDepthMask")
             if data is not None:
                 fglBool_options = flip_dict(glBool_options)
-                out[glfunc_to_id["glDepthMask"]] = [fglBool_options[data], 0, 0, 0]
+                param_1 = self.errorhandle_opengl_get("glDepthMask", data, fglBool_options)
+                out[glfunc_to_id["glDepthMask"]] = [param_1, 0, 0, 0]
 
             data = bmat.get("GL_DEPTH_TEST")
             if data is not None:
                 fglEnable_options = flip_dict(glEnable_options)
-                out[glfunc_to_id["GL_DEPTH_TEST"]] = [fglEnable_options[data], 0, 0, 0]
+                param_1 = self.errorhandle_opengl_get("GL_DEPTH_TEST", data, fglEnable_options)
+                out[glfunc_to_id["GL_DEPTH_TEST"]] = [param_1, 0, 0, 0]
 
             data = bmat.get("glColorMask")
             if data is not None:
                 fglBool_options = flip_dict(glBool_options)
-                out[glfunc_to_id["glColorMask"]] = [fglBool_options[opt] for opt in data]
+                params = [self.errorhandle_opengl_get("glColorMask", opt, fglBool_options) for opt in data]
+                out[glfunc_to_id["glColorMask"]] = params
 
             if not bmat.use_backface_culling:
                 out[glfunc_to_id["GL_CULL_FACE"]] = [0, 0, 0, 0]
