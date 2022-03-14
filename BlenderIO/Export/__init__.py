@@ -425,6 +425,14 @@ class ExportMediaVision(bpy.types.Operator):
                 out[glfunc_to_id["GL_ALPHA_TEST"]] = [1, 0, 0, 0]
                 out[glfunc_to_id["glAlphaFunc"]] = [516., bmat.alpha_threshold, 0, 0]
 
+    @staticmethod
+    def errorhandle_opengl_get(setting, option, optionlist):
+        try:
+            return optionlist[option]
+        except Exception as e:
+            newline = '\n'
+            raise TypeError(f"\"{option}\" is not a valid OpenGL parameter for \"{setting}\". Options are:\n {newline.join(optionlist)}") from e
+
     def export_textures(self, used_textures, model_data, export_images_folder):
         used_texture_names = [tex.name for tex in used_textures]
         used_texture_paths = [os.path.normpath(tex.filepath) for tex in used_textures]
