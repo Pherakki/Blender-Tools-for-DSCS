@@ -1,11 +1,12 @@
 from .BaseRW import BaseRW
 
+
 class PhysReader(BaseRW):
     def __init__(self, bytestream):
         super().__init__(bytestream)
 
         # Variables that appear in the file header
-        self.filetype = None
+        self.filetype = "PHYS"[::-1]
         self.filetype_identifier = 2
         self.ragdoll_count = 0
         self.collider_count = 0
@@ -14,17 +15,18 @@ class PhysReader(BaseRW):
 
         self.ragdolls_offset = 0
         self.colliders_offset = 0
-        self.offset_3 = 0
-        self.offset_4 = 0
+        self.material_names_offset = 0
+        self.bone_names_offset = 0
 
         self.ragdolls = []
         self.collider_ptrs = []
         self.colliders = []
-        self.material_names_offset = None
-        self.bone_names_offset = None
+        self.material_names = None
+        self.bone_names = None
 
     def read(self):
         self.read_write(self.read_buffer, 'read', self.init_structs, self.read_ascii, self.read_raw, self.cleanup_ragged_chunk_read)
+        assert self.bytestream.read(1) == b''
         self.interpret_phys_data()
 
     def write(self):
@@ -81,12 +83,11 @@ class PhysReader(BaseRW):
         self.bone_names = self.chunk_list(self.bone_names, 0x40)
         self.bone_names = [nm.strip(b'\x00').decode('ascii') for nm in self.bone_names]
 
-
     def reinterpret_phys_data(self):
-        self.material_names = [nm.ljust(0x40, b'\x00').encode('ascii') for nm in self.material_names]
+        self.material_names = [nm.encode('ascii').ljust(b'\x00', 0x40) for nm in self.material_names]
         self.material_names = b''.join(self.material_names)
 
-        self.bone_names = [nm.ljust(0x40, b'\x00').encode('ascii') for nm in self.bone_names]
+        self.bone_names = [nm.encode('ascii').ljust(b'\x00', 0x40) for nm in self.bone_names]
         self.bone_names = b''.join(self.bone_names)
 
 
@@ -101,7 +102,7 @@ class RagdollEntry(BaseRW):
         #  3) Covert back to quaternion without normalising
         self.position = None
         self.scaled_quaternion = None
-        self.unknown_3vec = None
+        self.unknown_3vec = (0.20000000298023224, 0.20000000298023224, 0.6000000238418579)
         self.unknown_float = 0
         self.collider_id = 0
         self.unknown_flag = 0
@@ -109,7 +110,6 @@ class RagdollEntry(BaseRW):
 
     def print(self):
         print(self.position, self.scaled_quaternion, self.unknown_3vec, self.unknown_float, self.collider_id, self.unknown_flag, self.ragdoll_name)
-
 
     def read(self):
         self.read_write(self.read_buffer, self.read_raw)
@@ -128,11 +128,13 @@ class RagdollEntry(BaseRW):
         rw_operator("unknown_flag", "I")
         rw_operator_raw("ragdoll_name", 0x18)
 
+        self.assert_equal("unknown_3vec", (0.20000000298023224, 0.20000000298023224, 0.6000000238418579))
+
     def interpret_ragdoll(self):
         self.ragdoll_name = self.ragdoll_name.strip(b'\x00').decode('ascii')
 
     def reinterpret_ragdoll(self):
-        self.ragdoll_name = self.ragdoll_name.ljust(b'\x00', 0x18).encode('ascii')
+        self.ragdoll_name = self.ragdoll_name.encode('ascii').ljust(0x18, b'\x00')
 
 
 class ColliderData(BaseRW):
@@ -145,10 +147,7 @@ class ColliderData(BaseRW):
 
     def read(self):
         self.read_buffer("filetype", "Q")
-        if self.filetype == 0:
-            self.data = SimpleCollider(self.bytestream)
-        elif self.filetype == 2:
-            self.data = ComplexCollider(self.bytestream)
+        self.init_data()
         self.data.read()
 
     def write(self):
@@ -164,6 +163,12 @@ class ColliderData(BaseRW):
     def print(self):
         print(self.filetype, type(self.data))
         self.data.print()
+
+    def init_data(self):
+        if self.filetype == 0:
+            self.data = SimpleCollider(self.bytestream)
+        elif self.filetype == 2:
+            self.data = ComplexCollider(self.bytestream)
 
 
 class SimpleCollider(BaseRW):
@@ -195,8 +200,8 @@ class ComplexCollider(BaseRW):
         super().__init__(bytestream)
         self.vertex_count = 0
         self.triangle_count = 0
-        self.unknown_coord_1 = 0
-        self.unknown_coord_2 = 0
+        self.first_vertex_copy_1 = 0
+        self.first_vertex_copy_2 = 0
 
         self.triangles_offset = 0
         self.vertex_positions_offset = 0
@@ -211,8 +216,8 @@ class ComplexCollider(BaseRW):
         self.submesh_bone_indices_pad = 0
 
     def print(self):
-        print(self.vertex_count, self.triangle_count, self.unknown_coord_1, self.unknown_coord_2)
-        #print(self.triangles_offset, self.vertex_positions_offset, self.offset_3, self.offset_4)
+        print(self.vertex_count, self.triangle_count, self.first_vertex_copy_1, self.first_vertex_copy_2)
+        #print(self.triangles_offset, self.vertex_positions_offset, self.submesh_material_indices_offset, self.submesh_bone_indices_offset)
         #print(self.triangle_indices)
         #print(self.vertex_positions)
         print(self.submesh_material_indices)
@@ -229,8 +234,8 @@ class ComplexCollider(BaseRW):
     def read_write(self, rw_operator):
         rw_operator("vertex_count", "I")
         rw_operator("triangle_count", "I")
-        rw_operator("unknown_coord_1", "fff")
-        rw_operator("unknown_coord_2", "fff")
+        rw_operator("first_vertex_copy_1", "fff")
+        rw_operator("first_vertex_copy_2", "fff")
         rw_operator("triangles_offset", "Q")
         rw_operator("vertex_positions_offset", "Q")
         rw_operator("submesh_material_indices_offset", "Q")
