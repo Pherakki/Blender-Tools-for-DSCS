@@ -5,7 +5,7 @@ import shutil
 
 import bpy
 from bpy_extras.io_utils import ExportHelper
-from bpy.props import BoolProperty, EnumProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty
 
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat
@@ -31,6 +31,7 @@ class ExportMediaVision(bpy.types.Operator):
     img_to_dds: None
     flip_uvs: None
     vweights_adjust: None
+    vweight_floor: None
 
     def export_file(self, context, filepath):
         # Grab the parent object
@@ -135,7 +136,7 @@ class ExportMediaVision(bpy.types.Operator):
 
             link_loops = self.generate_link_loops(mesh)
             face_link_loops = self.generate_face_link_loops(mesh)
-            export_verts, export_faces, vgroup_verts, vgroup_wgts = self.split_verts_by_loop_data(mesh_obj, link_loops, face_link_loops, model_data)
+            export_verts, export_faces, vgroup_verts, vgroup_wgts = self.split_verts_by_loop_data(mesh_obj, link_loops, face_link_loops, model_data, self.vweight_floor)
             if self.flip_uvs:
                 for key in ['UV', 'UV2', 'UV3']:
                     if key in export_verts[0]:
@@ -194,7 +195,7 @@ class ExportMediaVision(bpy.types.Operator):
         obj.foreach_get("bitangent_sign", data)
         return [(*round_to_sigfigs(datum, sigfigs), sign) for datum, sign in zip(zip(*(iter(data),) * dsize), signs)]
 
-    def split_verts_by_loop_data(self, mesh_obj, link_loops, face_link_loops, model_data):
+    def split_verts_by_loop_data(self, mesh_obj, link_loops, face_link_loops, model_data, vweight_floor):
         print(">>> Splitting", mesh_obj)
         mesh = mesh_obj.data
         has_uvs = len(mesh.uv_layers) > 0
@@ -272,10 +273,11 @@ class ExportMediaVision(bpy.types.Operator):
             unique_values = [(loop_idx_to_key[lids[0]], lids) for id_, lids in unique_ids.items()]
 
             for unique_value, loops_with_this_value in unique_values:
-                group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups]
+                group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups if grp.weight > vweight_floor]
                 group_bone_ids = None if len(group_bone_ids) == 0 else group_bone_ids
-                group_weights = [grp.weight for grp in vertex.groups]
+                group_weights = [grp.weight for grp in vertex.groups if grp.weight > vweight_floor]
                 group_weights = None if len(group_weights) == 0 else group_weights
+
 
                 vert = {'Position': vertex.co,
                         **{key: value for key, value in zip(['Normal'], unique_value[0])},
@@ -741,6 +743,12 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         description="Policy for post-processing Vertex Weights.",
         items=[("FitToWeights", "Adjust Shader", "Calculates the shader name that should be correctly aligned with the Vertex Weights on each mesh. This will generate additional materials where required. Some generated shader names may not exist in the game data, which will require them to be written by you. Meshes with non-existent shaders will not render in-game.", "", 0),
                (          None,          "None", "Does not apply any post-processing to the Vertex Weights. This is very likely to result in graphical issues.", "", 1)]
+    )
+
+    vweight_floor: FloatProperty(
+        default=0.0,
+        hard_min=0.0,
+        hard_max=1.0
     )
 
 
