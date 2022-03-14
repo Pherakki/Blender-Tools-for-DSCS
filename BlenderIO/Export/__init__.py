@@ -779,9 +779,11 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
     )
 
     vweight_floor: FloatProperty(
+        name="Vertex Weight Cutoff",
+        description="Remove Vertex Weights below or equal to this minimum on export",
         default=0.0,
-        hard_min=0.0,
-        hard_max=1.0
+        min=0.0,
+        max=1.0
     )
 
 
