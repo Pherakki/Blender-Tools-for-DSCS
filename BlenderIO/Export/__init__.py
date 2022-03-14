@@ -30,6 +30,7 @@ class ExportMediaVision(bpy.types.Operator):
     export_mode: None
     img_to_dds: None
     flip_uvs: None
+    vweights_adjust: None
 
     def export_file(self, context, filepath):
         # Grab the parent object
@@ -78,7 +79,9 @@ class ExportMediaVision(bpy.types.Operator):
                               strip_single_frame_transforms=False,
                               required_transforms={})
 
-        generate_files_from_intermediate_format(filepath, model_data, filename, self.platform, animation_only=self.export_mode=="Animation")
+        generate_files_from_intermediate_format(filepath, model_data, filename, self.platform,
+                                                animation_only=self.export_mode=="Animation",
+                                                vweights_adjust=self.vweights_adjust)
 
     def export_skeleton(self, armature, base_animation, model_data):
         bone_name_list = [bone.name for bone in armature.data.bones]
@@ -732,6 +735,13 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         items=[("As Required", "As Required", "Recalculates normals for meshes with invalid loop normals", "", 0),
                ("Always", "Always", "Recalculates loop normals for every mesh", "", 1),
                ("Never", "Never", "Exports whatever loop normals Blender holds, even if they are zero", "", 2)])
+
+    vweights_adjust: EnumProperty(
+        name="Fix Vertex Weights",
+        description="Policy for post-processing Vertex Weights.",
+        items=[("FitToWeights", "Adjust Shader", "Calculates the shader name that should be correctly aligned with the Vertex Weights on each mesh. This will generate additional materials where required. Some generated shader names may not exist in the game data, which will require them to be written by you. Meshes with non-existent shaders will not render in-game.", "", 0),
+               (          None,          "None", "Does not apply any post-processing to the Vertex Weights. This is very likely to result in graphical issues.", "", 1)]
+    )
 
 
 class ExportMegido(ExportMediaVision, ExportHelper):
