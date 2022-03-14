@@ -11,7 +11,7 @@ def import_animations(name_prefix, armature_name, model_data):
         if animation_name == name_prefix:
             track_name = "base"
         else:
-            track_name = animation_name[len(name_prefix):]
+            track_name = animation_name[len(name_prefix)+1:]  # +1 to also remove the underscore
         action = bpy.data.actions.new(animation_name)
 
         for rotation_data, location_data, scale_data, bone_name in zip(animation_data.rotations.values(),

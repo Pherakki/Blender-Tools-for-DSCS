@@ -41,7 +41,7 @@ def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_tr
             continue
 
         if nla_track.name == "base": anim_name = name_prefix
-        else:                        anim_name = name_prefix + nla_track.name
+        else:                        anim_name = name_prefix + "_" + nla_track.name
         ad = model_data.new_anim(anim_name)
 
         nla_strip = strips[0]
@@ -72,7 +72,7 @@ def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_tr
                                                           [slerp, lerp, lerp]):
                 channel_data = animation_bone_data[curve_type]
                 #animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)
-                animation_data[bone_idx][curve_type] = snap_frame_indices_to_integers(channel_data)
+                animation_data[bone_idx][curve_type] = snap_frame_indices_to_integers(channel_data) # This may be an issue
         for shader_channel_idx, channel_data in animation_uv_data.items():
             animation_uv_data[shader_channel_idx] = snap_frame_indices_to_integers(channel_data)
 
