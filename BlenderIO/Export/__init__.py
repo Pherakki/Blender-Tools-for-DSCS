@@ -274,10 +274,15 @@ class ExportMediaVision(bpy.types.Operator):
 
             for unique_value, loops_with_this_value in unique_values:
                 group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups if grp.weight > vweight_floor]
-                group_bone_ids = None if len(group_bone_ids) == 0 else group_bone_ids
                 group_weights = [grp.weight for grp in vertex.groups if grp.weight > vweight_floor]
-                group_weights = None if len(group_weights) == 0 else group_weights
+                # Normalise the group weights
+                total_weight = sum(group_weights)
+                if total_weight > 0.:
+                    group_weights = [wght / total_weight for wght in group_weights]
 
+                # Set to None for export if no vertices are left
+                group_bone_ids = None if len(group_bone_ids) == 0 else group_bone_ids
+                group_weights = None if len(group_weights) == 0 else group_weights
 
                 vert = {'Position': vertex.co,
                         **{key: value for key, value in zip(['Normal'], unique_value[0])},
