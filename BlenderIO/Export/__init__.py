@@ -32,6 +32,7 @@ class ExportMediaVision(bpy.types.Operator):
     flip_uvs: None
     vweights_adjust: None
     vweight_floor: None
+    export_anim_mode = None
 
     def export_file(self, context, filepath):
         # Grab the parent object
@@ -72,13 +73,15 @@ class ExportMediaVision(bpy.types.Operator):
             export_animations([base_anim], model_data, filename,
                               strip_single_frame_transforms=True,
                               required_transforms={},
-                              out_transforms=transforms_not_in_base)
+                              out_transforms=transforms_not_in_base,
+                              interp_mode=self.export_anim_mode)
 
         if self.export_mode == "Animation" or self.export_mode == "QA":
             overlay_anims = [track for track in armature.animation_data.nla_tracks if track.name != "base"]
             export_animations(overlay_anims, model_data, filename,
                               strip_single_frame_transforms=False,
-                              required_transforms={})
+                              required_transforms={},
+                              interp_mode=self.export_anim_mode)
 
         generate_files_from_intermediate_format(filepath, model_data, filename, self.platform,
                                                 animation_only=self.export_mode=="Animation",
@@ -784,6 +787,13 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         default=0.0,
         min=0.0,
         max=1.0
+    )
+
+    export_anim_mode: EnumProperty(
+        name="Anim Frame Integerisation",
+        description="Policy for integerising animation frames.",
+        items=[("Interpolate", "Interpolate", "Interpolates the keyframe values to the nearest integer frame, after scaling the keyframes such that each keyframe can be uniquely mapped to an integer frame value. Should result in smoother animations, but may be buggy.", "", 0),
+               (       "Snap",        "Snap", "Integerises floating-point-valued frames by snapping the keyframes to the nearest integer, after scaling the keyframes such that each keyframe can be uniquely mapped to an integer frame value. Animations may be choppy, but stable.", "", 1)]
     )
 
 

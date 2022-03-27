@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from ...Utilities.ActionDataRetrieval import get_action_data
 from ...Utilities.Interpolation import produce_interpolation_method_dict, lerp, slerp
@@ -12,7 +13,8 @@ def create_blank_anim(model_data, anim_name):
     ad.uv_data = {}
 
 
-def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_transforms, required_transforms, out_transforms=None):
+def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_transforms, required_transforms, out_transforms=None,
+                      interp_mode="Interpolate"):
     """
     Main entry point to the animation export functionality.
 
@@ -33,7 +35,7 @@ def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_tr
         out_transforms = {'location': [],
                           'rotation_quaternion': [],
                           'scale': []}
-
+    printout = True
     for nla_track in nla_tracks:
         strips = nla_track.strips
         if len(strips) != 1:
@@ -71,8 +73,12 @@ def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_tr
                                                           [curve_defaults['rotation_quaternion'], curve_defaults['location'], curve_defaults['scale']],
                                                           [slerp, lerp, lerp]):
                 channel_data = animation_bone_data[curve_type]
-                #animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)
-                animation_data[bone_idx][curve_type] = snap_frame_indices_to_integers(channel_data) # This may be an issue
+                if interp_mode == "Snap":
+                    animation_data[bone_idx][curve_type] = snap_frame_indices_to_integers(channel_data)  # Makes wobbly animations
+                elif interp_mode == "Interpolate":
+                    animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)  # May cause a CTD
+                else:
+                    raise ValueError(f"Unknown animation integerisation mode \'{interp_mode}\'.")
         for shader_channel_idx, channel_data in animation_uv_data.items():
             animation_uv_data[shader_channel_idx] = snap_frame_indices_to_integers(channel_data)
 
