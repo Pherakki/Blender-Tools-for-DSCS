@@ -170,10 +170,24 @@ def integerise_frame_indices(animation_channel, frame_default, interpolation_fun
     if not len(animation_channel):
         return {}
 
-    required_frame_indices = [int(np.ceil(idx)) for idx in animation_channel.keys()]
+    animation_channel_cpy = copy.deepcopy(animation_channel)
+    for key in list(animation_channel_cpy.keys()):
+        if key < 0:
+            val = animation_channel_cpy.pop(key)
+            if 0 not in animation_channel_cpy:
+                animation_channel_cpy[0] = val
+
+    required_frame_indices = [int(round(idx)) for idx in animation_channel_cpy.keys() if int(round(idx)) >= 0]
+
     # First frame must be 0
     if required_frame_indices[0] != 0:
         required_frame_indices.insert(0, 0)
-    interpolation_function = produce_interpolation_method_dict(animation_channel, frame_default, interpolation_function, debug_output)
+
+    largest_idx = int(np.ceil(list(animation_channel_cpy.keys())[-1]))
+    if largest_idx < 0:
+        largest_idx = 0
+    if required_frame_indices[-1] != largest_idx:
+       required_frame_indices.append(largest_idx)
+    interpolation_function = produce_interpolation_method_dict(animation_channel_cpy, frame_default, interpolation_function, debug_output)
 
     return {frame: interpolation_function(frame) for frame in required_frame_indices}
