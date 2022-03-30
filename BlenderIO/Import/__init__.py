@@ -16,15 +16,14 @@ from ...Utilities.Reposing import set_new_rest_pose
 
 class ImportMediaVision(bpy.types.Operator):
     platform = None
-    import_mode = None
+    import_anims = None
     img_to_dds = None
     use_custom_nodes = None
     merge_vertices = None
 
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
-        model_data = generate_intermediate_format_from_files(filepath, self.platform,
-                                                             any([self.import_mode == mode for mode in ["Animation", "QA"]]))
+        model_data = generate_intermediate_format_from_files(filepath, self.platform, self.import_anims)
         filename = os.path.split(filepath)[-1]
         armature_name = filename + "_armature"
         parent_obj = bpy.data.objects.new(filename, None)
@@ -40,12 +39,12 @@ class ImportMediaVision(bpy.types.Operator):
 
         armature = [child for child in parent_obj.children if child.type == "ARMATURE"][0]
 
-        print(self.import_mode)
-        if self.import_mode == "Animation":
-            set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
-        else:
+        # # Re-enable this if statement if you provide an option to merge the base animation at some point
+        #if self.import_mode == "Animation":
+        #    set_new_rest_pose(armature_name, model_data.skeleton.bone_names, model_data.skeleton.rest_pose_delta)
+        #else:
             # Unmute the base animation on the armature
-            armature.animation_data.nla_tracks["base"].mute = False
+        armature.animation_data.nla_tracks["base"].mute = False
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.context.view_layer.objects.active = parent_obj
@@ -94,12 +93,10 @@ class ImportDSCS(ImportMediaVision, ImportHelper):
         items=[("PC", "PC", "Imports a DSCS Complete Edition PC model", "", 0),
                ("PS4", "PS4 (WIP)", "Imports a DSCS pr DSHM PS4 model. Not fully tested", "", 1)])
 
-    import_mode: EnumProperty(
-        name="Import Mode",
-        description="Which mode to import in.",
-        items=[("Modelling", "Modelling", "Imports the model in the Bind Pose with its base animation only", "", 0),
-               ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
-               ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display correctly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
+    import_anims: BoolProperty(
+        name="Import Animations",
+        description="Import animations or not."
+    )
 
     img_to_dds: BoolProperty(
         name="Import IMG as DDS",
@@ -133,13 +130,10 @@ class ImportMegido(ImportMediaVision, ImportHelper):
 
     platform = "Megido"
 
-    import_mode: EnumProperty(
-        name="Import Mode",
-        description="Which mode to import in.",
-        items=[("Modelling", "Modelling", "Imports the model in the Bind Pose with its base animation only", "", 0),
-               ("Animation", "Animation", "Deform the Bind Pose to the Rest Pose stored in the Skel file, and load all overlay animations", "", 1),
-               ("QA", "QA", "Loads the model in the Bind Pose with all animations. Overlay Animations must be viewed as additions to the Base Animation in the NLA editor to display correctly. Should be used to check all animations work as intended with the Base Pose before export", "", 2)])
-
+    import_anims: BoolProperty(
+        name="Import Animations",
+        description="Import animations or not."
+    )
     img_to_dds: BoolProperty(
         name="Import IMG as DDS",
         description="Create a copy of each IMG file with a DDS extension before import."

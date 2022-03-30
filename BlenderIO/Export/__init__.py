@@ -27,7 +27,7 @@ class ExportMediaVision(bpy.types.Operator):
     filename_ext = ".name"
 
     platform: None
-    export_mode: None
+    export_anims: None
     img_to_dds: None
     flip_uvs: None
     vweights_adjust: None
@@ -45,23 +45,23 @@ class ExportMediaVision(bpy.types.Operator):
         export_folder, filename = os.path.split(filepath)
 
         base_anim = armature.animation_data.nla_tracks.get("base", None)
-        if self.export_mode == "Modelling" or self.export_mode == "QA":
-            export_images_folder = os.path.join(export_folder, 'images')
-            os.makedirs(export_images_folder, exist_ok=True)
+        #if self.export_mode == "Modelling" or self.export_mode == "QA":
+        export_images_folder = os.path.join(export_folder, 'images')
+        os.makedirs(export_images_folder, exist_ok=True)
 
-            # Top-level unknown data
-            model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
-            model_data.unknown_data['unknown_cam_data_2'] = parent_obj.get('unknown_cam_data_2', [])
-            model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
+        # Top-level unknown data
+        model_data.unknown_data['unknown_cam_data_1'] = parent_obj.get('unknown_cam_data_1', [])
+        model_data.unknown_data['unknown_cam_data_2'] = parent_obj.get('unknown_cam_data_2', [])
+        model_data.unknown_data['unknown_footer_data'] = parent_obj.get('unknown_footer_data', b'')
 
-            used_materials = []
-            used_textures = []
-            self.export_skeleton(armature, None if base_anim is None else base_anim.strips[0].action, model_data)
-            self.export_meshes(meshes, model_data, used_materials)
-            self.export_materials(model_data, used_materials, used_textures)
-            self.export_textures(used_textures, model_data, export_images_folder)
-            self.export_cameras(find_cameras(parent_obj), model_data)
-            self.export_lights(find_lights(parent_obj), model_data)
+        used_materials = []
+        used_textures = []
+        self.export_skeleton(armature, None if base_anim is None else base_anim.strips[0].action, model_data)
+        self.export_meshes(meshes, model_data, used_materials)
+        self.export_materials(model_data, used_materials, used_textures)
+        self.export_textures(used_textures, model_data, export_images_folder)
+        self.export_cameras(find_cameras(parent_obj), model_data)
+        self.export_lights(find_lights(parent_obj), model_data)
 
         # The first frame of the base animation becomes the rest pose
         # Strip out any transforms in the base animation that are only for the first frame: DSCS will get this from
@@ -76,7 +76,7 @@ class ExportMediaVision(bpy.types.Operator):
                               out_transforms=transforms_not_in_base,
                               interp_mode=self.export_anim_mode)
 
-        if self.export_mode == "Animation" or self.export_mode == "QA":
+        if self.export_anims:
             overlay_anims = [track for track in armature.animation_data.nla_tracks if track.name != "base"]
             export_animations(overlay_anims, model_data, filename,
                               strip_single_frame_transforms=False,
@@ -84,7 +84,7 @@ class ExportMediaVision(bpy.types.Operator):
                               interp_mode=self.export_anim_mode)
 
         generate_files_from_intermediate_format(filepath, model_data, filename, self.platform,
-                                                animation_only=self.export_mode=="Animation",
+                                                animation_only=False,#self.export_mode=="Animation",
                                                 vweights_adjust=self.vweights_adjust)
 
     def export_skeleton(self, armature, base_animation, model_data):
@@ -749,12 +749,11 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         items=[("PC", "PC", "Exports a DSCS Complete Edition PC model", "", 0),
                ("PS4", "PS4 (WIP)", "Exports a DSCS pr DSHM PS4 model. Not fully tested", "", 1)])
 
-    export_mode: EnumProperty(
-        name="Export Mode",
-        description="Which mode to export in.",
-        items=[("Modelling", "Modelling", "Exports the model with its base animation only", "", 0),
-               ("Animation", "Animation", "Exports overlay animations only", "", 1),
-               ("QA", "QA", "Exports the model and all animations", "", 2)])
+    export_anims: BoolProperty(
+        name="Export Animations",
+        description="Export animations or not."
+    )
+
 
     img_to_dds: BoolProperty(
         name="IMG->DDS File Extension",
@@ -803,12 +802,10 @@ class ExportMegido(ExportMediaVision, ExportHelper):
 
     platform = "Megido"
 
-    export_mode: EnumProperty(
-        name="Export Mode",
-        description="Which mode to export in.",
-        items=[("Modelling", "Modelling", "Exports the model with its base animation only", "", 0),
-               ("Animation", "Animation", "Exports overlay animations only", "", 1),
-               ("QA", "QA", "Exports the model and all animations", "", 2)])
+    export_anims: BoolProperty(
+        name="Export Animations",
+        description="Export animations or not."
+    )
 
     img_to_dds: BoolProperty(
         name="IMG->DDS File Extension",
