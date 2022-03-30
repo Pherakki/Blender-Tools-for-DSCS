@@ -33,7 +33,7 @@ def get_action_data(action, curve_defaults):
 # UTILITY FUNCTIONS #
 #####################
 def convert_eulers_to_quats(group):
-    if 'rotation_euler' in group:
+    if 'rotation_euler' in group and not "rotation_quaternion" in group:
         euler_data = group.pop("rotation_euler")
         for frame_idx, frame_value in euler_data.items():
             group['rotation_quaternion'][frame_idx] = XYZ_eulers_to_quat(frame_value, WXYZ=True)
