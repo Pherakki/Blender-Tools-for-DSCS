@@ -1,6 +1,8 @@
 # Blender Tools for Digimon Story: Cyber Sleuth
 This repository provides a work-in-progress addon for Blender 2.8 that can (to some degree) import model files from the PC version of Digimon Story: Cyber Sleuth. It provides new options in `File > Import` and `File > Export` named "DSCS Model", which should be pointed towards 'name' files in the game data. The file format is mostly understood; but some bugs remain and there are some Blender issues yet to be understood. There is also experimental support for the PS4 version and for Megido72.
 
+The tools appear to be valid for Blender versions 2.80 - 2.91. Some compatibility issues have been reported with 2.93 and versions >3.0.
+
 Progress reports are hosted in the [discussions](https://github.com/Pherakki/Blender-Tools-for-DSCS/discussions/1) and documentation is in-progress in the [wiki](https://github.com/Pherakki/Blender-Tools-for-DSCS/wiki).
 
 ## Preparation
@@ -36,19 +38,14 @@ If you are instead downloading a release version, skip ahead to step 3.
 1. The model files are split into name, skel, and geom files. These must all be in the same directory in order for the import to be successful.
 2. Textures are expected to be located in a directory named 'images' in the same directory as the name, skel, and geom files.
 3. Open Blender, navigate to `File > Import > Import DSCS` and open the appropriate name, skel, or geom file (all three will currently be simultaneously imported). By default, only the name files are present in the search results.
-4. There are three import options:
-    * "Modelling" will import the model in the bind pose, with the base animation loaded on the model to put it into the rest pose. This mode is suitable for editing the base model and skeleton, because it does not import the animations (which may take a few minutes for some models).
-    * "Animation" will import the model in the rest pose and load all animations. This mode is suitable for editing animations, because the model is in a position where any animation will be correctly applied to to the rest pose without any interference from the base animation.
-    * "QA" or "Quality Assurance" mode is for checking the model works as intended before export, or for modelling and animating all in one go. The model is loaded in the bind pose, with the base animation loaded on the model to put it into the rest pose. All animations are also loaded. The combined animations can be previewed in the NLA editor, by making sure the base animation and the selected overlay animation are both unmuted (ticked). By default, the NLA strips are set to the appropriate mode such that they combine in the way DSCS combines them.
+4. Import animations alongside the model by ticking "Import Animations" box in the importer. This will import all heuristically-identified animation files for the model.
 
 Note: If you point the import function towards the unpacked game files, all the files will be already in a location understandable by the import script.
 
 ## Export Usage
 1. To export, **select** any part of the model in **object mode** and navigate to `File > Export > Export DSCS`.
-2. There are three import options:
-    * "Modelling" will export the model and base animation only.
-    * "Animation" will export animations only.
-    * "QA" will export the model and any animations.
+2. Tick the "Export Animations" box if you want to export animations. Note that the animations will be identified by finding NLA Tracks associated with the Armature of your model, and each track must contain a single NLA strip.
+3. The tools will, by default, attempt to generate a shader name for your meshes that will allow them to render properly in-game by identifying the number of vertex groups used by each mesh. This may generate a name for a shader that does not exist within the game, and you will have to create this shader yourself in order for the affected mesh(es) to display. To turn off this behaviour, switch the "Fix Vertex Weights" option to "Never". This may cause rendering issues with the model.
 
 ## Putting models into the game files
 [SimpleDSCSModManager](https://github.com/Pherakki/SimpleDSCSModManager) makes the installation of exported models easy, as well as many other game edits. Follow the guide for making mods in the SimpleDSCSModManager user guide, located in the SimpleDSCSModManager documentation folder. For successful install, your mod requires:
@@ -61,15 +58,10 @@ Note: If you point the import function towards the unpacked game files, all the 
 
 ## Potential fixes for common "bugs"
 1. If the import/export options do not appear, navigate to your Blender addons folder. On Windows, this folder is located in `<drive>\Users\<user>\AppData\Roaming\Blender Foundation\Blender\<version>\scripts\addons`, where quantities between `<>` are specific to your computer. You can navigate to `<user>\AppData\Roaming\` by typing `%appdata%` into the file address bar in File Explorer. Ensure that the addon code is in a folder, perhaps named something like "Blender-Tools-For-DSCS_master", and not in a bunch of folders like "FileReaders", "CollatedData" etc. If the code is not contained in a single folder in this manner, create a new folder and drag + drop all the code from this addon into the folder. The contents of this folder should now contain files and folders in the GitHub repository. Restart Blender, and re-load the addon.
-   
-## Some Known Bugs and Limitations
-1. There are some issues with vertex normal import and export.
-2. Some exported animations may crash the game.
 
 ## Future Plans
-1. Find cause of occasional exported animation crash - may already be fixed?
-2. Readers for remaining filetypes: DETR, NAVI, NOTE, PHYS, SPRK
-3. [An external program that can assign shaders to models.](https://github.com/Pherakki/DSCSModelDataEditor) **Currently WIP** but under heavy development; the repository may not be kept up-to-date during this period.
+1. Readers for remaining filetypes: DETR, NAVI, NOTE, PHYS, SPRK
+2. [An external program that can assign shaders to models.](https://github.com/Pherakki/DSCSModelDataEditor) **Currently WIP** but under heavy development; the repository may not be kept up-to-date during this period.
 
 ## Contact
 e-mail: pherakki@gmail.com
