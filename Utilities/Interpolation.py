@@ -15,9 +15,9 @@ def slerp(x, y, t):
 
 
 def interpolate_keyframe(frame_idxs, frame_values, idx, interpolation_function):
-    smaller_elements = [fidx for fidx in frame_idxs if idx <= fidx]
+    smaller_elements = [fidx for fidx in frame_idxs if idx >= fidx]
     next_smallest_frame = max(smaller_elements) if len(smaller_elements) else frame_idxs[0]
-    larger_elements = [fidx for fidx in frame_idxs if idx >= fidx]
+    larger_elements = [fidx for fidx in frame_idxs if idx <= fidx]
     next_largest_frame = min(larger_elements) if len(larger_elements) else frame_idxs[-1]
 
     if next_largest_frame == next_smallest_frame:
