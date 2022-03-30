@@ -76,7 +76,7 @@ def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_tr
                 if interp_mode == "Snap":
                     animation_data[bone_idx][curve_type] = snap_frame_indices_to_integers(channel_data)  # Makes wobbly animations
                 elif interp_mode == "Interpolate":
-                    animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)  # May cause a CTD
+                    animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)
                 else:
                     raise ValueError(f"Unknown animation integerisation mode \'{interp_mode}\'.")
         for shader_channel_idx, channel_data in animation_uv_data.items():
