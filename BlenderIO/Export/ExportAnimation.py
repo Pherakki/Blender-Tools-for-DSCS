@@ -74,7 +74,7 @@ def export_animations(nla_tracks, model_data, name_prefix, strip_single_frame_tr
                                                           [slerp, lerp, lerp]):
                 channel_data = animation_bone_data[curve_type]
                 if interp_mode == "Snap":
-                    animation_data[bone_idx][curve_type] = snap_frame_indices_to_integers(channel_data)  # Makes wobbly animations
+                    animation_data[bone_idx][curve_type] = snap_frame_indices_to_integers(channel_data)  # Makes wobbly animations for float frame indices
                 elif interp_mode == "Interpolate":
                     animation_data[bone_idx][curve_type] = integerise_frame_indices(channel_data, default, interp_method)
                 else:
