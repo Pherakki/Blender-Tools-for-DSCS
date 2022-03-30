@@ -122,9 +122,7 @@ def get_all_required_frames(curve_data):
         iter_keys = tuple(dct.keys())
         for key in iter_keys:
             res.add(key)
-            # res.add(int(round(key)))
-        res.add(np.ceil(iter_keys[-1]))
-        # res.add(int(np.ceil(iter_keys[-1])))
+        #res.add(np.ceil(iter_keys[-1]))
     return sorted(list(res))
 
 
