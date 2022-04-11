@@ -211,7 +211,11 @@ class MaterialReader(BaseRW):
                 assert datum == 0, f"Element {i+num_floats} is not pad bytes!"
             payload = payload[:num_floats]
 
-        return uniform_type, shader_uniforms_from_defn[(uniform_type, num_floats)](payload)
+        uniform_inst = shader_uniforms_from_defn[(uniform_type, num_floats)](payload)
+        assert num_floats == uniform_inst.num_floats
+        setattr(uniform_inst, "id", data[16])
+
+        return uniform_type, uniform_inst
 
     def shader_uniform_data_factory(self, uniform_type, shader_uniform):
         if shader_uniform.num_floats == 0:
