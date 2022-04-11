@@ -64,6 +64,31 @@ def get_transformed_vertices(gi_mesh, transforms, switch_idx=2):
     return transformed_vertices
 
 
+def calculate_shader_weight_width(geomInterface, gi_mesh):
+    n_verts = max([len(vtx['WeightedBoneID']) if vtx['WeightedBoneID'] is not None else 0 for vtx in gi_mesh.vertices])
+    n_verts = 0 if len(gi_mesh.vertex_group_bone_idxs) == 1 else n_verts
+    geom_mat = geomInterface.material_data[gi_mesh.material_id]
+    shader_hex = geom_mat.shader_hex
+
+    hex_st = shader_hex[:-5]
+    hex_mid = shader_hex[-5:-3]
+    hex_end = shader_hex[-3:]
+
+    correct_width = f"{0x40 + 8 * n_verts:0>2X}"
+
+    if correct_width != hex_mid:
+        new_material = geomInterface.add_material()
+        new_material.name_hash = geom_mat.name_hash
+        new_material.shader_hex = hex_st + correct_width + hex_end
+        new_material.enable_shadows = geom_mat.enable_shadows
+
+        new_material.shader_uniforms = copy.deepcopy(geom_mat.shader_uniforms)
+        new_material.unknown_material_components = copy.deepcopy(geom_mat.unknown_material_components)
+
+        geomInterface.material_data.append(new_material)
+        gi_mesh.material_id = len(geomInterface.material_data) - 1
+
+
 def make_geominterface(filepath, model_data, sk, platform, vweights_adjust):
     geomInterface = GeomInterface()
 
@@ -133,30 +158,16 @@ def make_geominterface(filepath, model_data, sk, platform, vweights_adjust):
         gi_mat.unknown_material_components = mat.unknown_data['unknown_material_components']
 
     # Fix weight paddings
-    if vweights_adjust == "FitToWeights":
-        for gi_mesh in geomInterface.meshes:
-            n_verts = max([len(vtx['WeightedBoneID']) if vtx['WeightedBoneID'] is not None else 0 for vtx in gi_mesh.vertices])
-            n_verts = 0 if len(gi_mesh.vertex_group_bone_idxs) == 1 else n_verts
-            geom_mat = geomInterface.material_data[gi_mesh.material_id]
-            shader_hex = geom_mat.shader_hex
-
-            hex_st = shader_hex[:-5]
-            hex_mid = shader_hex[-5:-3]
-            hex_end = shader_hex[-3:]
-
-            correct_width = hex(0x40 + 8*n_verts)[2:]
-
-            if correct_width != hex_mid:
-                new_material = geomInterface.add_material()
-                new_material.name_hash = geom_mat.name_hash
-                new_material.shader_hex = hex_st + correct_width + hex_end
-                new_material.enable_shadows = geom_mat.enable_shadows
-
-                new_material.shader_uniforms = copy.deepcopy(geom_mat.shader_uniforms)
-                new_material.unknown_material_components = copy.deepcopy(geom_mat.unknown_material_components)
-
-                geomInterface.material_data.append(new_material)
-                gi_mesh.material_id = len(geomInterface.material_data) - 1
+    for gi_mesh in geomInterface.meshes:
+        if vweights_adjust == "FitToWeights":
+            calculate_shader_weight_width(geomInterface, gi_mesh)
+        elif vweights_adjust == "Pad4":
+            if "WeightedBoneID" in gi_mesh.vertices[0]:
+                for i, vertex in enumerate(gi_mesh.vertices):
+                    vertex["WeightedBoneID"] = [*vertex["WeightedBoneID"], *([0]*(4-len(vertex["WeightedBoneID"])))]
+                    vertex["BoneWeight"] = [*vertex["BoneWeight"], *([0.]*(4-len(vertex["BoneWeight"])))]
+                    gi_mesh.vertices[i] = vertex
+                calculate_shader_weight_width(geomInterface, gi_mesh)
 
     geomInterface.camera = []
     for cam in model_data.cameras:
