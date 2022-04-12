@@ -33,6 +33,7 @@ class ExportMediaVision(bpy.types.Operator):
     vweights_adjust: None
     vweight_floor: None
     export_anim_mode = None
+    generate_physics = None
 
     def export_file(self, context, filepath):
         # Grab the parent object
@@ -85,7 +86,8 @@ class ExportMediaVision(bpy.types.Operator):
 
         generate_files_from_intermediate_format(filepath, model_data, filename, self.platform,
                                                 animation_only=False,#self.export_mode=="Animation",
-                                                vweights_adjust=self.vweights_adjust)
+                                                vweights_adjust=self.vweights_adjust,
+                                                create_physics=self.generate_physics)
 
     def export_skeleton(self, armature, base_animation, model_data):
         bone_name_list = [bone.name for bone in armature.data.bones]
@@ -794,6 +796,11 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         description="Policy for integerising animation frames.",
         items=[("Interpolate", "Interpolate", "Interpolates the keyframe values to the nearest integer frame, after scaling the keyframes such that each keyframe can be uniquely mapped to an integer frame value. Should result in smoother animations, but may be buggy.", "", 0),
                (       "Snap",        "Snap", "Integerises floating-point-valued frames by snapping the keyframes to the nearest integer, after scaling the keyframes such that each keyframe can be uniquely mapped to an integer frame value. Animations may be choppy, but stable.", "", 1)]
+    )
+
+    generate_physics: BoolProperty(
+        name="Generate Physics",
+        description="Whether to create a PHYS file from the model. Only used for Map models."
     )
 
 

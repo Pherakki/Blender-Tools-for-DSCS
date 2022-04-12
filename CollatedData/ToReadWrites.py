@@ -6,22 +6,27 @@ from ..FileInterfaces.NameInterface import NameInterface
 from ..FileInterfaces.SkelInterface import SkelInterface
 from ..FileInterfaces.GeomInterface import GeomInterface
 from ..FileInterfaces.AnimInterface import AnimInterface
+from ..FileInterfaces.PhysInterface import PhysInterface
 
 from ..FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names
 from ..Utilities.StringHashing import dscs_name_hash
 from ..Utilities.Matrices import get_total_transform_matrix
 
 
-def generate_files_from_intermediate_format(filepath, model_data, model_name, platform='PC', animation_only=False, vweights_adjust=None):
+def generate_files_from_intermediate_format(filepath, model_data, model_name, platform='PC', animation_only=False,
+                                            vweights_adjust=None, create_physics=False):
     file_folder = os.path.join(*os.path.split(filepath)[:-1])
         
-    sk = make_skelinterface(filepath, model_data, not animation_only)
+    si = make_skelinterface(filepath, model_data, not animation_only)
     if not animation_only:
-        make_nameinterface(filepath, model_data)
-        make_geominterface(filepath, model_data, sk, platform, vweights_adjust)
+        ni = make_nameinterface(filepath, model_data)
+        gi = make_geominterface(filepath, model_data, si, platform, vweights_adjust)
+        if create_physics:
+            pi = PhysInterface.from_model(ni, si, gi)
+            pi.to_file(filepath + ".phys")
 
     for animation_name in model_data.animations:
-        make_animreader(file_folder, model_data, animation_name, model_name, sk)
+        make_animreader(file_folder, model_data, animation_name, model_name, si)
 
 
 def make_nameinterface(filepath, model_data):
@@ -30,6 +35,7 @@ def make_nameinterface(filepath, model_data):
     nameInterface.material_names = [mat.name for mat in model_data.materials]
 
     nameInterface.to_file(filepath + ".name")
+    return nameInterface
 
 
 def make_skelinterface(filepath, model_data, export=True):
@@ -203,6 +209,8 @@ def make_geominterface(filepath, model_data, sk, platform, vweights_adjust):
     geomInterface.unknown_footer_data = model_data.unknown_data['unknown_footer_data']
 
     geomInterface.to_file(filepath + '.geom', platform)
+
+    return geomInterface
 
 
 def validate_anim_data(fcurve):
