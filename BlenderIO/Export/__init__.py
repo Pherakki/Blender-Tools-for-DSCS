@@ -1,4 +1,5 @@
 import array
+import copy
 import numpy as np
 import os
 import shutil
@@ -8,7 +9,7 @@ from bpy_extras.io_utils import ExportHelper
 from bpy.props import BoolProperty, EnumProperty, FloatProperty
 
 from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
-from ...CollatedData.IntermediateFormat import IntermediateFormat
+from ...CollatedData.IntermediateFormat import IntermediateFormat, MaterialData
 from ...FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
 from .ExportAnimation import export_animations, create_blank_anim
 from ..DSCSBlenderUtils import find_selected_model
@@ -84,9 +85,9 @@ class ExportMediaVision(bpy.types.Operator):
                               required_transforms={},
                               interp_mode=self.export_anim_mode)
 
+        self.clean_up_model(model_data)
         generate_files_from_intermediate_format(filepath, model_data, filename, self.platform,
                                                 animation_only=False,#self.export_mode=="Animation",
-                                                vweights_adjust=self.vweights_adjust,
                                                 create_physics=self.generate_physics)
 
     def export_skeleton(self, armature, base_animation, model_data):
@@ -533,6 +534,25 @@ class ExportMediaVision(bpy.types.Operator):
             lgt.light_id = light_id
             lgt.unknown_fog_param = fogparam
 
+    def clean_up_model(self, model_data):
+        if self.vweights_adjust == "FitToWeights":
+            all_required_materials = {}
+            for i, mesh in enumerate(model_data.meshes):
+                key = (mesh.material_id, get_required_shader_width(mesh))
+                if key not in all_required_materials:
+                    all_required_materials[key] = []
+                all_required_materials[key].append(i)
+
+            new_materials = []
+            material_handle_count = {}
+            for new_material_idx, ((old_material_idx, width), mesh_idxs) in enumerate(all_required_materials.items()):
+                new_materials.append(create_adjusted_shader_material(model_data, old_material_idx, width, material_handle_count))
+                for mesh_idx in mesh_idxs:
+                    model_data.meshes[mesh_idx].material_id = new_material_idx
+            model_data.materials = new_materials
+
+            print("ALL OUTPUT MATERIALS", len(model_data.materials))
+
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in
@@ -540,6 +560,69 @@ class ExportMediaVision(bpy.types.Operator):
         self.export_file(context, filepath)
 
         return {'FINISHED'}
+
+
+def get_required_shader_width(mesh):
+    n_verts = max([len(vtx['WeightedBoneID']) if vtx['WeightedBoneID'] is not None else 0 for vtx in mesh.vertices])
+    n_verts = 0 if len(mesh.vertex_groups) == 1 else n_verts
+    return f"{0x40 + 8 * n_verts:0>2X}"
+
+
+def create_adjusted_shader_material(model_data, idx, width, material_handle_count):
+    material = model_data.materials[idx]
+    shader_hex = material.shader_hex
+
+    hex_st = shader_hex[:-5]
+    hex_mid = shader_hex[-5:-3]
+    hex_end = shader_hex[-3:]
+
+    # Make new material
+    new_material = copy.deepcopy(material)
+
+    # Rename new material
+    if idx in material_handle_count:
+        name = "{material.name}_w{width}"
+    else:
+        material_handle_count[idx] = 0
+        name = material.name
+    material_handle_count[idx] += 1
+
+    new_material.name = name
+
+    # Fix the shader hex
+    if width != hex_mid:
+        new_material.shader_hex = hex_st + width + hex_end
+
+    return new_material
+
+
+def fix_weights(geomInterface, vweights_adjust):
+    # Fix weight paddings
+    for gi_mesh in geomInterface.meshes:
+        if vweights_adjust == "FitToWeights":
+            calculate_shader_weight_width(geomInterface, gi_mesh)
+        elif vweights_adjust == "Pad4":
+            if "WeightedBoneID" in gi_mesh.vertices[0]:
+                for i, vertex in enumerate(gi_mesh.vertices):
+                    vertex["WeightedBoneID"] = [*vertex["WeightedBoneID"], *([0]*(4-len(vertex["WeightedBoneID"])))]
+                    vertex["BoneWeight"] = [*vertex["BoneWeight"], *([0.]*(4-len(vertex["BoneWeight"])))]
+                    gi_mesh.vertices[i] = vertex
+                calculate_shader_weight_width(geomInterface, gi_mesh)
+
+
+def strip_unused_materials(geomInterface):
+    used_material_ids = set()
+    for mesh in geomInterface.meshes:
+        used_material_ids.add(mesh.material_id)
+    print(">> USED IDS", used_material_ids)
+    material_id_map = {old_idx: new_idx for new_idx, old_idx in enumerate(sorted(used_material_ids))}
+    print(">> ID MAP", material_id_map)
+    for mesh in geomInterface.meshes:
+        mesh.material_id = material_id_map[mesh.material_id]
+    print(">> USED MATERIALS BEFORE STRIP", len(geomInterface.material_data))
+    geomInterface.material_data = [material for i, material in enumerate(geomInterface.material_data) if
+                                   i in material_id_map]
+    print(">> USED MATERIALS AFTER STRIP", len(geomInterface.material_data))
 
 
 def round_to_sigfigs(x, p):
@@ -779,7 +862,7 @@ class ExportDSCS(ExportMediaVision, ExportHelper):
         name="Fix Vertex Weights",
         description="Policy for post-processing Vertex Weights.",
         items=[("FitToWeights", "Adjust Shader", "Calculates the shader name that should be correctly aligned with the Vertex Weights on each mesh. This will generate additional materials where required. Some generated shader names may not exist in the game data, which will require them to be written by you. Meshes with non-existent shaders will not render in-game", "", 0),
-               (        "Pad4",  "Pad all to 4", "Pads all vertex weights to a width of 4.", "", 1),
+               (        "FitToWeights",  "Pad all to 4", "Pads all vertex weights to a width of 4.", "", 1),
                (        "None",          "None", "Does not apply any post-processing to the Vertex Weights. This is very likely to result in graphical issues", "", 2)]
     )
 

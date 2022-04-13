@@ -13,14 +13,13 @@ from ..Utilities.StringHashing import dscs_name_hash
 from ..Utilities.Matrices import get_total_transform_matrix
 
 
-def generate_files_from_intermediate_format(filepath, model_data, model_name, platform='PC', animation_only=False,
-                                            vweights_adjust=None, create_physics=False):
+def generate_files_from_intermediate_format(filepath, model_data, model_name, platform='PC', animation_only=False, create_physics=False):
     file_folder = os.path.join(*os.path.split(filepath)[:-1])
         
     si = make_skelinterface(filepath, model_data, not animation_only)
     if not animation_only:
         ni = make_nameinterface(filepath, model_data)
-        gi = make_geominterface(filepath, model_data, si, platform, vweights_adjust)
+        gi = make_geominterface(filepath, model_data, si, platform)
         if create_physics:
             pi = PhysInterface.from_model(ni, si, gi)
             pi.to_file(filepath + ".phys")
@@ -70,32 +69,7 @@ def get_transformed_vertices(gi_mesh, transforms, switch_idx=2):
     return transformed_vertices
 
 
-def calculate_shader_weight_width(geomInterface, gi_mesh):
-    n_verts = max([len(vtx['WeightedBoneID']) if vtx['WeightedBoneID'] is not None else 0 for vtx in gi_mesh.vertices])
-    n_verts = 0 if len(gi_mesh.vertex_group_bone_idxs) == 1 else n_verts
-    geom_mat = geomInterface.material_data[gi_mesh.material_id]
-    shader_hex = geom_mat.shader_hex
-
-    hex_st = shader_hex[:-5]
-    hex_mid = shader_hex[-5:-3]
-    hex_end = shader_hex[-3:]
-
-    correct_width = f"{0x40 + 8 * n_verts:0>2X}"
-
-    if correct_width != hex_mid:
-        new_material = geomInterface.add_material()
-        new_material.name_hash = geom_mat.name_hash
-        new_material.shader_hex = hex_st + correct_width + hex_end
-        new_material.enable_shadows = geom_mat.enable_shadows
-
-        new_material.shader_uniforms = copy.deepcopy(geom_mat.shader_uniforms)
-        new_material.unknown_material_components = copy.deepcopy(geom_mat.unknown_material_components)
-
-        geomInterface.material_data.append(new_material)
-        gi_mesh.material_id = len(geomInterface.material_data) - 1
-
-
-def make_geominterface(filepath, model_data, sk, platform, vweights_adjust):
+def make_geominterface(filepath, model_data, sk, platform):
     geomInterface = GeomInterface()
 
     bone_matrices = [get_total_transform_matrix(i, {p: c for p, c in sk.parent_bones}, sk.rest_pose) for i in range(sk.num_bones)]
@@ -163,17 +137,6 @@ def make_geominterface(filepath, model_data, sk, platform, vweights_adjust):
         gi_mat.shader_uniforms = {key: shader_uniforms_from_names[key](list(value)) for key, value in mat.shader_uniforms.items()}
         gi_mat.unknown_material_components = mat.unknown_data['unknown_material_components']
 
-    # Fix weight paddings
-    for gi_mesh in geomInterface.meshes:
-        if vweights_adjust == "FitToWeights":
-            calculate_shader_weight_width(geomInterface, gi_mesh)
-        elif vweights_adjust == "Pad4":
-            if "WeightedBoneID" in gi_mesh.vertices[0]:
-                for i, vertex in enumerate(gi_mesh.vertices):
-                    vertex["WeightedBoneID"] = [*vertex["WeightedBoneID"], *([0]*(4-len(vertex["WeightedBoneID"])))]
-                    vertex["BoneWeight"] = [*vertex["BoneWeight"], *([0.]*(4-len(vertex["BoneWeight"])))]
-                    gi_mesh.vertices[i] = vertex
-                calculate_shader_weight_width(geomInterface, gi_mesh)
 
     geomInterface.camera = []
     for cam in model_data.cameras:
@@ -208,8 +171,8 @@ def make_geominterface(filepath, model_data, sk, platform, vweights_adjust):
     geomInterface.inverse_bind_pose_matrices = model_data.skeleton.inverse_bind_pose_matrices
     geomInterface.unknown_footer_data = model_data.unknown_data['unknown_footer_data']
 
-    geomInterface.to_file(filepath + '.geom', platform)
-
+    print(">> USED MATERIALS BEFORE DUMP", len(geomInterface.material_data))
+    geomInterface.to_file(filepath + ".geom", platform)
     return geomInterface
 
 
