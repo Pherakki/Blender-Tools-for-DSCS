@@ -573,8 +573,6 @@ class ExportMediaVision(bpy.types.Operator):
                     model_data.meshes[mesh_idx].material_id = new_material_idx
             model_data.materials = new_materials
 
-            print("ALL OUTPUT MATERIALS", len(model_data.materials))
-
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in
@@ -615,22 +613,6 @@ def create_adjusted_shader_material(model_data, idx, width, material_handle_coun
         new_material.shader_hex = hex_st + width + hex_end
 
     return new_material
-
-
-def strip_unused_materials(geomInterface):
-    used_material_ids = set()
-    for mesh in geomInterface.meshes:
-        used_material_ids.add(mesh.material_id)
-    print(">> USED IDS", used_material_ids)
-    material_id_map = {old_idx: new_idx for new_idx, old_idx in enumerate(sorted(used_material_ids))}
-    print(">> ID MAP", material_id_map)
-    for mesh in geomInterface.meshes:
-        mesh.material_id = material_id_map[mesh.material_id]
-    print(">> USED MATERIALS BEFORE STRIP", len(geomInterface.material_data))
-    geomInterface.material_data = [material for i, material in enumerate(geomInterface.material_data) if
-                                   i in material_id_map]
-    print(">> USED MATERIALS AFTER STRIP", len(geomInterface.material_data))
-
 
 def round_to_sigfigs(x, p):
     """
