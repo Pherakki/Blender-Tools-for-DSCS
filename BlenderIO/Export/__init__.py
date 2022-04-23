@@ -327,7 +327,7 @@ class ExportMediaVision(bpy.types.Operator):
             material.name = bmat.name
             material.shader_hex = bmat.get('shader_hex',
                                            '088100c1_00880111_00000000_00058000')
-            material.enable_shadows = bmat.get('enable_shadows', 1)
+            material.enable_shadows = bmat.get('enable_shadows', 3)
 
             # Export Textures
             node_names = [node.name for node in node_tree.nodes]
