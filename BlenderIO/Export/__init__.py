@@ -550,9 +550,16 @@ class ExportMediaVision(bpy.types.Operator):
             lgt.unknown_fog_param = fogparam
 
     def clean_up_model(self, model_data):
-        if self.vweights_adjust == "FitToWeights":
+        if self.vweights_adjust == "FitToWeights" or self.vweights_adjust == "Pad4":
             all_required_materials = {}
             for i, mesh in enumerate(model_data.meshes):
+                if self.vweights_adjust == "Pad4":
+                    if "WeightedBoneID" in mesh.vertices[0]:
+                        for i, vertex in enumerate(mesh.vertices):
+                            vertex["WeightedBoneID"] = [*vertex["WeightedBoneID"], *([0] * (4 - len(vertex["WeightedBoneID"])))]
+                            vertex["BoneWeight"] = [*vertex["BoneWeight"], *([0.] * (4 - len(vertex["BoneWeight"])))]
+                            mesh.vertices[i] = vertex
+
                 key = (mesh.material_id, get_required_shader_width(mesh))
                 if key not in all_required_materials:
                     all_required_materials[key] = []
@@ -608,20 +615,6 @@ def create_adjusted_shader_material(model_data, idx, width, material_handle_coun
         new_material.shader_hex = hex_st + width + hex_end
 
     return new_material
-
-
-def fix_weights(geomInterface, vweights_adjust):
-    # Fix weight paddings
-    for gi_mesh in geomInterface.meshes:
-        if vweights_adjust == "FitToWeights":
-            calculate_shader_weight_width(geomInterface, gi_mesh)
-        elif vweights_adjust == "Pad4":
-            if "WeightedBoneID" in gi_mesh.vertices[0]:
-                for i, vertex in enumerate(gi_mesh.vertices):
-                    vertex["WeightedBoneID"] = [*vertex["WeightedBoneID"], *([0]*(4-len(vertex["WeightedBoneID"])))]
-                    vertex["BoneWeight"] = [*vertex["BoneWeight"], *([0.]*(4-len(vertex["BoneWeight"])))]
-                    gi_mesh.vertices[i] = vertex
-                calculate_shader_weight_width(geomInterface, gi_mesh)
 
 
 def strip_unused_materials(geomInterface):
