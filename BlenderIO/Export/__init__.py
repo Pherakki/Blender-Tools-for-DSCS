@@ -716,7 +716,7 @@ def validate_blender_data(parent_obj):
     armature = find_armatures(parent_obj)
     meshes = find_meshes(armature)
     check_vertex_group_counts(meshes)
-    check_vertex_weight_counts(meshes)
+    #check_vertex_weight_counts(meshes)
     bpy.ops.object.select_all(action='DESELECT')
     bpy.context.view_layer.objects.active = None
 
