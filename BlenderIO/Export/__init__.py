@@ -564,7 +564,6 @@ class ExportMediaVision(bpy.types.Operator):
 
 def get_required_shader_width(mesh):
     n_verts = max([len(vtx['WeightedBoneID']) if vtx['WeightedBoneID'] is not None else 0 for vtx in mesh.vertices])
-    n_verts = 0 if len(mesh.vertex_groups) == 1 else n_verts
     return f"{0x40 + 8 * n_verts:0>2X}"
 
 
