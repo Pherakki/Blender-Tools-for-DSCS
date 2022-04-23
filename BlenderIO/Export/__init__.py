@@ -150,15 +150,26 @@ class ExportMediaVision(bpy.types.Operator):
                             u, v = vert[key]
                             vert[key] = (u, 1. - v)
 
+            # Remap any groups that were culled in the split...
+            old_groups = get_all_nonempty_vertex_groups(mesh_obj)
+            for i, group in enumerate(old_groups):
+                bone_name = group.name
+                bone_id = model_data.skeleton.bone_names.index(bone_name)
+                old_groups[i] = bone_id
+
+            group_map = {old_groups.index(bone_id) : new_idx for new_idx, bone_id in enumerate(vgroup_verts.keys())}
+            if "WeightedBoneID" in export_verts[0]:
+                for vert in export_verts:
+                    vert["WeightedBoneID"] = [group_map[idx] for idx in vert["WeightedBoneID"]]
+
+            # Now get on with exporting the mesh
             md.vertices = export_verts
             for j, face in enumerate(export_faces):
                 assert len(face) == 3, f"Polygon {j} is not a triangle."
                 md.add_polygon(face)
 
-            for group in get_all_nonempty_vertex_groups(mesh_obj):
-                bone_name = group.name
-                bone_id = model_data.skeleton.bone_names.index(bone_name)
-                md.add_vertex_group(bone_id, vgroup_verts.get(bone_id, []), vgroup_wgts.get(bone_id, []))
+            for bone_id in vgroup_verts:
+                md.add_vertex_group(bone_id, vgroup_verts[bone_id], vgroup_wgts[bone_id])
 
             matname = mesh.materials[0].name
             if matname not in mat_names:
@@ -279,8 +290,11 @@ class ExportMediaVision(bpy.types.Operator):
             unique_values = [(loop_idx_to_key[lids[0]], lids) for id_, lids in unique_ids.items()]
 
             for unique_value, loops_with_this_value in unique_values:
-                group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in vertex.groups if grp.weight > vweight_floor]
-                group_weights = [grp.weight for grp in vertex.groups if grp.weight > vweight_floor]
+                group_indices = [grp for grp in vertex.groups if grp.weight > vweight_floor]
+                group_bone_ids = [get_bone_id(mesh_obj, model_data.skeleton.bone_names, grp) for grp in group_indices]
+                group_weights = [grp.weight for grp in group_indices]
+
+
                 # Normalise the group weights
                 total_weight = sum(group_weights)
                 if total_weight > 0.:
@@ -289,6 +303,7 @@ class ExportMediaVision(bpy.types.Operator):
                 # Set to None for export if no vertices are left
                 group_bone_ids = None if len(group_bone_ids) == 0 else group_bone_ids
                 group_weights = None if len(group_weights) == 0 else group_weights
+                group_indices = None if len(group_indices) == 0 else group_indices
 
                 vert = {'Position': vertex.co,
                         **{key: value for key, value in zip(['Normal'], unique_value[0])},
@@ -296,7 +311,7 @@ class ExportMediaVision(bpy.types.Operator):
                         **{key: value for key, value in zip(['Colour'], unique_value[2])},
                         **{key: value for key, value in zip(['Tangent'], unique_value[3])},
                         **{key: value for key, value in zip(['Binormal'], unique_value[4])},
-                        'WeightedBoneID': [group_map[grp.group] for grp in vertex.groups],
+                        'WeightedBoneID': [group_map[grp.group] for grp in group_indices],
                         'BoneWeight': group_weights}
 
                 n_verts = len(exported_vertices)
