@@ -554,10 +554,11 @@ class ExportMediaVision(bpy.types.Operator):
             all_required_materials = {}
             for i, mesh in enumerate(model_data.meshes):
                 if self.vweights_adjust == "Pad4":
+                    width = 4
                     if "WeightedBoneID" in mesh.vertices[0]:
                         for i, vertex in enumerate(mesh.vertices):
-                            vertex["WeightedBoneID"] = [*vertex["WeightedBoneID"], *([0] * (4 - len(vertex["WeightedBoneID"])))]
-                            vertex["BoneWeight"] = [*vertex["BoneWeight"], *([0.] * (4 - len(vertex["BoneWeight"])))]
+                            vertex["WeightedBoneID"] = [*vertex["WeightedBoneID"], *([0] * (width - len(vertex["WeightedBoneID"])))]
+                            vertex["BoneWeight"] = [*vertex["BoneWeight"], *([0.] * (width - len(vertex["BoneWeight"])))]
                             mesh.vertices[i] = vertex
 
                 key = (mesh.material_id, get_required_shader_width(mesh))
