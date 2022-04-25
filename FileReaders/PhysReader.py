@@ -84,10 +84,10 @@ class PhysReader(BaseRW):
         self.bone_names = [nm.strip(b'\x00').decode('ascii') for nm in self.bone_names]
 
     def reinterpret_phys_data(self):
-        self.material_names = [nm.encode('ascii').ljust(b'\x00', 0x40) for nm in self.material_names]
+        self.material_names = [nm.encode('ascii').ljust(0x40, b'\x00') for nm in self.material_names]
         self.material_names = b''.join(self.material_names)
 
-        self.bone_names = [nm.encode('ascii').ljust(b'\x00', 0x40) for nm in self.bone_names]
+        self.bone_names = [nm.encode('ascii').ljust(0x40, b'\x00') for nm in self.bone_names]
         self.bone_names = b''.join(self.bone_names)
 
 
