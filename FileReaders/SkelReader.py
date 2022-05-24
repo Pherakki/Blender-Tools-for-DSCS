@@ -161,8 +161,11 @@ class SkelReader(BaseRW):
 
     def rw_unknown_data_3(self, rw_operator):
         """
+        > For materials:
         This is an array offset: (shader key * 16) + array_index.
         E.g. to access DiffuseColor item 1, the required value is (0x33 * 16) + 0x01 = 0x331
+        > For cameras:
+        7 = FOV
         """
         self.assert_file_pointer_now_at(self.abs_ptr_unknown_3)
         rw_operator('unknown_data_3', 'I' * self.num_uv_channels, force_1d=True)
