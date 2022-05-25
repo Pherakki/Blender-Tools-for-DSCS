@@ -54,9 +54,9 @@ def produce_interpolation_method(frame_idxs, frame_values, default_value, interp
 # Surely these can be unified with the above...
 def interpolate_keyframe_dict(frames, idx, interpolation_function, debug_output=False):
     frame_idxs = list(frames.keys())
-    smaller_elements = [fidx for fidx in frame_idxs if fidx <= idx]
+    smaller_elements = [fidx for fidx in frame_idxs if idx >= fidx]
     next_smallest_frame = max(smaller_elements) if len(smaller_elements) else frame_idxs[0]
-    larger_elements = [fidx for fidx in frame_idxs if fidx >= idx]
+    larger_elements = [fidx for fidx in frame_idxs if idx <= fidx]
     next_largest_frame = min(larger_elements) if len(larger_elements) else frame_idxs[-1]
 
     if next_largest_frame == next_smallest_frame:
