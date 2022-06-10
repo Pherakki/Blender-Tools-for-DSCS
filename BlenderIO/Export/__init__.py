@@ -602,7 +602,7 @@ def create_adjusted_shader_material(model_data, idx, width, material_handle_coun
 
     # Rename new material
     if idx in material_handle_count:
-        name = "{material.name}_w{width}"
+        name = f"{material.name}_w{width}"
     else:
         material_handle_count[idx] = 0
         name = material.name
