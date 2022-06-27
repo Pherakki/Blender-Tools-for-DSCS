@@ -93,7 +93,8 @@ def find_selected_model():
         sel_obj = parent_obj
         parent_obj = sel_obj.parent
     parent_obj = sel_obj
-    assert parent_obj.type == "EMPTY", f"Top-level object \'{parent_obj.name}\' is not an axis object - has type {parent_obj.type}."
+    if parent_obj.type != "EMPTY":
+        raise ReportableException(f"An object is selected, but the top-level object \'{parent_obj.name}\' is not an Empty Axis object - has type {parent_obj.type}.")
     return parent_obj
 
 
