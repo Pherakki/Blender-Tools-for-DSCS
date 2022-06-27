@@ -12,7 +12,7 @@ from ...CollatedData.ToReadWrites import generate_files_from_intermediate_format
 from ...CollatedData.IntermediateFormat import IntermediateFormat, MaterialData
 from ...FileReaders.GeomReader.ShaderUniforms import shader_uniforms_from_names, shader_textures, shader_uniforms_vp_fp_from_names
 from .ExportAnimation import export_animations, create_blank_anim
-from ..DSCSBlenderUtils import find_selected_model
+from ..DSCSBlenderUtils import find_selected_model, handle_errors
 
 from ...Utilities.Matrices import calculate_bone_matrix_relative_to_parent, generate_transform_delta, decompose_matrix, generate_transform_matrix
 from ...Utilities.ActionDataRetrieval import get_action_data
@@ -574,6 +574,7 @@ class ExportMediaVision(bpy.types.Operator):
                     model_data.meshes[mesh_idx].material_id = new_material_idx
             model_data.materials = new_materials
 
+    @handle_errors
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in

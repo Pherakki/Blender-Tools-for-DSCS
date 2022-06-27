@@ -11,7 +11,7 @@ from .MaterialImport import import_materials
 from .MeshImport import import_meshes
 from .CameraImport import import_cameras
 from .LightImport import import_lights
-from ...Utilities.Reposing import set_new_rest_pose
+from ..DSCSBlenderUtils import handle_errors
 
 
 class ImportMediaVision(bpy.types.Operator):
@@ -52,6 +52,7 @@ class ImportMediaVision(bpy.types.Operator):
         # Rotate to the Blender coordinate convention
         parent_obj.rotation_euler = (np.pi / 2, 0, 0)
 
+    @handle_errors
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
         assert any([file_extension == ext for ext in

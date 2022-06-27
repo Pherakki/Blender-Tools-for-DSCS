@@ -1,6 +1,7 @@
 import bpy
 from .BlenderIO.Import import ImportDSCS, ImportMegido
 from .BlenderIO.Export import ExportDSCS, ExportMegido
+from .BlenderIO.DSCSBlenderUtils import MessagePopup
 
 
 bl_info = {
@@ -55,6 +56,7 @@ def register():
     # bpy.utils.register_class(ExportMegido)
     bpy.utils.register_class(MVExportSubmenu)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+    bpy.utils.register_class(MessagePopup)
 
 
 def unregister():
@@ -66,6 +68,7 @@ def unregister():
     # bpy.utils.unregister_class(ExportMegido)
     bpy.utils.unregister_class(MVExportSubmenu)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    bpy.utils.unregister_class(MessagePopup)
 
 # if __name__ == "__main__":
 #     register()
