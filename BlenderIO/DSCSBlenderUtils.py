@@ -55,7 +55,6 @@ class MessagePopup(bpy.types.Operator):
                     current_bit += word + " "
             if len(current_bit):
                 lines.append(current_bit)
-
         return lines
 
 
@@ -69,6 +68,8 @@ def handle_errors(function):
         try:
             return function(operator, context)
         except ReportableException as e:
+            operator.report({'ERROR'}, "Error popup invoked: Full details printed to console.")
+            print(f'Error popup invoked. Popup message:\n{e.message}\n{traceback.format_exc()}')
             bpy.ops.dscsblendertools.errorpopup('INVOKE_DEFAULT', message=e.message)
             return {'CANCELLED'}
         except Exception as e:
