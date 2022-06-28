@@ -103,9 +103,9 @@ def find_armature(parent_object):
     if len(armatures) == 1:
         model_armature = armatures[0]
     elif len(armatures) > 1:
-        assert 0, f"Multiple armature objects found under the axis object \'{parent_object.name}\'."
+        raise ReportableException(f"Multiple armature objects found under the axis object \'{parent_object.name}\'.")
     else:
-        assert 0, f"No armature objects found under the axis object \'{parent_object.name}\'."
+        raise ReportableException(f"No armature objects found under the axis object \'{parent_object.name}\'.")
 
     return model_armature
 

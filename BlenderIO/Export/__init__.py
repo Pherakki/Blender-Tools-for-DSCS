@@ -21,6 +21,7 @@ from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_
 from ...Utilities.Lists import flip_dict, natural_sort
 
 from ...Utilities.Paths import normalise_abs_path
+from ..DSCSBlenderUtils import ReportableException
 
 
 class ExportMediaVision(bpy.types.Operator):
@@ -392,7 +393,7 @@ class ExportMediaVision(bpy.types.Operator):
 
                         material.shader_uniforms[key] = data
                     except Exception as e:
-                        raise TypeError(f"Shader Uniform value \"{key}\" cannot be interpreted as a list of floats: {data}") from e
+                        raise ReportableException(f"Shader Uniform value \"{key}\" cannot be interpreted as a list of floats: {data}") from e
 
             #########################
             # EXPORT OPENGL OPTIONS #
@@ -462,7 +463,7 @@ class ExportMediaVision(bpy.types.Operator):
             return optionlist[option]
         except Exception as e:
             newline = '\n'
-            raise TypeError(f"\"{option}\" is not a valid OpenGL parameter for \"{setting}\". Options are:\n {newline.join(optionlist)}") from e
+            raise ReportableException(f"\"{option}\" is not a valid OpenGL parameter for \"{setting}\". Options are:\n {newline.join(optionlist)}") from e
 
     def export_textures(self, used_textures, model_data, export_images_folder):
         used_texture_names = [tex.name for tex in used_textures]
@@ -490,7 +491,8 @@ class ExportMediaVision(bpy.types.Operator):
         for camera_obj in cameras:
             cam = model_data.new_camera()
             childof_constraints = [constr for constr in camera_obj.constraints if constr.type == "CHILD_OF"]
-            assert len(childof_constraints) == 1, f"Camera \'{camera_obj.name}\' must have ONE \'CHILD OF\' constraint."
+            if len(childof_constraints) != 1:
+                raise ReportableException(f"Camera \'{camera_obj.name}\' must have ONE \'CHILD OF\' constraint.")
             constr = childof_constraints[0]
             cam.bone_name = constr.subtarget
             assert type(cam.bone_name) == str, "[DEBUG] Not a string"
@@ -502,7 +504,8 @@ class ExportMediaVision(bpy.types.Operator):
             if camera.type == "PERSP":
                 cam.projection = 0
                 # Put in a conversion from mm later...
-                assert camera.lens_unit == "FOV", f"Camera not in FOV mode."
+                if camera.lens_unit != "FOV":
+                    raise ReportableException(f"Camera lens unit is not 'FOV'.")
                 cam.fov = camera.lens
                 cam.orthographic_scale = 0.
             elif camera.type == "ORTHO":
@@ -536,7 +539,7 @@ class ExportMediaVision(bpy.types.Operator):
                 light_name = "DirLamp" + str(light_id).rjust(2, '0')
                 type_counts[1] += 1
             else:
-                assert 0, "Unrecognised light type \'{light.type}\'."
+                raise ReportableException("Unrecognised light type \'{light.type}\'.")
 
             if fogparam is None:
                 fogparam = 0.
@@ -577,8 +580,8 @@ class ExportMediaVision(bpy.types.Operator):
     @handle_errors
     def execute(self, context):
         filepath, file_extension = os.path.splitext(self.filepath)
-        assert any([file_extension == ext for ext in
-                    ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
+        if not any([file_extension == ext for ext in ('.name', '.skel', '.geom')]):
+            raise ReportableException(f"Extension is {file_extension}: Not a name, skel or geom file!")
         self.export_file(context, filepath)
 
         return {'FINISHED'}
@@ -765,11 +768,11 @@ def check_vertex_group_counts(mesh_objs):
             printline += '\n'
             to_print.append(printline)
         to_print = '\n'.join(to_print)
-        raise Exception(f"The following meshes have more than 56 vertex groups with at least 1 vertex:\n"
-                        f"{to_print}\n"
-                        f"These meshes have been selected for you.\n"
-                        f"Reduce the number of vertex groups in these meshes by dividing the mesh such that some "
-                        f"vertex groups are unused by one of the two resulting meshes.")
+        raise ReportableException(f"The following meshes have more than 56 vertex groups with at least 1 vertex:\n"
+                                  f"{to_print}\n"
+                                  f"These meshes have been selected for you.\n"
+                                  f"Reduce the number of vertex groups in these meshes by dividing the mesh such that "
+                                  f"some vertex groups are unused by one of the two resulting meshes.")
 
 
 def check_vertex_weight_counts(mesh_objs):
@@ -792,7 +795,7 @@ def check_vertex_weight_counts(mesh_objs):
             res += " ".join([f"{mob}" for mob in mesh_objs])
             res += " ||| "
             res += " ".join([f"{mob}" for mob in bad_meshes])
-            raise Exception(res)
+            raise ReportableException(res) from e
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_mode(type='VERT')
         bpy.ops.mesh.select_all(action='DESELECT')
@@ -809,11 +812,11 @@ def check_vertex_weight_counts(mesh_objs):
                 bv.select_set(True)
         bpy.ops.object.mode_set(mode="EDIT")
         newline = '\n'
-        raise Exception(f"The following meshes have vertices included in more than 4 vertex groups:\n"
-                        f"{newline.join([f'{mesh.name} ({bvc} bad vertices)' for mesh, bvc in zip(bad_meshes, bad_vertex_counts)])}\n"
-                        f"The vertices for the mesh \"{bad_meshes[0].name}\" have been selected for you.\n"
-                        f"Reduce the number of vertex groups these vertices are part of to 4 or less.\n"
-                        f"You can do this per-vertex via the 'Items' panel of the pop-out menu near the top-right of the 3D viewport.")
+        raise ReportableException(f"The following meshes have vertices included in more than 4 vertex groups:\n"
+                                  f"{newline.join([f'{mesh.name} ({bvc} bad vertices)' for mesh, bvc in zip(bad_meshes, bad_vertex_counts)])}\n"
+                                  f"The vertices for the mesh \"{bad_meshes[0].name}\" have been selected for you.\n"
+                                  f"Reduce the number of vertex groups these vertices are part of to 4 or less.\n"
+                                  f"You can do this per-vertex via the 'Items' panel of the pop-out menu near the top-right of the 3D viewport.")
 
 
 class ExportDSCS(ExportMediaVision, ExportHelper):

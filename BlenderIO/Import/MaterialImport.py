@@ -6,6 +6,7 @@ from ...FileReaders.GeomReader.ShaderUniforms import shader_textures
 from ...Utilities.OpenGLResources import id_to_glfunc, glBool_options, glEnable_options, glBlendFunc_options, glBlendEquationSeparate_options, glCullFace_options, glComparison_options
 
 from ...Utilities.Paths import normalise_abs_path
+from ..DSCSBlenderUtils import ReportableException
 
 
 def import_materials(model_data, rename_imgs, use_custom_nodes):
@@ -73,7 +74,7 @@ def import_materials(model_data, rename_imgs, use_custom_nodes):
                 elif gl_enum == 0x207:  # GL_ALWAYS
                     new_material.alpha_threshold = 0.
                 else:
-                    assert 0, f"Unknown GL_ENUM \'{hex(gl_enum)}\' encounted in glAlphaTest."
+                    raise ReportableException(f"Unknown GL_ENUM \'{hex(gl_enum)}\' encounted in glAlphaTest.")
 
             elif gl_func == "GL_ALPHA_TEST":
                 new_material.blend_method = 'CLIP'
@@ -143,7 +144,10 @@ def set_texture_node_image(node, texture_idx, IF_texture, import_memory, rename_
         use_filename = tex_filename
     if texture_idx not in import_memory:
         import_memory[texture_idx] = use_filename
-        bpy.data.images.load(dds_loc)
+        try:
+            bpy.data.images.load(dds_loc)
+        except Exception as e:
+            raise ReportableException(f"Unable to load texture: {e}") from e
     node.image = bpy.data.images[use_filename]
 
 
