@@ -2,7 +2,7 @@ import bpy
 import copy
 import numpy as np
 import os
-from bpy.props import BoolProperty, EnumProperty
+from bpy.props import BoolProperty, EnumProperty, CollectionProperty
 from bpy_extras.io_utils import ImportHelper
 from ...CollatedData.FromReadWrites import generate_intermediate_format_from_files
 from .AnimationImport import import_animations
@@ -20,6 +20,8 @@ class ImportMediaVision(bpy.types.Operator):
     img_to_dds = None
     use_custom_nodes = None
     merge_vertices = None
+
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
 
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
@@ -54,10 +56,15 @@ class ImportMediaVision(bpy.types.Operator):
 
     @handle_errors
     def execute(self, context):
-        filepath, file_extension = os.path.splitext(self.filepath)
-        assert any([file_extension == ext for ext in
-                    ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
-        self.import_file(context, filepath)
+        folder = (os.path.dirname(self.filepath))
+
+        # iterate through the selected files
+        for file in self.files:
+            path_to_file = (os.path.join(folder, file.name))
+            filepath, file_extension = os.path.splitext(path_to_file)
+            assert any([file_extension == ext for ext in
+                        ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
+            self.import_file(context, filepath)
 
         return {'FINISHED'}
 
@@ -82,6 +89,8 @@ class ImportDSCS(ImportMediaVision, ImportHelper):
     bl_options = {'REGISTER', 'UNDO'}
     # This will actually work with any file extension since the code just looks for the right ones...
     filename_ext = "*.name"
+
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
 
     filter_glob: bpy.props.StringProperty(
                                              default="*.name",
@@ -124,6 +133,8 @@ class ImportMegido(ImportMediaVision, ImportHelper):
     # This will actually work with any file extension since the code just looks for the right ones...
     filename_ext = "*.name"
 
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
+    
     filter_glob: bpy.props.StringProperty(
                                              default="*.name",
                                              options={'HIDDEN'},
