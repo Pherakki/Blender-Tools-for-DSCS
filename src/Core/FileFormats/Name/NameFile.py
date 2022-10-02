@@ -64,8 +64,6 @@ class NameFile(Serializable):
             # Now read/write as appropriate
             sizes = iter(sizes)
             for i in range(self.bone_name_count):
-                self.pointers[i] = rw.tie_to_offset(self.pointers[i])
                 self.bone_names[i] = rw.rw_str(self.bone_names[i], next(sizes))
             for i in range(self.material_name_count):
-                self.pointers[self.bone_name_count + i] = rw.tie_to_offset(self.pointers[self.bone_name_count + i])
                 self.material_names[i] = rw.rw_str(self.material_names[i], next(sizes))
