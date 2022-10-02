@@ -174,11 +174,11 @@ class BinaryTargetBase:
             raise Exception(
                 f"File pointer at {formatter(file_pointer_location)}, expected find {msg} with the pointer at {formatter(location)}.")
 
-    def tie_to_offset(self):
-        return
+    def tie_to_offset(self, value):
+        return value
 
-    def tie_to_local_offset(self):
-        return
+    def tie_to_local_offset(self, value):
+        return value
 
     ############################
     # Arg Validation Functions #
@@ -360,6 +360,13 @@ class OffsetTracker(BinaryTargetBase):
         self.virtual_offset = 0
         self.pointers = []
 
+    # Context managers are a decent approximation of RAII behaviour
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, traceback):
+        pass
+
     def log_offset(self):
         self.pointers.append(self.virtual_offset)
 
@@ -438,8 +445,8 @@ class OffsetTracker(BinaryTargetBase):
 class PointerCalculator(OffsetTracker):
     open_flags = None
 
-    def tie_to_offset(self):
+    def tie_to_offset(self, value):
         return self.tell()
 
-    def tie_to_local_offset(self):
+    def tie_to_local_offset(self, value):
         return self.local_tell()

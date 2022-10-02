@@ -1,6 +1,6 @@
 import copy
 
-from .BinaryTargets import Reader, Writer, Context
+from .BinaryTargets import Reader, Writer, PointerCalculator, Context
 
 
 class Serializable:
@@ -25,6 +25,10 @@ class Serializable:
 
     def write(self, filepath):
         with Writer(filepath) as rw:
+            rw.rw_obj(self)
+
+    def calc_pointers(self):
+        with PointerCalculator() as rw:
             rw.rw_obj(self)
 
     def read_write(self, rw):
