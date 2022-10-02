@@ -450,3 +450,6 @@ class PointerCalculator(OffsetTracker):
 
     def tie_to_local_offset(self, value):
         return self.local_tell()
+
+    def mode(self):
+        return "PointerCalculator"
