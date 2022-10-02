@@ -1,6 +1,6 @@
 import copy
 
-from .BinaryTargets import Reader, Writer
+from .BinaryTargets import Reader, Writer, Context
 
 
 class Serializable:
@@ -11,7 +11,13 @@ class Serializable:
     Calling "read" or "write" on the object will then excute this method,
     with a BinaryTarget as the operating object.
     """
-    __slots__ = tuple()
+    __slots__ = ("context",)
+
+    def __init__(self, context=None):
+        if context is None:
+            self.context = Context()
+        else:
+            self.context = copy.deepcopy(context)
 
     def read(self, filepath):
         with Reader(filepath) as rw:
