@@ -6,59 +6,146 @@ class SkelFile(Serializable):
     A class to read skel files. These files are split into eight main sections:
         1. The header, which gives file pointers to split the file into its major sections, plus counts of what appears
            in each section.
-        2. Pairs of bone indices that create parent-bone relationships procedurally, 8 int16s per element
-        3. A section of 12 floats per bone
-        4. A section of 1 int16 per bone that gives the parent of each bone
-        5. A section of one-multiple-of-8 per shader uniform channel
-        6. A section of 4 bytes per bone
-        7. A section of 1 uint32 per user channel, identifying which shader uniform the channel is for.
-        8. A section of material/camera/light name hashes for the shader uniform channels.
+        2. Pairs of bone indices that create parent-bone relationships, 8 int16s per index -> 128 bitwidth.
+        3. A section of bone transforms (quat, pos, scale).
+        4. A list of bone-parent relationships (same data as 2, but more easily readable).
+        5. A section of flaot channel flags.
+        6. A section of (hashed) bone names; one per bone.
+        7. A section of 1 uint32 per float channel, identifying the array index the float channel puts data into.
+           These arrays are deep inside the game logic somewhere and each object type stores different data in these
+           arrays. Materials store shader uniforms, cameras and lights both have various object properties (FOV,
+           clip distance, light colour...)
+        8. A section of (hashed) material/camera/light names the float channel data are associated with.
 
     Completion status
     ------
     (o) SkelReader can successfully parse all name files in DSDB archive within current constraints.
-    (x) SkelReader cannot yet fully interpret all data in name files in DSDB archive.
+    (o) SkelReader can yet fully interpret all data in name files in DSDB archive.
     (o) SkelReader can write data to skel files.
-
-    Current hypotheses and observations
-    ------
-    1. Currently not 100% clear what the 0/8/16 per shader uniform channel is for, but is connected to the type...
-       could be a flag?
     """
+
+    @property
+    def BONE_TRANSFORMS_REL_OFFSET_OFFSET                 (self): return 0x18
+    @property
+    def PARENT_BONES_REL_OFFSET_OFFSET                    (self): return 0x1C
+    @property
+    def BONE_NAME_HASHES_REL_OFFSET_OFFSET                (self): return 0x20
+    @property
+    def FLOAT_CHANNEL_ARRAY_INDICES_REL_OFFSET_OFFSET     (self): return 0x24
+    @property
+    def FLOAT_CHANNEL_OBJECT_NAME_HASHES_REL_OFFSET_OFFSET(self): return 0x28
+    @property
+    def FLOAT_CHANNEL_FLAGS_REL_OFFSET_OFFSET              (self): return 0x2C
+
     def __init__(self):
         super().__init__()
 
-        # Variables that appear in the file header
-        self.filetype = None
-        self.total_bytes = None
-        self.remaining_bytes_after_parent_bones_chunk = None
-        self.num_bones = None
-        self.num_uv_channels = None
-        self.num_bone_hierarchy_data_lines = None
+        # Header variables
+        self.filetype                   = None
+        self.filesize                   = None
+        self.hashes_section_bytecount   = None
+        self.bone_count                 = None
+        self.float_channel_count        = None
+        self.parent_bone_dataline_count = None
 
-        self.rel_ptr_to_end_of_bone_hierarchy_data = None
-        self.rel_ptr_to_end_of_bone_defs = None
-        self.rel_ptr_to_end_of_parent_bones_chunk = None
-        self.rel_ptr_bone_name_hashes = None
-        self.unknown_rel_ptr_3 = None
-        self.rel_ptr_to_end_of_parent_bones = None
+        self.bone_transforms_rel_offset                  = None
+        self.parent_bones_rel_offset                     = None
+        self.bone_name_hashes_rel_offset                 = None
+        self.float_channel_array_indices_rel_offset      = None
+        self.float_channel_object_name_hashes_rel_offset = None
+        self.float_channel_flags_rel_offset              = None
 
-        # These hold the data stored within the file
-        self.bone_hierarchy_data = None
-        self.bone_data = None
-        self.parent_bones = None
-        self.unknown_data_1 = None
-        self.bone_name_hashes = None
-        self.unknown_data_3 = None
-        self.uv_channel_material_name_hashes = None
+        # Data holders
+        self.parent_bone_datalines            = None
+        self.bone_transforms                  = None
+        self.parent_bones                     = None
+        self.float_channel_flags              = None
+        self.bone_name_hashes                 = None
+        self.float_channel_array_indices      = None
+        self.float_channel_object_name_hashes = None
 
-        # Utility variables
-        self.filesize = None
+    def read_write(self, rw):
+        self.rw_header(rw)
+        self.rw_parent_bone_datalines(rw)
+        self.rw_bone_transforms(rw)
+        self.rw_parent_bones(rw)
+        self.rw_float_channel_flags(rw)
+        self.rw_bone_name_hashes(rw)
+        self.rw_float_channel_array_indices(rw)
+        self.rw_float_channel_object_names(rw)
+        rw.assert_at_eof()
 
-        self.abs_ptr_bone_hierarchy_data = None
-        self.abs_ptr_bone_defs = None
-        self.abs_ptr_parent_bones = None
-        self.abs_ptr_end_of_parent_bones_chunk = None
-        self.abs_ptr_bone_name_hashes = None
-        self.abs_ptr_unknown_3 = None
-        self.abs_ptr_unknown_4 = None
+    def rw_header(self, rw):
+        # 0x00
+        self.filetype = rw.rw_str(self.filetype, 4)
+        if self.filetype != "20SE":
+            raise ValueError("Attempted to read a file that is not a valid skel file")
+        self.filesize                   = rw.rw_uint64(self.filesize)
+        self.hashes_section_bytecount   = rw.rw_uint32(self.hashes_section_bytecount)
+
+        # 0x10
+        self.bone_count                 = rw.rw_uint16(self.bone_count)
+        self.float_channel_count        = rw.rw_uint16(self.float_channel_count)
+        self.parent_bone_dataline_count = rw.rw_uint32(self.parent_bone_dataline_count)
+        self.bone_transforms_rel_offset = rw.rw_uint32(self.bone_transforms_rel_offset)
+        self.parent_bones_rel_offset    = rw.rw_uint32(self.parent_bones_rel_offset)
+
+        # 0x20
+        self.bone_name_hashes_rel_offset                 = rw.rw_uint32(self.bone_name_hashes_rel_offset)
+        self.float_channel_array_indices_rel_offset      = rw.rw_uint32(self.float_channel_array_indices_rel_offset)
+        self.float_channel_object_name_hashes_rel_offset = rw.rw_uint32(self.float_channel_object_name_hashes_rel_offset)
+        self.float_channel_flags_rel_offset              = rw.rw_uint32(self.float_channel_flags_rel_offset)
+
+        # 0x30
+        rw.rw_pad32s(4)
+
+        if self.filesize != self.bone_name_hashes_rel_offset + self.BONE_NAME_HASHES_REL_OFFSET_OFFSET + self.hashes_section_bytecount:
+            raise ValueError("Inconsistent file header; hashes section bytecount inconsistent with file size")
+
+    def rw_parent_bone_datalines(self, rw):
+        self.parent_bone_datalines = rw.rw_int16s(self.parent_bone_datalines, (self.parent_bone_dataline_count, 8))
+
+    def rw_bone_transforms(self, rw):
+        rw.assert_file_pointer_now_at("Bone Transforms", self.bone_transforms_rel_offset + self.BONE_TRANSFORMS_REL_OFFSET_OFFSET)
+        self.bone_transforms = rw.rw_obj_array(self.bone_transforms, BoneTransforms, self.bone_count)
+
+    def rw_parent_bones(self, rw):
+        rw.assert_file_pointer_now_at("Bone Transforms", self.parent_bones_rel_offset + self.PARENT_BONES_REL_OFFSET_OFFSET)
+        self.parent_bones = rw.rw_int16s(self.parent_bones, self.bone_count)
+
+    def rw_float_channel_flags(self, rw):
+        rw.assert_file_pointer_now_at("Float Channel Flags", self.float_channel_flags_rel_offset + self.FLOAT_CHANNEL_FLAGS_REL_OFFSET_OFFSET)
+        self.float_channel_flags = rw.rw_uint8s(self.float_channel_flags, self.float_channel_count)
+        rw.align(rw.tell(), 0x10)
+
+    def rw_bone_name_hashes(self, rw):
+        rw.assert_file_pointer_now_at("Bone Name Hashes", self.bone_name_hashes_rel_offset + self.BONE_NAME_HASHES_REL_OFFSET_OFFSET)
+        self.bone_name_hashes = rw.rw_uint32s(self.bone_name_hashes, self.bone_count)
+
+    def rw_float_channel_array_indices(self, rw):
+        rw.assert_file_pointer_now_at("Float Channel Array Indices", self.float_channel_array_indices_rel_offset + self.FLOAT_CHANNEL_ARRAY_INDICES_REL_OFFSET_OFFSET)
+
+        self.float_channel_array_indices = rw.rw_uint32s(self.float_channel_array_indices, self.float_channel_count)
+
+    def rw_float_channel_object_names(self, rw):
+        rw.assert_file_pointer_now_at("Float Channel Object Names", self.float_channel_object_name_hashes_rel_offset + self.FLOAT_CHANNEL_OBJECT_NAME_HASHES_REL_OFFSET_OFFSET)
+        self.float_channel_object_name_hashes = rw.rw_uint32s(self.float_channel_object_name_hashes, self.float_channel_count)
+        rw.align(rw.tell(), 0x10)
+
+
+class BoneTransforms(Serializable):
+    __slots__ = ("quat", "pos", "scale")
+
+    def __init__(self):
+        super().__init__()
+        self.quat = None
+        self.pos = None
+        self.scale = None
+
+    def __repr__(self):
+        return f"[BoneTransforms] {list(self.quat)} {list(self.pos)} {list(self.scale)}"
+
+    def read_write(self, rw):
+        self.quat  = rw.rw_float32s(self.quat, 4)
+        self.pos   = rw.rw_float32s(self.pos, 4)
+        self.scale = rw.rw_float32s(self.scale, 4)
