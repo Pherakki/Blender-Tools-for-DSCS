@@ -215,6 +215,9 @@ class BinaryTargetBase:
     def rw_bytestring(self, value, count):
         raise NotImplementedError
 
+    def rw_obj_array(self, value, obj_constructor, shape, validator=None):
+        raise NotImplementedError
+
     def align(self, offset, alignment, padval=b'\x00'):
         raise NotImplementedError
 
@@ -281,6 +284,23 @@ class Reader(BinaryTargetBase):
         self.bytestream.seek(-count, 1)
         return val
 
+    def rw_obj_array(self, value, obj_constructor, shape, validator=None):
+        if not hasattr(shape, "__getitem__"):
+            shape = (shape,)
+        n_to_read = 1
+        for elem in shape:
+            n_to_read *= elem
+
+        data = [obj_constructor() for _ in range(n_to_read)]
+        for d in data:
+            if validator is not None:
+                validator(d)
+            self.rw_obj(d)
+
+        for subshape in shape[1::][::-1]:
+            data = chunk_list(data, subshape)
+        return data
+
     def align(self, offset, alignment, padval=b'\x00'):
         n_to_read = (alignment - (offset % alignment)) % alignment
         data = self.bytestream.read(n_to_read)
@@ -336,6 +356,23 @@ class Writer(BinaryTargetBase):
         if len(value) != count:
             raise ValueError(f"Expected to write a bytestring of length {count}, but it was length {len(value)}.")
         self.bytestream.write(value)
+        return value
+
+    def rw_obj_array(self, value, obj_constructor, shape, validator=None):
+        if not hasattr(shape, "__getitem__"):
+            shape = (shape,)
+        n_to_read = 1
+        for elem in shape:
+            n_to_read *= elem
+
+        data = value  # Shouldn't need to deepcopy since flatten_list will copy
+        for _ in range(len(shape) - 1):
+            data = flatten_list(data)
+        for d in data:
+            if validator is not None:
+                validator(d)
+            self.rw_obj(d)
+
         return value
 
     def align(self, offset, alignment, padval=b'\x00'):
