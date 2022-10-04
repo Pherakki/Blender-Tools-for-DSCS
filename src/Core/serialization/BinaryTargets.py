@@ -148,7 +148,7 @@ class BinaryTargetBase:
     def convert_to_global_position(self, position):
         return position + self.anchor_pos
 
-    def assert_file_pointer_now_at(self, location, file_pointer_location=None, use_hex=True):
+    def assert_file_pointer_now_at(self, msg, location, file_pointer_location=None, use_hex=True):
         if file_pointer_location is None:
             file_pointer_location = self.global_tell()
         if file_pointer_location != location:
@@ -157,10 +157,10 @@ class BinaryTargetBase:
                 formatter = lambda x: f"0x{x:0{size(x) + (((size(x) + 1) // 2) - (size(x) // 2))}x}"
             else:
                 formatter = lambda x: x
-            raise Exception(f"File pointer at {formatter(file_pointer_location)}, not at {formatter(location)}.")
+            raise Exception(f"File pointer at {formatter(file_pointer_location)}, expected find {msg} with the pointer at {formatter(location)}.")
 
-    def assert_global_file_pointer_now_at(self, location, file_pointer_location=None, use_hex=True):
-        self.assert_file_pointer_now_at(location, file_pointer_location, use_hex)
+    def assert_global_file_pointer_now_at(self, msg, location, file_pointer_location=None, use_hex=True):
+        self.assert_file_pointer_now_at(msg, location, file_pointer_location, use_hex)
 
     def assert_local_file_pointer_now_at(self, msg, location, file_pointer_location=None, use_hex=True):
         if file_pointer_location is None:

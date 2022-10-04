@@ -30,7 +30,6 @@ class NameFile(Serializable):
         self.rw_names(rw)
 
     def rw_header(self, rw):
-        rw.assert_file_pointer_now_at(0)
         self.bone_name_count     = rw.rw_uint32(self.bone_name_count)
         self.material_name_count = rw.rw_uint32(self.material_name_count)
         self.pointers            = rw.rw_uint32s(self.pointers, self.bone_name_count + self.material_name_count)
@@ -38,7 +37,7 @@ class NameFile(Serializable):
     def rw_names(self, rw):
         if len(self.pointers):
             # Check we're in the right place, init the variable holders if necessary
-            rw.assert_file_pointer_now_at(self.pointers[0])
+            rw.assert_file_pointer_now_at("Start of pointers", self.pointers[0])
             if rw.mode() == "read":
                 self.bone_names     = [None for _ in range(self.bone_name_count)]
                 self.material_names = [None for _ in range(self.material_name_count)]
