@@ -1,4 +1,4 @@
-from .NameFile import NameFile
+from .NameBinary import NameBinary
 
 
 class NameInterface:
@@ -18,7 +18,7 @@ class NameInterface:
         return instance
 
     def to_file(self, filepath):
-        nf = NameFile()
+        nf = NameBinary()
         nf.bone_name_count = len(self.bone_names)
         nf.material_name_count = len(self.material_names)
         nf.bone_names = self.bone_names

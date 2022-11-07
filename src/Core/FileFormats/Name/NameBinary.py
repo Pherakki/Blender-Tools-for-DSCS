@@ -1,9 +1,9 @@
 from ...serialization.Serializable import Serializable
 
 
-class NameFile(Serializable):
+class NameBinary(Serializable):
     """
-    A class to read name files. These files are split into three main sections:
+    A class to read and write name files. These files are split into three main sections:
         1. Two integers that state how many bone names and material names are contained within the file.
         2. A section of file pointers, one per bone name and one per material name.
         3. A continuous string of ascii characters that, when split at the locations given by the file pointers,
@@ -11,9 +11,9 @@ class NameFile(Serializable):
 
     Completion status
     ------
-    (o) NameFile can successfully parse all name files in DSDB archive within current constraints.
-    (o) NameFile can fully interpret all data in name files in DSDB archive.
-    (o) NameFile can write data to name files.
+    (o) NameBinary can successfully parse all name files in DSDB archive within current constraints.
+    (o) NameBinary can fully interpret all data in name files in DSDB archive.
+    (o) NameBinary can write data to name files.
     """
     def __init__(self):
         super().__init__()

@@ -1,9 +1,11 @@
+import array
+
 from ...serialization.Serializable import Serializable
 
 
-class SkelFile(Serializable):
+class SkelBinary(Serializable):
     """
-    A class to read skel files. These files are split into eight main sections:
+    A class to read and write skel files. These files are split into eight main sections:
         1. The header, which gives file pointers to split the file into its major sections, plus counts of what appears
            in each section.
         2. Pairs of bone indices that create parent-bone relationships, 8 int16s per index -> 128 bitwidth.
@@ -19,9 +21,9 @@ class SkelFile(Serializable):
 
     Completion status
     ------
-    (o) SkelReader can successfully parse all name files in DSDB archive within current constraints.
-    (o) SkelReader can yet fully interpret all data in name files in DSDB archive.
-    (o) SkelReader can write data to skel files.
+    (o) SkelBinary can successfully parse all name files in DSDB archive within current constraints.
+    (o) SkelBinary can yet fully interpret all data in name files in DSDB archive.
+    (o) SkelBinary can write data to skel files.
     """
 
     @property
@@ -110,7 +112,7 @@ class SkelFile(Serializable):
         self.bone_transforms = rw.rw_obj_array(self.bone_transforms, BoneTransforms, self.bone_count)
 
     def rw_parent_bones(self, rw):
-        rw.assert_file_pointer_now_at("Bone Transforms", self.parent_bones_rel_offset + self.PARENT_BONES_REL_OFFSET_OFFSET)
+        rw.assert_file_pointer_now_at("Bone Parents", self.parent_bones_rel_offset + self.PARENT_BONES_REL_OFFSET_OFFSET)
         self.parent_bones = rw.rw_int16s(self.parent_bones, self.bone_count)
 
     def rw_float_channel_flags(self, rw):
@@ -133,19 +135,41 @@ class SkelFile(Serializable):
         rw.align(rw.tell(), 0x10)
 
 
+class QuaternionBinary(Serializable):
+    __slots__ = ("data",)
+
+    def __init__(self):
+        super().__init__()
+        self.data = []
+
+    def __repr__(self):
+        return f"[XYZW Quat] {list(self.data)}"
+
+    def rw_XYZW(self, rw):
+        self.data = rw.rw_float32s(self.data, 4)
+
+    def rw_WXYZ(self, rw):
+        if rw.mode() == "read":
+            self.data = rw.rw_float32s(None, 4)
+            self.data = array.array('f', [*self.data[1:4], self.data[0]])
+        else:
+            data = [self.data[3], *self.data[0:3]]
+            rw.rw_float32s(data, 4)
+
+
 class BoneTransforms(Serializable):
     __slots__ = ("quat", "pos", "scale")
 
     def __init__(self):
         super().__init__()
-        self.quat = None
-        self.pos = None
+        self.quat  = QuaternionBinary()
+        self.pos   = None
         self.scale = None
 
     def __repr__(self):
-        return f"[BoneTransforms] {list(self.quat)} {list(self.pos)} {list(self.scale)}"
+        return f"[BoneTransforms] {self.quat} {list(self.pos)} {list(self.scale)}"
 
     def read_write(self, rw):
-        self.quat  = rw.rw_float32s(self.quat, 4)
+        rw.rw_obj_method(self.quat, self.quat.rw_XYZW)
         self.pos   = rw.rw_float32s(self.pos, 4)
         self.scale = rw.rw_float32s(self.scale, 4)
