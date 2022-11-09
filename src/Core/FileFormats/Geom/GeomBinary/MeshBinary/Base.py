@@ -1,3 +1,5 @@
+import enum
+
 from .....serialization.Serializable import Serializable
 from .....serialization.utils import safe_format
 
@@ -139,16 +141,52 @@ class MeshBinaryBase(Serializable):
         rw.assert_local_file_pointer_now_at(self.vertex_attributes_offset)
         self.vertex_attributes = rw.rw_obj_array(self.vertex_attributes, VertexAttribute, self.vertex_attribute_count)
 
+    def unpack_vertex_attribute_data(self, vertex_idx, vertex_attribute, type_size, unpack_func):
+        byte_idx = vertex_idx * self.bytes_per_vertex + vertex_attribute.offset
+        bytes = self.VAO[byte_idx:byte_idx + vertex_attribute.size*type_size]
+        return unpack_func(bytes)
+
+    def unpack_vertices(self):
+        verts = [Vertex()]*self.vertex_count
+        for vertex_attribute in self.vertex_attributes:
+            assign_func = vertex_attribute.retrieve_unpack_func(self._VA_MAP)
+            type_size, unpack_func = self.retrieve_primitive_type_info(vertex_attribute.type)
+            for i, vert in enumerate(verts):
+                value = self.unpack_vertex_attribute_data(i, vertex_attribute, type_size, unpack_func)
+                assign_func(vert, value)
+
+    def pack_vertices(self, vertex_array):
+        raise NotImplementedError("pack_vertices not implemented on subclass")
+
     # VIRTUAL PROPERTIES
     @property
     def _CLASSTAG(self):
-        raise NotImplementedError("Do not instantiate Abstact Base Classes!")
+        raise NotImplementedError("_CLASSTAG not implemented on subclass")
 
-    def unpack_vertices(self):
-        raise NotImplementedError("Do not instantiate Abstact Base Classes!")
+    @property
+    def _VA_MAP(self):
+        raise NotImplementedError("_VA_MAP not implemented on subclass")
 
-    def pack_vertices(self):
-        raise NotImplementedError("Do not instantiate Abstact Base Classes!")
+    def retrieve_index_rw_function(self, rw):
+        # Should use retrieve_primitive_type_info to get the type
+        raise NotImplementedError("retreive_index_rw_function not implemented on subclass")
+
+    def retrieve_primitive_type_info(self, rw):
+        raise NotImplementedError("retrieve_primitive_type_info not implemented on subclass")
+
+
+class AttributeTypes(enum.Enum):
+    POSITION = 0
+    NORMAL   = 1
+    TANGENT  = 2
+    BINORMAL = 3
+    COLOR    = 4
+    UV1      = 5
+    UV2      = 6
+    UV3      = 7
+    INDEX    = 8
+    WEIGHT   = 9
+
 
 class VertexAttribute:
     def __init__(self):
@@ -165,3 +203,48 @@ class VertexAttribute:
         self.size       = rw.rw_uint16(self.size)
         self.type       = rw.rw_uint16(self.type)
         self.offset     = rw.rw_uint16(self.offset)
+
+    def retrieve_unpack_func(self, index_mapping):
+        lookup = index_mapping.get(self.index, -1)  # Need to map this depending on exact VertexAttribute type...
+        if lookup == AttributeTypes.POSITION:
+            def unpack_func(vert, x): vert.position = x
+        elif lookup == AttributeTypes.NORMAL:
+            def unpack_func(vert, x): vert.normal = x
+        elif lookup == AttributeTypes.TANGENT:
+            def unpack_func(vert, x): vert.tangent = x
+        elif lookup == AttributeTypes.BINORMAL:
+            def unpack_func(vert, x): vert.binormal = x
+        elif lookup == AttributeTypes.COLOR:
+            def unpack_func(vert, x): vert.color = x
+        elif lookup == AttributeTypes.UV1:
+            def unpack_func(vert, x): vert.UV1 = x
+        elif lookup == AttributeTypes.UV2:
+            def unpack_func(vert, x): vert.UV2 = x
+        elif lookup == AttributeTypes.UV3:
+            def unpack_func(vert, x): vert.UV3 = x
+        elif lookup == AttributeTypes.INDEX:
+            def unpack_func(vert, x): vert.indices = x
+        elif lookup == AttributeTypes.WEIGHT:
+            def unpack_func(vert, x): vert.weights = x
+        elif lookup == -1:
+            raise ValueError(f"Unmapped Vertex Attribute Type: {self.index}")
+        else:
+            raise NotImplementedError(f"Unimplemented Vertex Attribute Type: {lookup}")
+
+        return unpack_func
+
+
+class Vertex:
+    __slots__ = ("position", "normal", "tangent", "binormal", "color", "UV1", "UV2", "UV3", "indices", "weights")
+
+    def __init__(self):
+        self.position        = None
+        self.normal          = None
+        self.tangent         = None
+        self.binormal        = None
+        self.color           = None
+        self.UV1             = None
+        self.UV2             = None
+        self.UV3             = None
+        self.indices         = None
+        self.weights         = None
