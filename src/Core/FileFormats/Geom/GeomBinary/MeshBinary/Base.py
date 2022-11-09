@@ -126,9 +126,9 @@ class MeshBinaryBase(Serializable):
         Read/write the vertex indices.
         Corresponds to an OpenGL Index Buffer Object (IBO).
         """
-        rw.assert_local_file_pointer_now_at(self.matrix_palette_offset)
-        # should look up the required type...
-        self.matrix_palette = rw.uint16s(self.matrix_palette, self.matrix_palette_count)
+        rw.assert_local_file_pointer_now_at(self.indices_offset)
+        rw_func = self.retrieve_index_rw_function(rw)
+        self.IBO = rw_func(self.IBO, self.index_count)
         rw.align(rw.local_tell(), 0x04)
 
     def rw_vertex_attributes(self, rw):
