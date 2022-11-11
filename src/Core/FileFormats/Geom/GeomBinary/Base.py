@@ -1,4 +1,7 @@
 from ....serialization.Serializable import Serializable
+from .MaterialBinary import MaterialBinary
+from .LightBinary import LightBinary
+from .CameraBinary import CameraBinary
 
 
 class GeomBinaryBase(Serializable):
@@ -54,7 +57,14 @@ class GeomBinaryBase(Serializable):
         self.textures_offset       = None
         self.extra_clut_offset     = None
 
-        self.meshes = []
+        # Data Holders
+        self.meshes    = []
+        self.materials = []
+        self.textures  = []
+        self.lights    = []
+        self.cameras   = []
+        self.ibpms     = []
+        self.extra_clut = None
 
     def __repr__(self):
         return f"[{self._CLASSTAG}] " \
@@ -70,6 +80,14 @@ class GeomBinaryBase(Serializable):
     def read_write(self, rw):
         self.rw_header(rw)
         self.rw_meshes(rw)
+        self.rw_materials(rw)
+        self.rw_textures(rw)
+        self.rw_lights(rw)
+        self.rw_cameras(rw)
+        rw.align(rw.local_tell(), 0x10)
+        self.rw_ibpms(rw)
+        self.rw_extra_clut(rw)
+        rw.assert_at_eof()
 
     def rw_header(self, rw):
         rw.assert_local_file_pointer_now_at("File Start", 0)
@@ -108,3 +126,33 @@ class GeomBinaryBase(Serializable):
             self.meshes = rw.rw_obj_array(self.meshes, self.MESH_TYPE, self.mesh_count)
             for mesh in self.meshes:
                 rw.rw_obj_method(mesh, mesh.rw_contents)
+
+    def rw_materials(self, rw):
+        if self.materials_offset:
+            rw.assert_local_file_pointer_now_at("Materials", self.materials_offset)
+            self.materials = rw.rw_obj_array(self.materials, MaterialBinary, self.material_count)
+
+    def rw_textures(self, rw):
+        if self.textures_offset:
+            rw.assert_local_file_pointer_now_at("Textures", self.textures_offset)
+            self.textures = rw.rw_bytestrings(self.textures, 0x20, self.texture_section_size // 0x20)
+
+    def rw_lights(self, rw):
+        if self.light_sources_offset:
+            rw.assert_local_file_pointer_now_at("Lights", self.light_sources_offset)
+            self.lights = rw.rw_obj_array(self.lights, LightBinary, self.light_source_count)
+
+    def rw_cameras(self, rw):
+        if self.cameras_offset:
+            rw.assert_local_file_pointer_now_at("Lights", self.cameras_offset)
+            self.cameras = rw.rw_obj_array(self.cameras, CameraBinary, self.camera_count)
+
+    def rw_ibpms(self, rw):
+        if self.ibpms_offset:
+            rw.assert_local_file_pointer_now_at("IBPMs", self.ibpms_offset)
+            self.ibpms = rw.rw_float32s(self.ibpms, (self.ibpm_count, 12))
+
+    def rw_extra_clut(self, rw):
+        if self.extra_clut_offset:
+            rw.assert_local_file_pointer_now_at("Extra CLUT", self.extra_clut_offset)
+            self.extra_clut = rw.rw_unbounded_bytestring(self.extra_clut)

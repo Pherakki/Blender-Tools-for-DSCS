@@ -155,14 +155,20 @@ class MeshBinaryBase(Serializable):
             dsize = struct.calcsize(dtype)
             struct_fmts[i] = (dtype, dsize)
             if vertex_attribute.normalised:
-                if   dtype[0] == 'b': exp = 7
-                elif dtype[0] == 'B': exp = 8
-                elif dtype[0] == 'h': exp = 15
-                elif dtype[0] == 'H': exp = 16
-                elif dtype[0] == 'i': exp = 31
-                elif dtype[0] == 'I': exp = 32
+                if   dtype[0] == 'b':
+                    unpack_funcs[i] = lambda x, dtype=dtype: [max(val / 127, -1) for val in struct.unpack(dtype, x)]
+                elif dtype[0] == 'B':
+                    unpack_funcs[i] = lambda x, dtype=dtype: [val / 255 for val in struct.unpack(dtype, x)]
+                elif dtype[0] == 'h':
+                    unpack_funcs[i] = lambda x, dtype=dtype: [max(val / 32767, -1) for val in struct.unpack(dtype, x)]
+                elif dtype[0] == 'H':
+                    unpack_funcs[i] = lambda x, dtype=dtype: [val / 65535 for val in struct.unpack(dtype, x)]
+                elif dtype[0] == 'i':
+                    unpack_funcs[i] = lambda x, dtype=dtype: [max(val / 2147483647, -1) for val in struct.unpack(dtype, x)]
+                elif dtype[0] == 'I':
+                    unpack_funcs[i] = lambda x, dtype=dtype: [(val / 4294967295) for val in struct.unpack(dtype, x)]
                 else: raise ValueError("Non-integer Vertex Attribute was set to 'normalised'")
-                unpack_funcs[i] = lambda x, dtype=dtype: [val / 2**(exp) for val in struct.unpack(dtype, x)]
+
             else:
                 unpack_funcs[i] = lambda x, dtype=dtype: struct.unpack(dtype, x)
 
@@ -179,20 +185,26 @@ class MeshBinaryBase(Serializable):
         pack_funcs  = [None]*len(self.vertex_attributes)
         fmt_sizes = [None] * len(self.vertex_attributes)
         chunk_sizes = [None] * len(self.vertex_attributes)
-        total_size = 0
+
         sorted_vas = sorted(self.vertex_attributes, key=lambda x: x.offset)
         for i, vertex_attribute in enumerate(sorted_vas):
             dtype = self.DATA_TYPES[vertex_attribute.type]*vertex_attribute.elem_count
             fmt_sizes[i] = struct.calcsize(dtype)
             if vertex_attribute.normalised:
-                if   dtype[0] == 'b': exp = 7
-                elif dtype[0] == 'B': exp = 8
-                elif dtype[0] == 'h': exp = 15
-                elif dtype[0] == 'H': exp = 16
-                elif dtype[0] == 'i': exp = 31
-                elif dtype[0] == 'I': exp = 32
+                if   dtype[0] == 'b':
+                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 127) for val in struct.pack(dtype, x)]
+                elif dtype[0] == 'B':
+                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 255) for val in struct.pack(dtype, x)]
+                elif dtype[0] == 'h':
+                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 32767) for val in struct.pack(dtype, x)]
+                elif dtype[0] == 'H':
+                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 65535) for val in struct.pack(dtype, x)]
+                elif dtype[0] == 'i':
+                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 2147483647) for val in struct.pack(dtype, x)]
+                elif dtype[0] == 'I':
+                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 4294967295) for val in struct.pack(dtype, x)]
                 else: raise ValueError("Non-integer Vertex Attribute was set to 'normalised'")
-                pack_funcs[i] = lambda x, dtype=dtype: [int(val * 2**(exp)) for val in struct.pack(dtype, x)]
+
             else:
                 pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *x)
 

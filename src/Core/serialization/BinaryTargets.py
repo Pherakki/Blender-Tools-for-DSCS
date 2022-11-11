@@ -215,6 +215,12 @@ class BinaryTargetBase:
     def rw_bytestring(self, value, count):
         raise NotImplementedError
 
+    def rw_bytestrings(self, value, count, shape):
+        raise NotImplementedError
+
+    def rw_unbounded_bytestring(self, value):
+        raise NotImplementedError
+
     def rw_obj_array(self, value, obj_constructor, shape, validator=None):
         raise NotImplementedError
 
@@ -278,6 +284,15 @@ class Reader(BinaryTargetBase):
 
     def rw_bytestring(self, value, count):
         return self.bytestream.read(count)
+
+    def rw_bytestrings(self, value, count, shape):
+        out = [None]*shape
+        for i in range(shape):
+            out[i] = self.rw_bytestring(value, count)
+        return out
+
+    def rw_unbounded_bytestring(self, value):
+        return self.bytestream.read()
 
     def peek_bytestring(self, count):
         val = self.bytestream.read(count)
@@ -357,6 +372,14 @@ class Writer(BinaryTargetBase):
             raise ValueError(f"Expected to write a bytestring of length {count}, but it was length {len(value)}.")
         self.bytestream.write(value)
         return value
+
+    def rw_bytestrings(self, value, count, shape):
+        for v in value:
+            self.rw_bytestring(v, count)
+        return value
+
+    def rw_unbounded_bytestring(self, value):
+        return self.rw_bytestring(value, len(value))
 
     def rw_obj_array(self, value, obj_constructor, shape, validator=None):
         if not hasattr(shape, "__getitem__"):
@@ -444,6 +467,14 @@ class OffsetTracker(BinaryTargetBase):
         self.virtual_offset += count
         return value
 
+    def rw_bytestrings(self, value, count, shape):
+        for v in value:
+            self.rw_bytestring(v, count)
+        return value
+
+    def rw_unbounded_bytestring(self, value):
+        return self.rw_bytestring(value, len(value))
+    
     def align(self, offset, alignment, padval=b'\x00'):
         n_to_read = (alignment - (offset % alignment)) % alignment
         data = padval * (n_to_read // len(padval))
