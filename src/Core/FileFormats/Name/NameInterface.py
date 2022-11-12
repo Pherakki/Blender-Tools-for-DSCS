@@ -8,7 +8,7 @@ class NameInterface:
 
     @classmethod
     def from_file(cls, filepath):
-        nf = NameFile()
+        nf = NameBinary()
         nf.read(filepath)
 
         instance = cls()
