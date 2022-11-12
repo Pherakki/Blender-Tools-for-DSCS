@@ -27,35 +27,35 @@ class SkelBinary(Serializable):
     """
 
     @property
-    def BONE_TRANSFORMS_REL_OFFSET_OFFSET                 (self): return 0x18
+    def BONE_TRANSFORMS_OFFSET_OFFSET            (self): return 0x18
     @property
-    def PARENT_BONES_REL_OFFSET_OFFSET                    (self): return 0x1C
+    def PARENT_BONES_OFFSET_OFFSET               (self): return 0x1C
     @property
-    def BONE_NAME_HASHES_REL_OFFSET_OFFSET                (self): return 0x20
+    def BONE_NAME_HASHES_OFFSET_OFFSET           (self): return 0x20
     @property
-    def FLOAT_CHANNEL_ARRAY_INDICES_REL_OFFSET_OFFSET     (self): return 0x24
+    def FLOAT_CHANNEL_ARRAY_INDICES_OFFSET_OFFSET(self): return 0x24
     @property
-    def FLOAT_CHANNEL_OBJECT_NAME_HASHES_REL_OFFSET_OFFSET(self): return 0x28
+    def FLOAT_CHANNEL_NAME_HASHES_OFFSET_OFFSET  (self): return 0x28
     @property
-    def FLOAT_CHANNEL_FLAGS_REL_OFFSET_OFFSET              (self): return 0x2C
+    def FLOAT_CHANNEL_FLAGS_OFFSET_OFFSET        (self): return 0x2C
 
     def __init__(self):
         super().__init__()
 
         # Header variables
-        self.filetype                   = None
+        self.filetype                   = b'20SE'
         self.filesize                   = None
         self.hashes_section_bytecount   = None
         self.bone_count                 = None
         self.float_channel_count        = None
         self.parent_bone_dataline_count = None
 
-        self.bone_transforms_rel_offset                  = None
-        self.parent_bones_rel_offset                     = None
-        self.bone_name_hashes_rel_offset                 = None
-        self.float_channel_array_indices_rel_offset      = None
-        self.float_channel_object_name_hashes_rel_offset = None
-        self.float_channel_flags_rel_offset              = None
+        self.bone_transforms_offset             = None
+        self.parent_bones_offset                = None
+        self.bone_name_hashes_offset            = None
+        self.float_channel_array_indices_offset = None
+        self.float_channel_name_hashes_offset   = None
+        self.float_channel_flags_offset         = None
 
         # Data holders
         self.parent_bone_datalines            = None
@@ -79,8 +79,8 @@ class SkelBinary(Serializable):
 
     def rw_header(self, rw):
         # 0x00
-        self.filetype = rw.rw_str(self.filetype, 4)
-        if self.filetype != "20SE":
+        self.filetype = rw.rw_bytestring(self.filetype, 4)
+        if self.filetype != b"20SE":
             raise ValueError("Attempted to read a file that is not a valid skel file")
         self.filesize                   = rw.rw_uint64(self.filesize)
         self.hashes_section_bytecount   = rw.rw_uint32(self.hashes_section_bytecount)
@@ -89,48 +89,48 @@ class SkelBinary(Serializable):
         self.bone_count                 = rw.rw_uint16(self.bone_count)
         self.float_channel_count        = rw.rw_uint16(self.float_channel_count)
         self.parent_bone_dataline_count = rw.rw_uint32(self.parent_bone_dataline_count)
-        self.bone_transforms_rel_offset = rw.rw_uint32(self.bone_transforms_rel_offset)
-        self.parent_bones_rel_offset    = rw.rw_uint32(self.parent_bones_rel_offset)
+        self.bone_transforms_offset     = rw.rw_offset_uint32(self.bone_transforms_offset, self.BONE_TRANSFORMS_OFFSET_OFFSET)
+        self.parent_bones_offset        = rw.rw_offset_uint32(self.parent_bones_offset, self.PARENT_BONES_OFFSET_OFFSET)
 
         # 0x20
-        self.bone_name_hashes_rel_offset                 = rw.rw_uint32(self.bone_name_hashes_rel_offset)
-        self.float_channel_array_indices_rel_offset      = rw.rw_uint32(self.float_channel_array_indices_rel_offset)
-        self.float_channel_object_name_hashes_rel_offset = rw.rw_uint32(self.float_channel_object_name_hashes_rel_offset)
-        self.float_channel_flags_rel_offset              = rw.rw_uint32(self.float_channel_flags_rel_offset)
+        self.bone_name_hashes_offset            = rw.rw_offset_uint32(self.bone_name_hashes_offset, self.BONE_NAME_HASHES_OFFSET_OFFSET)
+        self.float_channel_array_indices_offset = rw.rw_offset_uint32(self.float_channel_array_indices_offset, self.FLOAT_CHANNEL_ARRAY_INDICES_OFFSET_OFFSET)
+        self.float_channel_name_hashes_offset   = rw.rw_offset_uint32(self.float_channel_name_hashes_offset, self.FLOAT_CHANNEL_NAME_HASHES_OFFSET_OFFSET)
+        self.float_channel_flags_offset         = rw.rw_offset_uint32(self.float_channel_flags_offset, self.FLOAT_CHANNEL_FLAGS_OFFSET_OFFSET)
 
         # 0x30
-        rw.rw_pad32s(4)
+        rw.align(0x30, 0x40)
 
-        if self.filesize != self.bone_name_hashes_rel_offset + self.BONE_NAME_HASHES_REL_OFFSET_OFFSET + self.hashes_section_bytecount:
+        if self.filesize != self.bone_name_hashes_offset + self.hashes_section_bytecount:
             raise ValueError("Inconsistent file header; hashes section bytecount inconsistent with file size")
 
     def rw_parent_bone_datalines(self, rw):
         self.parent_bone_datalines = rw.rw_int16s(self.parent_bone_datalines, (self.parent_bone_dataline_count, 8))
 
     def rw_bone_transforms(self, rw):
-        rw.assert_file_pointer_now_at("Bone Transforms", self.bone_transforms_rel_offset + self.BONE_TRANSFORMS_REL_OFFSET_OFFSET)
+        rw.assert_file_pointer_now_at("Bone Transforms", self.bone_transforms_offset)
         self.bone_transforms = rw.rw_obj_array(self.bone_transforms, BoneTransforms, self.bone_count)
 
     def rw_parent_bones(self, rw):
-        rw.assert_file_pointer_now_at("Bone Parents", self.parent_bones_rel_offset + self.PARENT_BONES_REL_OFFSET_OFFSET)
+        rw.assert_file_pointer_now_at("Bone Parents", self.parent_bones_offset)
         self.parent_bones = rw.rw_int16s(self.parent_bones, self.bone_count)
 
     def rw_float_channel_flags(self, rw):
-        rw.assert_file_pointer_now_at("Float Channel Flags", self.float_channel_flags_rel_offset + self.FLOAT_CHANNEL_FLAGS_REL_OFFSET_OFFSET)
+        rw.assert_file_pointer_now_at("Float Channel Flags", self.float_channel_flags_offset)
         self.float_channel_flags = rw.rw_uint8s(self.float_channel_flags, self.float_channel_count)
         rw.align(rw.tell(), 0x10)
 
     def rw_bone_name_hashes(self, rw):
-        rw.assert_file_pointer_now_at("Bone Name Hashes", self.bone_name_hashes_rel_offset + self.BONE_NAME_HASHES_REL_OFFSET_OFFSET)
+        rw.assert_file_pointer_now_at("Bone Name Hashes", self.bone_name_hashes_offset)
         self.bone_name_hashes = rw.rw_uint32s(self.bone_name_hashes, self.bone_count)
 
     def rw_float_channel_array_indices(self, rw):
-        rw.assert_file_pointer_now_at("Float Channel Array Indices", self.float_channel_array_indices_rel_offset + self.FLOAT_CHANNEL_ARRAY_INDICES_REL_OFFSET_OFFSET)
+        rw.assert_file_pointer_now_at("Float Channel Array Indices", self.float_channel_array_indices_offset)
 
         self.float_channel_array_indices = rw.rw_uint32s(self.float_channel_array_indices, self.float_channel_count)
 
     def rw_float_channel_object_names(self, rw):
-        rw.assert_file_pointer_now_at("Float Channel Object Names", self.float_channel_object_name_hashes_rel_offset + self.FLOAT_CHANNEL_OBJECT_NAME_HASHES_REL_OFFSET_OFFSET)
+        rw.assert_file_pointer_now_at("Float Channel Object Names", self.float_channel_name_hashes_offset)
         self.float_channel_object_name_hashes = rw.rw_uint32s(self.float_channel_object_name_hashes, self.float_channel_count)
         rw.align(rw.tell(), 0x10)
 
