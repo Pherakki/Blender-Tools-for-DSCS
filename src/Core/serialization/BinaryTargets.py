@@ -539,7 +539,7 @@ class OffsetTracker(BinaryTargetBase):
         self.adv_offset(count)
 
     def rw_offset_uint32(self, value, offset, endianness=None):
-        self.rw_uint32(value, endianness)
+        return self.rw_uint32(value, endianness)
 
     def _rw_single(self, typecode, size, value, endianness=None):
         self.adv_offset(size)
@@ -613,7 +613,22 @@ class OffsetTracker(BinaryTargetBase):
     @classmethod
     def assert_is_zero(cls, data):
         pass
+    
+    def rw_obj_array(self, value, obj_constructor, shape, validator=None):
+        if not hasattr(shape, "__getitem__"):
+            shape = (shape,)
+        n_to_read = 1
+        for elem in shape:
+            n_to_read *= elem
 
+        data = value  # Shouldn't need to deepcopy since flatten_list will copy
+        for _ in range(len(shape) - 1):
+            data = flatten_list(data)
+        for d in data:
+            self.rw_obj(d)
+
+        return value
+        
     def rw_s3Quat(self, value, endianness=None):
         self.adv_offset(6)
         return value
