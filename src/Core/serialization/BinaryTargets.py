@@ -1,4 +1,5 @@
 import array
+import copy
 import struct
 
 from .utils import chunk_list, flatten_list
@@ -200,6 +201,9 @@ class BinaryTargetBase:
     def _handle_pads(self, count):
         raise NotImplementedError
 
+    def rw_offset_uint32(self, value, offset, endianness=None):
+        raise NotImplementedError
+
     def _rw_single(self, typecode, size, value, endianness=None):
         raise NotImplementedError
 
@@ -219,6 +223,12 @@ class BinaryTargetBase:
         raise NotImplementedError
 
     def rw_unbounded_bytestring(self, value):
+        raise NotImplementedError
+
+    def rw_s3Quat(self, value, endianness=None):
+        raise NotImplementedError
+
+    def rw_s3Quats(self, value, shape, endianness=None):
         raise NotImplementedError
 
     def rw_obj_array(self, value, obj_constructor, shape, validator=None):
@@ -241,6 +251,9 @@ class Reader(BinaryTargetBase):
         value = self.bytestream.read(count)
         if value != b'\x00'*count:
             raise ValueError(f"Excepted padding bytes, but found {value}")
+
+    def rw_offset_uint32(self, value, offset, endianness=None):
+        return self.rw_uint32(value, endianness) + offset
 
     def _rw_single(self, typecode, size, value, endianness=None):
         if endianness is None:
@@ -294,6 +307,38 @@ class Reader(BinaryTargetBase):
     def rw_unbounded_bytestring(self, value):
         return self.bytestream.read()
 
+    def rw_s3Quat(self, value, endianness=None):
+        input_data = self.rw_uint8s(None, 6)
+        c1 = (input_data[0] & 0x7F) << 8 | input_data[1]
+        c2 = (input_data[2] & 0xFF) << 7 | (input_data[3] & 0xFE) >> 1
+        c3 = (input_data[3] & 0x01) << 14 | (input_data[4] & 0xFF) << 6 | (input_data[5] & 0xFC) >> 2
+        largest_index = input_data[5] & 0x03
+
+        components = [c1, c2, c3]
+        components = [c - 16383 for c in components]
+        components = [c / 16384 for c in components]
+        components = [c / (2**.5) for c in components]
+
+        square_vector_length = sum([c ** 2 for c in components])
+        largest_component = (1 - square_vector_length)**.5
+
+        components.insert(largest_index, largest_component)
+
+        return components
+
+    def rw_s3Quats(self, value, shape, endianness=None):
+        if not hasattr(shape, "__getitem__"):
+            shape = (shape,)
+        n_to_read = 1
+        for elem in shape:
+            n_to_read *= elem
+
+        data = [self.rw_s3Quat(None, endianness) for _ in range(n_to_read)]
+
+        for subshape in shape[1::][::-1]:
+            data = chunk_list(data, subshape)
+        return data
+
     def peek_bytestring(self, count):
         val = self.bytestream.read(count)
         self.bytestream.seek(-count, 1)
@@ -335,6 +380,10 @@ class Writer(BinaryTargetBase):
 
     def _handle_pads(self, count):
         self.bytestream.write(b'\x00'*count)
+
+    def rw_offset_uint32(self, value, offset, endianness=None):
+        self.rw_uint32(value - offset, endianness)
+        return value
 
     def _rw_single(self, typecode, size, value, endianness=None):
         if endianness is None:
@@ -380,6 +429,59 @@ class Writer(BinaryTargetBase):
 
     def rw_unbounded_bytestring(self, value):
         return self.rw_bytestring(value, len(value))
+
+    def rw_s3Quat(self, value, endianness=None):
+        components = copy.deepcopy(value)
+        abs_components = [abs(c) for c in components]
+        abs_largest_component = max(abs_components)
+        largest_index = abs_components.index(abs_largest_component)
+        largest_component = components[largest_index]
+        largest_component_sign = largest_component // (abs(largest_component))
+        # Get rid of the largest component
+        # No need to store the sign of the largest component, because
+        # (X, Y, Z, W) = (-X, -Y, -Z, -W)
+        # So just multiply through by the sign of the removed component to create an equivalent quaternion
+        # In this way, the largest component is always +ve
+        del components[largest_index]
+        components = [largest_component_sign * c for c in components]
+
+        # No other component can be larger than 1/sqrt(2) due to normalisation
+        # So map the remaining components from the interval [-1/sqrt(2), 1/sqrt(2)] to [0, 32767] to gain ~1.4x precision
+        components = [int(round(c * (2**.5) * 16384)) + 16383 for c in components]
+
+        for i, elem in enumerate(components):
+            if elem < 0:
+                components[i] = 0
+            elif elem > 32767:
+                components[i] = 32767
+
+        # Now convert to big-endian uint15s
+        packed_rep = [0, 0, 0, 0, 0, 0]
+        packed_rep[0] = (components[0] >> 8) & 0x7F
+        packed_rep[1] = components[0] & 0xFF
+        packed_rep[2] = (components[1] >> 7) & 0xFF
+        packed_rep[3] = ((components[1] & 0xFF) << 1) | ((components[2] & 0xC0) >> 7)
+        packed_rep[4] = (components[2] >> 6) & 0xFF
+        packed_rep[5] = ((components[2] & 0x3F) << 2) | largest_index
+
+        self.rw_uint8s(packed_rep, 6)
+
+        return value
+
+    def rw_s3Quats(self, value, shape, endianness=None):
+        if not hasattr(shape, "__getitem__"):
+            shape = (shape,)
+        n_to_read = 1
+        for elem in shape:
+            n_to_read *= elem
+
+        data = value  # Shouldn't need to deepcopy since flatten_list will copy
+        for _ in range(len(shape) - 1):
+            data = flatten_list(data)
+        for d in data:
+            self.rw_s3Quat(d)
+
+        return value
 
     def rw_obj_array(self, value, obj_constructor, shape, validator=None):
         if not hasattr(shape, "__getitem__"):
@@ -435,6 +537,9 @@ class OffsetTracker(BinaryTargetBase):
 
     def _handle_pads(self, count):
         self.adv_offset(count)
+
+    def rw_offset_uint32(self, value, offset, endianness=None):
+        self.rw_uint32(value, endianness)
 
     def _rw_single(self, typecode, size, value, endianness=None):
         self.adv_offset(size)
@@ -509,6 +614,21 @@ class OffsetTracker(BinaryTargetBase):
     def assert_is_zero(cls, data):
         pass
 
+    def rw_s3Quat(self, value, endianness=None):
+        self.adv_offset(6)
+        return value
+
+    def rw_s3Quats(self, value, shape, endianness=None):
+        if not hasattr(shape, "__getitem__"):
+            shape = (shape,)
+        n_to_read = 1
+        for elem in shape:
+            n_to_read *= elem
+
+        for _ in range(n_to_read):
+            self.rw_s3Quat(None)
+
+        return value
 
 class PointerCalculator(OffsetTracker):
     open_flags = None
