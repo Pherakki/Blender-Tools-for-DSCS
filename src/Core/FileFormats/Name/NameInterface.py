@@ -10,7 +10,10 @@ class NameInterface:
     def from_file(cls, filepath):
         nf = NameBinary()
         nf.read(filepath)
+        return cls.from_binary(nf)
 
+    @classmethod
+    def from_binary(cls, nf):
         instance = cls()
         instance.bone_names = nf.bone_names
         instance.material_names = nf.material_names
@@ -18,6 +21,10 @@ class NameInterface:
         return instance
 
     def to_file(self, filepath):
+        nf = self.to_binary()
+        nf.write(filepath)
+
+    def to_binary(self):
         nf = NameBinary()
         nf.bone_name_count = len(self.bone_names)
         nf.material_name_count = len(self.material_names)
@@ -33,4 +40,4 @@ class NameInterface:
         for i in range(nf.material_name_count):
             nf.pointers[nf.bone_name_count + i] = offset
             offset += len(nf.material_names[i])
-        nf.write(filepath)
+        return nf
