@@ -2,10 +2,19 @@ from .SkelBinary import SkelBinary, BoneTransforms
 from ...serialization.BinaryTargets import OffsetTracker
 import struct
 
+
 class SkelInterface:
     def __init__(self):
         self.bones = []
         self.float_channels = []
+
+    @property
+    def bone_count(self):
+        return len(self.bones)
+
+    @property
+    def float_channel_count(self):
+        return len(self.float_channels)
 
     @classmethod
     def from_file(cls, path):
