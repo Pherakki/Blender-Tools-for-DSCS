@@ -27,7 +27,7 @@ class MaterialBinary(Serializable):
         self.shader_hex           = None
         self.shader_uniform_count = None
         self.opengl_setting_count = None
-        self.material_flags       = None
+        self.flags                = None
 
         # Data variables
         self.shader_uniforms = []
@@ -38,7 +38,7 @@ class MaterialBinary(Serializable):
         self.shader_hex           = rw.rw_uint32s(self.shader_hex, 4)
         self.shader_uniform_count = rw.rw_uint8(self.shader_uniform_count)
         self.opengl_setting_count = rw.rw_uint8(self.opengl_setting_count)
-        self.material_flags       = rw.rw_uint16(self.material_flags)
+        self.flags                = rw.rw_uint16(self.flags)
 
         # Material flags:
         # 0x01 - ???
@@ -89,7 +89,7 @@ class OpenGLSetting(Serializable):
         self.payload = None
         self.index = None
         self.unknown_0x11 = 0x64
-        self.unknown_0x12 = 0xFF00
+        self.unknown_0x12 = 0x00FF
         self.padding_0x14 = 0x00000000
 
     def read_write(self, rw):

@@ -40,7 +40,7 @@ class MeshBinaryBase(Serializable):
         self.index_type               = None
 
         self.vertex_groups_per_vertex = None
-        self.meshflags                = None
+        self.flags                    = None
         self.primitive_type           = None
         self.name_hash                = None
         self.material_id              = None
@@ -86,7 +86,7 @@ class MeshBinaryBase(Serializable):
         self.index_type               = rw.rw_uint16(self.index_type)  # 0x1403 / GL_UNSIGNED_SHORT for PC
 
         self.vertex_groups_per_vertex = rw.rw_uint8(self.vertex_groups_per_vertex)  # takes values 0, 1, 2, 3, 4: 0 means map everything to idx 0, 1 means the idxs are in the position vector
-        self.meshflags                = rw.rw_uint8(self.meshflags)  # Mesh flags: >>0 - isRendered, >>1 - isWireframe, >>2 - skinning indices are consecutive
+        self.flags                    = rw.rw_uint8(self.flags)  # Mesh flags: >>0 - isRendered, >>1 - isWireframe, >>2 - skinning indices are consecutive
         self.primitive_type           = rw.rw_uint16(self.primitive_type)  # 4 or 5: 4 is Triangles, 5 is TriangleStrips... any OpenGL type should work
         self.name_hash                = rw.rw_uint32(self.name_hash)
         self.material_id              = rw.rw_uint32(self.material_id)
@@ -332,11 +332,10 @@ class Vertex:
     def color(self, value): self.buffer[AttributeTypes.COLOR] = value
 
     @property
-    def indices(self): return self.buffer[AttributeTypes.INDEX]
-    @indices.setter
-    def indices(self, value): self.buffer[AttributeTypes.INDEX] = value
-
-    @property
-    def weights(self): return self.buffer[AttributeTypes.WEIGHT]
+    def weights(self):
+        return list(zip(self.buffer[AttributeTypes.INDEX], self.buffer[AttributeTypes.WEIGHT]))
     @weights.setter
-    def weights(self, value): self.buffer[AttributeTypes.WEIGHT] = value
+    def weights(self, value):
+        # Adding a check here for weight count is probably too expensive
+        self.buffer[AttributeTypes.INDEX] = [v[0] for v in value]
+        self.buffer[AttributeTypes.WEIGHT] = [v[1] for v in value]
