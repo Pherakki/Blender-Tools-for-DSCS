@@ -166,6 +166,14 @@ class BoneTransforms(Serializable):
         self.pos   = None
         self.scale = None
 
+    @classmethod
+    def from_transforms(cls, quat, pos, scale):
+        instance = cls()
+        instance.quat.data = quat
+        instance.pos = pos
+        instance.scale= scale
+        return instance
+
     def __repr__(self):
         return f"[BoneTransforms] {self.quat} {list(self.pos)} {list(self.scale)}"
 
