@@ -3,6 +3,7 @@ import struct
 
 from .....serialization.Serializable import Serializable
 from .....serialization.utils import safe_format
+from ...Constants import AttributeTypes, PrimitiveTypes
 
 
 class MeshBinaryBase(Serializable):
@@ -236,32 +237,6 @@ class MeshBinaryBase(Serializable):
         raise NotImplementedError("retrieve_index_rw_function not implemented on subclass")
 
 
-class PrimitiveTypes:
-    POINTS         = 0
-    LINES          = 1
-    LINE_LOOP      = 2
-    LINE_STRIP     = 3
-    TRIANGLES      = 4
-    TRIANGLE_STRIP = 5
-    TRIANGLE_FAN   = 6
-    QUADS          = 7
-    QUAD_STRIP     = 8
-    POLYGON        = 9
-
-
-class AttributeTypes:
-    POSITION = 1
-    NORMAL   = 2
-    TANGENT  = 3
-    BINORMAL = 4
-    UV1      = 5
-    UV2      = 6
-    UV3      = 7
-    COLOR    = 9
-    INDEX    = 10
-    WEIGHT   = 11
-
-
 class VertexAttribute(Serializable):
     def __init__(self):
         super().__init__()
@@ -337,5 +312,9 @@ class Vertex:
     @weights.setter
     def weights(self, value):
         # Adding a check here for weight count is probably too expensive
-        self.buffer[AttributeTypes.INDEX] = [v[0] for v in value]
-        self.buffer[AttributeTypes.WEIGHT] = [v[1] for v in value]
+        if value is None:
+            self.buffer[AttributeTypes.INDEX] = None
+            self.buffer[AttributeTypes.WEIGHT] = None
+        else:
+            self.buffer[AttributeTypes.INDEX] = [v[0] for v in value]
+            self.buffer[AttributeTypes.WEIGHT] = [v[1] for v in value]
