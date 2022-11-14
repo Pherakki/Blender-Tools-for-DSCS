@@ -60,10 +60,10 @@ class BinaryTargetBase:
     #######################
 
     def rw_single(self, typecode, value, endianness=None):
-        self._rw_single(typecode, self.type_sizes[typecode], value, endianness)
+        return self._rw_single(typecode, self.type_sizes[typecode], value, endianness)
 
     def rw_multiple(self, typecode, value, shape, endianness=None):
-        self._rw_multiple(typecode, self.type_sizes[typecode], value, shape, endianness)
+        return self._rw_multiple(typecode, self.type_sizes[typecode], value, shape, endianness)
 
     def rw_obj(self, obj, *args, **kwargs):
         previous_context = self.context
