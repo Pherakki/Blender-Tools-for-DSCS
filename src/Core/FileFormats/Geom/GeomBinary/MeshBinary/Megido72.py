@@ -21,10 +21,7 @@ class MeshBinaryMegido72(MeshBinaryBase):
         0x0003: PrimitiveTypes.LINE_STRIP,
         0x0004: PrimitiveTypes.TRIANGLES,
         0x0005: PrimitiveTypes.TRIANGLE_STRIP,
-        0x0006: PrimitiveTypes.TRIANGLE_FAN,
-        0x0007: PrimitiveTypes.QUADS,
-        0x0008: PrimitiveTypes.QUAD_STRIP,
-        0x0009: PrimitiveTypes.POLYGON
+        0x0006: PrimitiveTypes.TRIANGLE_FAN
     }
 
     @property
