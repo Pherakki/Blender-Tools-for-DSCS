@@ -1,4 +1,4 @@
-from .Base import MeshBinaryBase, PrimitiveTypes
+from .Base import MeshBinaryBase, PrimitiveTypes, AttributeTypes
 
 
 class MeshBinaryMegido72(MeshBinaryBase):
@@ -42,3 +42,18 @@ class MeshBinaryMegido72(MeshBinaryBase):
     def retrieve_index_rw_function(self, rw):
         dtype = self.__DATA_TYPES[self.index_type]
         return lambda value, shape, endianness=None: rw.rw_multiple(dtype, value, shape, endianness)
+
+    def unpack_vertices(self):
+        vertices = super().unpack_vertices()
+        for va_idx in [AttributeTypes.UV1, AttributeTypes.UV2, AttributeTypes.UV3]:
+            if vertices[0].buffer[va_idx] is not None:
+                for v in vertices:
+                    v.buffer[va_idx] /= 1024
+        return vertices
+
+    def pack_vertices(self, vertices):
+        for va_idx in [AttributeTypes.UV1, AttributeTypes.UV2, AttributeTypes.UV3]:
+            if vertices[0].buffer[va_idx] is not None:
+                for v in vertices:
+                    v.buffer[va_idx] = int(v.buffer[va_idx]*1024)
+        return super().pack_vertices(vertices)

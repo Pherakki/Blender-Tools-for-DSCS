@@ -32,7 +32,7 @@ class MeshBinaryBase(Serializable):
         self.vertices_offset          = None
         self.indices_offset           = None
         self.matrix_palette_offset    = None
-        self.padding_0x18             = None
+        self.padding_0x18             = 0
 
         self.vertex_attributes_offset = None
         self.matrix_palette_count     = None
@@ -48,8 +48,8 @@ class MeshBinaryBase(Serializable):
         self.vertex_count             = None
 
         self.index_count              = None
-        self.padding_0x44             = None
-        self.padding_0x48             = None
+        self.padding_0x44             = 0
+        self.padding_0x48             = 0
         self.bounding_sphere_radius   = None
         self.centre_point             = None
         self.bounding_box_diagonal    = None
