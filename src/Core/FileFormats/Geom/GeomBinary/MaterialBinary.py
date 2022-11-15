@@ -33,6 +33,9 @@ class MaterialBinary(Serializable):
         self.shader_uniforms = []
         self.opengl_settings = []
 
+    def __repr__(self):
+        return f"[GeomBinary::MaterialBinary {self.name_hash}] {self.flags} {self.shader_hex} {self.shader_uniform_count} {self.opengl_setting_count}"
+
     def read_write(self, rw):
         self.name_hash            = rw.rw_uint32(self.name_hash)
         self.shader_hex           = rw.rw_uint32s(self.shader_hex, 4)
