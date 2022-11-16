@@ -62,12 +62,12 @@ class MeshBinaryBase(Serializable):
 
     def __repr__(self):
         return f"[{self._CLASSTAG}: {safe_format(self.name_hash, hex)}] " \
-            f"Flags: {safe_format(self.meshflags, hex)} Material: {self.material_id}" \
+            f"Flags: {safe_format(self.flags, hex)} Material: {self.material_id} " \
             f"VAO: {self.vertex_count}/{self.vertices_offset}/{self.bytes_per_vertex} " \
             f"VAs: {self.vertex_attribute_count}/{self.vertex_attributes_offset}/{self.vertex_groups_per_vertex} " \
             f"IBO: {self.index_count}/{self.indices_offset}/{safe_format(self.index_type, hex)}/{self.primitive_type} " \
             f"Matrix Palette: {self.matrix_palette_count}/{self.matrix_palette_offset} " \
-            f"Geometry: {self.centre_point} {safe_format(self.bounding_sphere_radius, list)} {safe_format(self.bounding_box_diagonal, list)}"
+            f"Geometry: {self.centre_point} {self.bounding_sphere_radius} {safe_format(self.bounding_box_diagonal, list)}"
 
     def read_write(self, rw):
         """
