@@ -26,5 +26,6 @@ class MeshBinaryDSCSPS(MeshBinaryBase):
         return self.__PRIMITIVE_TYPES
 
     def retrieve_index_rw_function(self, rw):
-        dtype = self.__DATA_TYPES[self.index_type]
+        dtype = 'H'
+        rw.assert_equal(self.index_type, 0)
         return lambda value, shape, endianness=None: rw.rw_multiple(dtype, value, shape, endianness)
