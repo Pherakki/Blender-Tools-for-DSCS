@@ -17,6 +17,7 @@ class LightBinary(Serializable):
         self.unknown_0x20      = None
         self.unknown_0x24      = None
         self.unknown_0x28      = None
+        self.unknown_0x2C      = None
 
     def read_write(self, rw):
         self.bone_name_hash = rw.rw_uint32(self.bone_name_hash)
@@ -35,4 +36,6 @@ class LightBinary(Serializable):
         self.unknown_0x20 = rw.rw_int32(self.unknown_0x20)
         self.unknown_0x24 = rw.rw_int32(self.unknown_0x24)
         self.unknown_0x28 = rw.rw_int32(self.unknown_0x28)
-        rw.align(0x2C, 0x40)
+        self.unknown_0x2C = rw.rw_float32(self.unknown_0x2C)
+        
+        rw.align(0x30, 0x40)
