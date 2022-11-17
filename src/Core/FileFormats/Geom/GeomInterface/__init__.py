@@ -36,28 +36,29 @@ class GeomInterface:
         binary = binary_class()
         binary.read(path)
 
-        shader_files = [
-            f"{mb.shader_hex[0]:0>8x}_{mb.shader_hex[1]:0>8x}_{mb.shader_hex[2]:0>8x}_{mb.shader_hex[3]:0>8x}"
-            for mb in binary.materials
-            if all(sh != 0 for sh in mb.shader_hex)
-        ]
+        # Keep this code around, we'll need it at some point
+        # shader_files = [
+        #     f"{mb.shader_hex[0]:0>8x}_{mb.shader_hex[1]:0>8x}_{mb.shader_hex[2]:0>8x}_{mb.shader_hex[3]:0>8x}"
+        #     for mb in binary.materials
+        #     if all(sh != 0 for sh in mb.shader_hex)
+        # ]
+        #
+        # shaders = []
+        # for sf in shader_files:
+        #     vertex_shader_path = os.path.join(os.path.dirname(path), "shaders", sf + "_vp.shad")
+        #     fragment_shader_path = os.path.join(os.path.dirname(path), "shaders", sf + "_fp.shad")
+        #
+        #     with open(vertex_shader_path, 'r') as F:
+        #         vertex_shader = F.read()
+        #     with open(fragment_shader_path, 'r') as F:
+        #         fragment_shader = F.read()
+        #
+        #     shaders.append((vertex_shader, fragment_shader))
 
-        shaders = []
-        for sf in shader_files:
-            vertex_shader_path = os.path.join(os.path.dirname(path), "shaders", sf + "_vp.shad")
-            fragment_shader_path = os.path.join(os.path.dirname(path), "shaders", sf + "_fp.shad")
-
-            with open(vertex_shader_path, 'r') as F:
-                vertex_shader = F.read()
-            with open(fragment_shader_path, 'r') as F:
-                fragment_shader = F.read()
-
-            shaders.append((vertex_shader, fragment_shader))
-
-        return cls.from_binary(binary, shaders)
+        return cls.from_binary(binary)
 
     @classmethod
-    def from_binary(cls, binary, shaders):
+    def from_binary(cls, binary):
         instance = cls()
         instance.meshes     = [Mesh.from_binary(mb) for mb in binary.meshes]
         instance.materials  = [Material.from_binary(mb) for mb in binary.materials]
