@@ -3,8 +3,8 @@ import math
 import os
 
 from ....serialization.BinaryTargets import OffsetTracker
-from ..GeomBinary import GeomBinaryDSCSCgGL, GeomBinaryDSCSPS, GeomBinaryMegido72
 from ..GeomBinary.MeshBinary.Base import VertexAttribute, AttributeTypes
+from ..GeomBinary import GeomBinaryDSCSOpenGL, GeomBinaryDSCSPS, GeomBinaryMegido72
 from ..GeomBinary.MaterialBinary import MaterialBinary
 from .IndexTypes import create_index_interface
 
@@ -20,7 +20,7 @@ class GeomInterface:
         self.extra_clut = None
 
     __KEY_MAPPING = {
-        "DSCS_CgGL": GeomBinaryDSCSCgGL,
+        "DSCS_OpenGL": GeomBinaryDSCSOpenGL,
         "DSCS_PS":   GeomBinaryDSCSPS,
         "Megido72":  GeomBinaryMegido72
     }

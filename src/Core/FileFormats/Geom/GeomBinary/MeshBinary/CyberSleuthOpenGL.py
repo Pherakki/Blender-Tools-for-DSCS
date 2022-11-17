@@ -1,7 +1,7 @@
 from .Base import MeshBinaryBase, PrimitiveTypes
 
 
-class MeshBinaryDSCSCgGL(MeshBinaryBase):
+class MeshBinaryDSCSOpenGL(MeshBinaryBase):
     __DATA_TYPES = {
         0x1400: 'b',
         0x1401: 'B',

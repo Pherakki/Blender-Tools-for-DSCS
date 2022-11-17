@@ -1,11 +1,11 @@
 from .Base import GeomBinaryBase
-from .MeshBinary.CyberSleuthCgGL import MeshBinaryDSCSCgGL
+from .MeshBinary.CyberSleuthOpenGL import MeshBinaryDSCSOpenGL
 from .MeshBinary.CyberSleuthPS import MeshBinaryDSCSPS
 from .MeshBinary.Megido72 import MeshBinaryMegido72
 
 
-class GeomBinaryDSCSCgGL(GeomBinaryBase):
-    __MESH_BINARY = MeshBinaryDSCSCgGL
+class GeomBinaryDSCSOpenGL(GeomBinaryBase):
+    __MESH_BINARY = MeshBinaryDSCSOpenGL
 
     @property
     def _CLASSTAG(self):
