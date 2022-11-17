@@ -141,7 +141,7 @@ class MeshBinaryBase(Serializable):
         States what properties each vertex contains.
         """
         rw.assert_local_file_pointer_now_at("Vertex Attributes", self.vertex_attributes_offset)
-        self.vertex_attributes = rw.rw_obj_array(self.vertex_attributes, VertexAttribute, self.vertex_attribute_count)
+        self.vertex_attributes = rw.rw_obj_array(self.vertex_attributes, VertexAttributeBinary, self.vertex_attribute_count)
 
     ########################################
     # Helpers for (de)serialising vertices #
@@ -237,7 +237,7 @@ class MeshBinaryBase(Serializable):
         raise NotImplementedError("retrieve_index_rw_function not implemented on subclass")
 
 
-class VertexAttribute(Serializable):
+class VertexAttributeBinary(Serializable):
     def __init__(self):
         super().__init__()
         self.index      = None
@@ -247,7 +247,7 @@ class VertexAttribute(Serializable):
         self.offset     = None
 
     def __repr__(self):
-        return f"[Geom::Mesh::VertexAttribute] {self.index} {self.normalised} {self.elem_count} {self.type} {self.offset}"
+        return f"[Geom::Mesh::VertexAttributeBinary] {self.index} {self.normalised} {self.elem_count} {self.type} {self.offset}"
 
     def read_write(self, rw):
         self.index      = rw.rw_uint8(self.index)

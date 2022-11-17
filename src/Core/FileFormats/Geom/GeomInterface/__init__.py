@@ -1,12 +1,13 @@
 import copy
 import math
-import os
+import struct
 
 from ....serialization.BinaryTargets import OffsetTracker
-from ..GeomBinary.MeshBinary.Base import VertexAttribute, AttributeTypes
 from ..GeomBinary import GeomBinaryDSCSOpenGL, GeomBinaryDSCSPS, GeomBinaryMegido72
+from ..GeomBinary.MeshBinary.Base import VertexAttributeBinary
 from ..GeomBinary.MaterialBinary import MaterialBinary
 from .IndexTypes import create_index_interface
+from .VertexAttributes import create_vertex_attribute_interface
 
 
 class GeomInterface:
@@ -143,10 +144,7 @@ class Mesh:
         self.material_id = None
         self.vertices    = None
         self.indices     = None
-
-        # To be reconstructed
         self.vertex_attributes = None
-        self.bytes_per_vertex = None
 
     @classmethod
     def from_binary(cls, binary):
@@ -160,8 +158,7 @@ class Mesh:
         dtype = binary.DATA_TYPES[binary.index_type]
         instance.indices     = create_index_interface(ptype, dtype, binary.IBO)
 
-        instance.vertex_attributes = binary.vertex_attributes  # Needs reconstruction
-        instance.bytes_per_vertex = binary.bytes_per_vertex  # Needs reconstruction
+        instance.vertex_attributes = [create_vertex_attribute_interface(va, binary.DATA_TYPES) for va in binary.vertex_attributes]
         return instance
 
     def to_binary(self, ctor):
@@ -172,8 +169,22 @@ class Mesh:
         binary.flags     = self.flags
         binary.material_id = self.material_id
         binary.IBO         = self.indices.buffer
-        binary.vertex_attributes = self.vertex_attributes
-        binary.bytes_per_vertex = self.bytes_per_vertex  # NEED TO CALCULATE
+        INVERSE_DATA_TYPES = {v: i for i, v in binary.DATA_TYPES.items()}
+        binary.vertex_attributes = []
+        binary.bytes_per_vertex = 0
+        for va in self.vertex_attributes:
+            vab = VertexAttributeBinary()
+            vab.index = va.index
+            vab.normalised = va.normalised
+            vab.elem_count = va.count
+            vab.type = INVERSE_DATA_TYPES[va.type]
+            vab.offset = binary.bytes_per_vertex
+            binary.vertex_attributes.append(vab)
+
+            # Update size of vertex
+            size = struct.calcsize(va.type)*va.count
+            size += (0x04 - (size % 0x04)) % 0x04
+            binary.bytes_per_vertex += size
         self.__to_binary_vertices(binary, self.vertices)
 
         # Counts
