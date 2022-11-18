@@ -192,17 +192,17 @@ class MeshBinaryBase(Serializable):
             fmt_sizes[i] = struct.calcsize(dtype)
             if vertex_attribute.normalised:
                 if   dtype[0] == 'b':
-                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 127) for val in struct.pack(dtype, x)]
+                    pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *[int(val * 127) for val in x])
                 elif dtype[0] == 'B':
-                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 255) for val in struct.pack(dtype, x)]
+                    pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *[int(val * 255) for val in x])
                 elif dtype[0] == 'h':
-                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 32767) for val in struct.pack(dtype, x)]
+                    pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *[int(val * 32767) for val in x])
                 elif dtype[0] == 'H':
-                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 65535) for val in struct.pack(dtype, x)]
+                    pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *[int(val * 65535) for val in x])
                 elif dtype[0] == 'i':
-                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 2147483647) for val in struct.pack(dtype, x)]
+                    pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *[int(val * 2147483647) for val in x])
                 elif dtype[0] == 'I':
-                    pack_funcs[i] = lambda x, dtype=dtype: [int(val * 4294967295) for val in struct.pack(dtype, x)]
+                    pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *[int(val * 4294967295) for val in x])
                 else: raise ValueError("Non-integer Vertex Attribute was set to 'normalised'")
 
             else:
