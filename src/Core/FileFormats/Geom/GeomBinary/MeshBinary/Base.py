@@ -1,4 +1,4 @@
-import enum
+import math
 import struct
 
 from .....serialization.Serializable import Serializable
@@ -204,7 +204,18 @@ class MeshBinaryBase(Serializable):
                 elif dtype[0] == 'I':
                     pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *[int(val * 4294967295) for val in x])
                 else: raise ValueError("Non-integer Vertex Attribute was set to 'normalised'")
-
+            elif dtype[0] == "e":
+                def make_pack_func():
+                    def float_packer(xs, dtype=dtype):
+                        out = [None]*len(dtype)
+                        for i, (d, x) in enumerate(zip(dtype, xs)):
+                            if math.isnan(x):
+                                out[i] = b'\xff\x7f'
+                            else:
+                                out[i] = struct.pack(d, x)
+                        return b''.join(out)
+                    return float_packer
+                pack_funcs[i] = make_pack_func()
             else:
                 pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *x)
 
