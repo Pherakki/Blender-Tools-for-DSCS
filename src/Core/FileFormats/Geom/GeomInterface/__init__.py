@@ -247,14 +247,16 @@ class Mesh:
 
         if binary.vertex_groups_per_vertex == 0:
             for v in vertices:
-                v.weights = [(0, 1.0)]
+                v.indices = [0]
+                v.weights = [1.0]
         elif binary.vertex_groups_per_vertex == 1:
             for v in vertices:
-                v.weights = [(int(v.position[3]), 1.0)]
+                v.indices = [int(v.position[3])]
+                v.weights = [1.0]
 
         if vertices[0].weights is not None:
             for v in vertices:
-                v.weights = [(binary.matrix_palette[idx // 3], wgt) for idx, wgt in v.weights]
+                v.indices = [(binary.matrix_palette[idx // 3]) for idx in v.indices]
 
         return vertices
 
@@ -269,12 +271,12 @@ class Mesh:
         # Deal with position / weights
         weights_used = set(v.weights is not None and len(v.weights) > 0 for v in vertices)
         if len(weights_used) > 1:
-            raise ValueError("Some vertices have at least one 'weight' value and some do not")
+            raise ValueError("Vertices have inconsistent numbers of weights")
         if list(weights_used)[0]:
             used_indices = set()
             max_weights = 0
             for v in vertices:
-                used_indices.update(set([w[0] for w in v.weights]))
+                used_indices.update(set(v.indices))
                 max_weights = max(max_weights, len(v.weights))
 
             if len(used_indices) == 1:
@@ -282,20 +284,24 @@ class Mesh:
                 binary.vertex_groups_per_vertex = 0
                 binary.matrix_palette = list(used_indices)
                 for v in vertices:
+                    v.indices = None
                     v.weights = None
             elif max_weights == 1:
                 binary.vertex_groups_per_vertex = 1
                 binary.matrix_palette = sorted(used_indices)
                 idx_lookup = {idx: i*3 for i, idx in enumerate(binary.matrix_palette)}
                 for v in vertices:
-                    v.weights = [(idx_lookup[w[0]], w[1]) for w in v.weights]
+                    v.indices = [idx_lookup[w] for w in v.indices]
+                    v.weights = list(v.weights)
             else:
                 binary.vertex_groups_per_vertex = max_weights
                 binary.matrix_palette = sorted(used_indices)
                 idx_lookup = {idx: i*3 for i, idx in enumerate(binary.matrix_palette)}
                 for v in vertices:
-                    v.weights = [(idx_lookup[w[0]], w[1]) for w in v.weights]
-                    v.weights += [(0, 0.) for _ in range(max_weights - len(v.weights))]
+                    v.indices = [idx_lookup[w] for w in v.indices]
+                    v.weights = list(v.weights)
+                    v.indices += [0 for _ in range(max_weights - len(v.weights))]
+                    v.weights += [0. for _ in range(max_weights - len(v.weights))]
 
         binary.VAO = binary.pack_vertices(vertices)
 

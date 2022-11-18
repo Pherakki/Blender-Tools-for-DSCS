@@ -169,7 +169,6 @@ class MeshBinaryBase(Serializable):
                 elif dtype[0] == 'I':
                     unpack_funcs[i] = lambda x, dtype=dtype: [(val / 4294967295) for val in struct.unpack(dtype, x)]
                 else: raise ValueError("Non-integer Vertex Attribute was set to 'normalised'")
-
             else:
                 unpack_funcs[i] = lambda x, dtype=dtype: struct.unpack(dtype, x)
 
@@ -307,14 +306,11 @@ class Vertex:
     def color(self, value): self.buffer[AttributeTypes.COLOR] = value
 
     @property
-    def weights(self):
-        return list(zip(self.buffer[AttributeTypes.INDEX], self.buffer[AttributeTypes.WEIGHT]))
+    def indices(self): return self.buffer[AttributeTypes.INDEX]
+    @indices.setter
+    def indices(self, value): self.buffer[AttributeTypes.INDEX] = value
+
+    @property
+    def weights(self): return self.buffer[AttributeTypes.WEIGHT]
     @weights.setter
-    def weights(self, value):
-        # Adding a check here for weight count is probably too expensive
-        if value is None:
-            self.buffer[AttributeTypes.INDEX] = None
-            self.buffer[AttributeTypes.WEIGHT] = None
-        else:
-            self.buffer[AttributeTypes.INDEX] = [v[0] for v in value]
-            self.buffer[AttributeTypes.WEIGHT] = [v[1] for v in value]
+    def weights(self, value): self.buffer[AttributeTypes.WEIGHT] = value
