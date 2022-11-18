@@ -45,12 +45,12 @@ class MeshBinaryMegido72(MeshBinaryBase):
         for va_idx in [AttributeTypes.UV1, AttributeTypes.UV2, AttributeTypes.UV3]:
             if vertices[0].buffer[va_idx] is not None:
                 for v in vertices:
-                    v.buffer[va_idx] /= 1024
+                    v.buffer[va_idx] = [w/1024 for w in v.buffer[va_idx]]
         return vertices
 
     def pack_vertices(self, vertices):
         for va_idx in [AttributeTypes.UV1, AttributeTypes.UV2, AttributeTypes.UV3]:
             if vertices[0].buffer[va_idx] is not None:
                 for v in vertices:
-                    v.buffer[va_idx] = int(v.buffer[va_idx]*1024)
+                    v.buffer[va_idx] = [int(w*1024) for w in v.buffer[va_idx]]
         return super().pack_vertices(vertices)
