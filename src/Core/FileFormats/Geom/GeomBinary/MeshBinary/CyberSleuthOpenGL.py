@@ -1,4 +1,5 @@
 from .Base import MeshBinaryBase, PrimitiveTypes
+from .ShaderTransforms import CopySingleIndicesIntoPosition, DeleteSingleIndices
 
 
 class MeshBinaryDSCSOpenGL(MeshBinaryBase):
@@ -39,3 +40,11 @@ class MeshBinaryDSCSOpenGL(MeshBinaryBase):
     def retrieve_index_rw_function(self, rw):
         dtype = self.__DATA_TYPES[self.index_type]
         return lambda value, shape, endianness=None: rw.rw_multiple(dtype, value, shape, endianness)
+
+    def get_default_shader_transforms(self):
+        if self.vertex_groups_per_vertex == 0:
+            return [DeleteSingleIndices]
+        elif self.vertex_groups_per_vertex == 1:
+            return [CopySingleIndicesIntoPosition, DeleteSingleIndices]
+        else:
+            return []

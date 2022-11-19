@@ -1,4 +1,5 @@
 from .Base import MeshBinaryBase, PrimitiveTypes
+from .ShaderTransforms import CopySingleIndicesIntoPosition, DeleteSingleIndices
 
 
 class MeshBinaryDSCSPS(MeshBinaryBase):
@@ -29,3 +30,11 @@ class MeshBinaryDSCSPS(MeshBinaryBase):
         dtype = 'H'
         rw.assert_equal(self.index_type, 0)
         return lambda value, shape, endianness=None: rw.rw_multiple(dtype, value, shape, endianness)
+
+    def get_default_shader_transforms(self):
+        if self.vertex_groups_per_vertex == 0:
+            return [DeleteSingleIndices]
+        elif self.vertex_groups_per_vertex == 1:
+            return [CopySingleIndicesIntoPosition, DeleteSingleIndices]
+        else:
+            return []

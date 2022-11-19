@@ -146,11 +146,18 @@ class MeshBinaryBase(Serializable):
     ########################################
     # Helpers for (de)serialising vertices #
     ########################################
-    def unpack_vertices(self):
+    def unpack_vertices(self, make_shader_transforms=None):
+        if make_shader_transforms is None:
+            shader_transform_functors = self.get_default_shader_transforms()
+        else:
+            shader_transform_functors = make_shader_transforms()
+
+        # Create unpack functions
         # Inefficient but can't do much more with Python without making the code very unclean
         vertices = [Vertex() for _ in range(self.vertex_count)]
         unpack_funcs = [None]*len(self.vertex_attributes)
         struct_fmts = [None]*len(self.vertex_attributes)
+        va_idxs = set(va.index for va in self.vertex_attributes)
         for i, vertex_attribute in enumerate(self.vertex_attributes):
             dtype = self.DATA_TYPES[vertex_attribute.type]*vertex_attribute.elem_count
             dsize = struct.calcsize(dtype)
@@ -172,20 +179,33 @@ class MeshBinaryBase(Serializable):
             else:
                 unpack_funcs[i] = lambda x, dtype=dtype: struct.unpack(dtype, x)
 
+        # Unpack vertices
         for vertex_idx, vertex in enumerate(vertices):
             for unpack_func, (dtype, size), va in zip(unpack_funcs, struct_fmts, self.vertex_attributes):
                 byte_idx = vertex_idx * self.bytes_per_vertex + va.offset
                 bytes = self.VAO[byte_idx:byte_idx + size]
                 vertex.buffer[va.index] = unpack_func(bytes)
 
+            for transform_functor in shader_transform_functors:
+                for va_idx in transform_functor.APPLIES_TO:
+                    if va_idx in va_idxs:
+                        transform_functor.forwards(vertex, va_idx)
+
         return vertices
 
-    def pack_vertices(self, vertices):
+    def pack_vertices(self, vertices, make_shader_transforms=None):
+        if make_shader_transforms is None:
+            shader_transform_functors = self.get_default_shader_transforms()
+        else:
+            shader_transform_functors = make_shader_transforms()
+
         vertex_binaries = [None]*len(vertices)
         pack_funcs  = [None]*len(self.vertex_attributes)
         fmt_sizes = [None] * len(self.vertex_attributes)
         chunk_sizes = [None] * len(self.vertex_attributes)
+        va_idxs = set(va.index for va in self.vertex_attributes)
 
+        # Generate pack funcs
         sorted_vas = sorted(self.vertex_attributes, key=lambda x: x.offset)
         for i, vertex_attribute in enumerate(sorted_vas):
             dtype = self.DATA_TYPES[vertex_attribute.type]*vertex_attribute.elem_count
@@ -210,7 +230,7 @@ class MeshBinaryBase(Serializable):
                         out = [None]*len(dtype)
                         for i, (d, x) in enumerate(zip(dtype, xs)):
                             if math.isnan(x):
-                                out[i] = b'\xff\x7f'
+                                out[i] = b'\xff\x7f'  # Just because it's what nan values seem to be serialised as
                             else:
                                 out[i] = struct.pack(d, x)
                         return b''.join(out)
@@ -219,11 +239,18 @@ class MeshBinaryBase(Serializable):
             else:
                 pack_funcs[i] = lambda x, dtype=dtype: struct.pack(dtype, *x)
 
+        # Get space allocation for each vertex attribute
         for i, (va1, va2) in enumerate(zip(sorted_vas, sorted_vas[1:])):
             chunk_sizes[i] = va2.offset - va1.offset
         chunk_sizes[-1] = self.bytes_per_vertex - sorted_vas[-1].offset
+
+        # Construct vertices
         vertex_binary = [None]*len(self.vertex_attributes)
         for vertex_idx, vertex in enumerate(vertices):
+            for transform_functor in shader_transform_functors:
+                for va_idx in transform_functor.APPLIES_TO:
+                    if va_idx in va_idxs:
+                        transform_functor.backwards(vertex, va_idx)
             for va_idx, (pack_func, fmt_size, alloc_size, va) in enumerate(zip(pack_funcs, fmt_sizes, chunk_sizes, sorted_vas)):
                 vertex_binary[va_idx] = pack_func(vertex.buffer[va.index])
                 vertex_binary[va_idx] += b'\x00'*(alloc_size - fmt_size)
@@ -245,6 +272,16 @@ class MeshBinaryBase(Serializable):
 
     def retrieve_index_rw_function(self, rw):
         raise NotImplementedError("retrieve_index_rw_function not implemented on subclass")
+
+    def get_default_shader_transforms(self):
+        # Deprecate in favour of the below two methods: this is not a commutative operation
+        raise NotImplementedError("get_default_shader_transforms not implemented on subclass")
+
+    def get_default_unpack_shader_transforms(self):
+        raise NotImplementedError("get_default_unpack_shader_transforms not implemented on subclass")
+
+    def get_default_pack_shader_transforms(self):
+        raise NotImplementedError("get_default_pack_shader_transforms not implemented on subclass")
 
 
 class VertexAttributeBinary(Serializable):
