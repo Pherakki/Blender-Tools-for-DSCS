@@ -5,7 +5,7 @@ import struct
 from ....serialization.BinaryTargets import OffsetTracker
 from ..GeomBinary import GeomBinaryDSCSOpenGL, GeomBinaryDSCSPS, GeomBinaryMegido72
 from ..GeomBinary.MeshBinary.Base import VertexAttributeBinary
-from ..GeomBinary.MaterialBinary import MaterialBinary
+from ..GeomBinary.MaterialBinary import MaterialBinary, ShaderUniformBinary, OpenGLSettingBinary
 from .IndexTypes import create_index_interface
 from .VertexAttributes import create_vertex_attribute_interface
 
@@ -266,7 +266,6 @@ class Mesh:
         Sets the vertex_groups_per_vertex and matrix_palette variables, and prepares vertices for packing.
         """
         vertices = copy.deepcopy(vertices)
-        data_types = {v: k for k, v in binary.DATA_TYPES.items()}
 
         # Deal with position / weights
         weights_used = set(v.weights is not None and len(v.weights) > 0 for v in vertices)
@@ -320,8 +319,8 @@ class Material:
         instance.name_hash = binary.name_hash
         instance.flags = binary.flags
         instance.shader_file = binary.shader_hex
-        instance.shader_uniforms = binary.shader_uniforms
-        instance.opengl_settings = binary.opengl_settings
+        instance.shader_uniforms = [ShaderUniform.from_binary(b) for b in binary.shader_uniforms]
+        instance.opengl_settings = [OpenGLSetting.from_binary(b) for b in binary.opengl_settings]
         return instance
 
     def to_binary(self):
@@ -332,6 +331,80 @@ class Material:
         binary.opengl_setting_count = len(self.opengl_settings)
         binary.flags = self.flags
 
-        binary.shader_uniforms = self.shader_uniforms
-        binary.opengl_settings = self.opengl_settings
+        binary.shader_uniforms = [b.to_binary() for b in self.shader_uniforms]
+        binary.opengl_settings = [b.to_binary() for b in self.opengl_settings]
+        return binary
+
+
+class ShaderUniform:
+    def __init__(self):
+        self.index = None
+        self.data = None
+
+    def __repr__(self):
+        return f"[Geom::ShaderUniform {self.index}] {self.data}"
+
+    @classmethod
+    def from_binary(cls, binary):
+        if binary.float_count == 0:
+            instance = TextureUniform()
+        else:
+            instance = cls()
+        instance.index = binary.index
+        instance.data = binary.unpack()
+        return instance
+
+    def to_binary(self):
+        binary = ShaderUniformBinary()
+        binary.index = self.index
+        binary.float_count = len(self.data)
+        binary.payload = binary.pack(self.data)
+        return binary
+
+
+class TextureUniform:
+    def __init__(self):
+        self.index = None
+        self.data = None
+
+    def __repr__(self):
+        return f"[Geom::TextureUniform {self.index}] {self.data}"
+
+    @classmethod
+    def from_binary(cls, binary):
+        if binary.float_count == 0:
+            instance = TextureUniform()
+        else:
+            instance = cls()
+        instance.index = binary.index
+        instance.data = binary.unpack()
+        return instance
+
+    def to_binary(self):
+        binary = ShaderUniformBinary()
+        binary.index = self.index
+        binary.float_count = 0
+        binary.payload = binary.pack(self.data)
+        return binary
+
+
+class OpenGLSetting:
+    def __init__(self):
+        self.index = None
+        self.data = None
+
+    def __repr__(self):
+        return f"[Geom::OpenGLSetting {self.index}] {self.data}"
+
+    @classmethod
+    def from_binary(cls, binary):
+        instance = cls()
+        instance.index = binary.index
+        instance.data = binary.unpack()
+        return instance
+
+    def to_binary(self):
+        binary = OpenGLSettingBinary()
+        binary.index = self.index
+        binary.payload = binary.pack(self.data)
         return binary

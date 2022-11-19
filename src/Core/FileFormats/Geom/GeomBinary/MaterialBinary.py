@@ -53,11 +53,11 @@ class MaterialBinary(Serializable):
         # 0x40 - ???
         # 0x80 - ???
 
-        self.shader_uniforms = rw.rw_obj_array(self.shader_uniforms, ShaderUniform, self.shader_uniform_count)
-        self.opengl_settings = rw.rw_obj_array(self.opengl_settings, OpenGLSetting, self.opengl_setting_count)
+        self.shader_uniforms = rw.rw_obj_array(self.shader_uniforms, ShaderUniformBinary, self.shader_uniform_count)
+        self.opengl_settings = rw.rw_obj_array(self.opengl_settings, OpenGLSettingBinary, self.opengl_setting_count)
 
 
-class ShaderUniform(Serializable):
+class ShaderUniformBinary(Serializable):
     def __init__(self):
         super().__init__()
         self.payload = None
@@ -83,16 +83,16 @@ class ShaderUniform(Serializable):
         if self.float_count == 0:
             return struct.pack('IIII', *value)
         else:
-            return struct.pack('ffff', [*value, *[0]*(4-len(value))])
+            return struct.pack('ffff', *[*value, *[0]*(4-len(value))])
 
 
-class OpenGLSetting(Serializable):
+class OpenGLSettingBinary(Serializable):
     def __init__(self):
         super().__init__()
         self.payload = None
         self.index = None
         self.unknown_0x11 = 0x64
-        self.unknown_0x12 = 0x00FF
+        self.unknown_0x12 = 0xFF00
         self.padding_0x14 = 0x00000000
 
     def read_write(self, rw):
