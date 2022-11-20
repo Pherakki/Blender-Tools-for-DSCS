@@ -309,6 +309,8 @@ class Reader(BinaryTargetBase):
 
     def rw_s3Quat(self, value, endianness=None):
         input_data = self.rw_uint8s(None, 6)
+        if (input_data[0] & 0x80) >> 7 == 1:
+            print("WARNING: Quaternion with a leading bit of 1 found.")
         c1 = (input_data[0] & 0x7F) << 8 | input_data[1]
         c2 = (input_data[2] & 0xFF) << 7 | (input_data[3] & 0xFE) >> 1
         c3 = (input_data[3] & 0x01) << 14 | (input_data[4] & 0xFF) << 6 | (input_data[5] & 0xFC) >> 2
@@ -321,6 +323,11 @@ class Reader(BinaryTargetBase):
 
         square_vector_length = sum([c ** 2 for c in components])
         largest_component = (1 - square_vector_length)**.5
+        if square_vector_length <= 1: # Should be smaller than 0.5...
+            largest_component = (1 - square_vector_length)**.5
+        else:
+            print("WARNING: Quaternion with an invalid largest component found.")
+            largest_component = 0
 
         components.insert(largest_index, largest_component)
 
