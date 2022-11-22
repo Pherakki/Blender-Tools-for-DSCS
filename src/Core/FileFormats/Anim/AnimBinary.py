@@ -63,7 +63,7 @@ class AnimBinary(Serializable):
         self.animated_scales_count         = None
         self.animated_float_channel_count  = None
         self.padding_0x26                  = 0  # Always 0
-        self.animation_masks_size               = None  # Specifies size of the bone mask
+        self.animation_masks_size          = None  # Specifies size of the bone mask
         self.bone_mask_offset              = None
 
         self.keyframe_chunks_offsets_offset = None
