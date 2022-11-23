@@ -287,17 +287,17 @@ class AnimInterface:
         ot = OffsetTracker()
         ot.rw_obj_method(binary, binary.rw_header)
         ot.rw_obj_method(binary, binary.rw_bone_idx_lists)
-        binary.static_rotations_offset = ot.tell() if len(binary.static_rotations) else 0
+        binary.static_rotations_offset = ot.tell()
         ot.rw_obj_method(binary, binary.rw_static_rotations)
-        binary.static_locations_offset = ot.tell() if len(binary.static_locations) else 0
+        binary.static_locations_offset = ot.tell()
         ot.rw_obj_method(binary, binary.rw_static_locations)
-        binary.static_scales_offset = ot.tell() if len(binary.static_scales) else 0
+        binary.static_scales_offset = ot.tell()
         ot.rw_obj_method(binary, binary.rw_static_scales)
-        binary.static_float_channels_offset = ot.tell() if len(binary.static_float_channels) else 0
+        binary.static_float_channels_offset = ot.tell()
         ot.rw_obj_method(binary, binary.rw_static_float_channels)
-        binary.keyframe_chunks_offsets_offset = ot.tell() if len(binary.keyframe_chunks) else 0
+        binary.keyframe_chunks_offsets_offset = ot.tell()
         ot.rw_obj_method(binary, binary.rw_keyframe_chunk_offsets)
-        binary.keyframe_chunks_counts_offset = ot.tell() if len(binary.keyframe_chunks) else 0
+        binary.keyframe_chunks_counts_offset = ot.tell()
         ot.rw_obj_method(binary, binary.rw_keyframe_chunk_counts)
         binary.animation_masks_offset = ot.tell()
         binary.bone_mask_offset = ot.tell() if len(binary.bone_masks) or len(binary.float_channel_masks) else 0
