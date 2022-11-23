@@ -315,6 +315,12 @@ def flatten_list(lst):
     return [subitem for item in lst for subitem in item]
 
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
 def split_keyframes_by_role(keyframe_set):
     statics = {}
     animated = {}
@@ -403,8 +409,8 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
                                                          pen_r_bitvecs, pen_l_bitvecs, pen_s_bitvecs, pen_u_bitvecs,
                                                          chunksizes[-1]))
     chunks.append(ChunkHolder(final_rotations, final_locations, final_scales, final_float_chs,
-                              ['1' for _ in final_rotations], ['1' for _ in final_locations],
-                              ['1' for _ in final_scales], ['1' for _ in final_float_chs],
+                              [1 for _ in final_rotations], [1 for _ in final_locations],
+                              [1 for _ in final_scales], [1 for _ in final_float_chs],
                               1))
 
     return chunks
@@ -421,14 +427,6 @@ def populate_frames(frame_count, animation_data):
         for frame_id, frame_value in keyframes.items():
             frame_data[bone_id][frame_id] = frame_value
     return frame_data
-
-#
-# def chunk_frames(frames, chunksize):
-#     chunked_frames = {}
-#     for bone_id, value in frames.items():
-#         chunked_frames[bone_id] = chunks(value, chunksize)
-#     return chunked_frames
-
 
 def adaptive_chunk_frames(rotation_frames, location_frames, scale_frames, float_ch_frames, frame_count):
     cuts = [0]
@@ -539,7 +537,7 @@ def strip_and_validate(keyframes, chunksizes, method):
         skipped_chunks = []
         # This should *never* be the case for the first chunk
         # Every chunk must have data in its first frame, so check if what we have does...
-        if bitvector[0] == '0':
+        if bitvector[0] == 0:
             if chunk_idx == 0:
                 assert 0, "Invalid input data to animation: first frame has no data."
             # If it doesn't, we'll need to interpolate it using the closest data in the past (from the previous chunk)
@@ -552,7 +550,7 @@ def strip_and_validate(keyframes, chunksizes, method):
             for i, (iter_initial_pair, bv) in enumerate(zip(initial_values[chunk_idx:], bitvectors[chunk_idx:])):
                 # If the chunk doesn't have an initial value, we need to interpolate that value
                 # So keep track of the chunk if we need to interpolate its first value
-                if bv[0] == '0':
+                if bv[0] == 0:
                     skipped_chunks.append(chunk_idx + i)
                 # If the chunk contains *some* data, stop here because we've found the next non-zero value
                 # We'll carry this value forward and use it as the end point of the interpolation.
@@ -608,9 +606,9 @@ def boil_down_chunk(chunk):
     indices = []
     for j, value in enumerate(chunk):
         if value is None:
-            bitvector += '0'
+            bitvector += 0
         else:
-            bitvector += '1'
+            bitvector += 1
             reduced_chunk.append(value)
             indices.append(j)
     return reduced_chunk, bitvector, indices
@@ -642,13 +640,29 @@ class ChunkHolder:
         bytes_read += (4 - (bytes_read % 4)) % 4
         bytes_read += self.initial_uvc_bytes
 
-        total_rotation_bitvector = ''.join([elem[1:] for elem in rotation_bitvector])
-        total_location_bitvector = ''.join([elem[1:] for elem in location_bitvector])
-        total_scale_bitvector = ''.join([elem[1:] for elem in scale_bitvector])
-        total_uvc_bitvector = ''.join([elem[1:] for elem in uvc_bitvector])
+        total_rotation_bitvector = rotation_bitvector[1:]
+        total_location_bitvector = location_bitvector[1:]
+        total_scale_bitvector = scale_bitvector[1:]
+        total_uvc_bitvector = uvc_bitvector[1:]
 
         self.total_bitvector = total_rotation_bitvector + total_location_bitvector + total_scale_bitvector + total_uvc_bitvector
-        self.bitvector_size = roundup(len(self.total_bitvector), 8) // 8
+        remainder = (8 - (len(self.total_bitvector) % 8)) % 8
+        self.total_bitvector += [0]*remainder
+
+        packed_bitvector = [None]*(len(self.total_bitvector) // 8)
+        for i, (a, b, c, d, e, f, g, h) in enumerate(chunks(self.total_bitvector, 8)):
+            elem = a
+            elem |= (b << 1)
+            elem |= (c << 2)
+            elem |= (d << 3)
+            elem |= (e << 4)
+            elem |= (f << 5)
+            elem |= (g << 6)
+            elem |= (h << 7)
+            packed_bitvector[i] = elem.to_bytes(1, byteorder='little')
+        self.total_bitvector = b''.join(packed_bitvector)
+
+        self.bitvector_size = len(self.total_bitvector)
         bytes_read += self.bitvector_size
 
         self.later_rotations = [sublist[1:] for sublist in rotations]
@@ -694,11 +708,11 @@ class ChunkHolder:
         self.contained_frames = contained_frames
 
         # Error checking
-        assert len(flatten_list(self.later_rotations)) == sum([elem == '1' for elem in total_rotation_bitvector]), \
+        assert len(flatten_list(self.later_rotations)) == sum([elem == 1 for elem in total_rotation_bitvector]), \
             "Number of rotation frames in keyframe chunk did not equal the number of rotations."
-        assert len(flatten_list(self.later_locations)) == sum([elem == '1' for elem in total_location_bitvector]), \
+        assert len(flatten_list(self.later_locations)) == sum([elem == 1 for elem in total_location_bitvector]), \
             "Number of location frames in keyframe chunk did not equal the number of locations."
-        assert len(flatten_list(self.later_scales)) == sum([elem == '1' for elem in total_scale_bitvector]), \
+        assert len(flatten_list(self.later_scales)) == sum([elem == 1 for elem in total_scale_bitvector]), \
             "Number of scale frames in keyframe chunk did not equal the number of scales."
         # Do UVCs? Needs to be handled differently because 1 float per channel instead of a list of floats
 
@@ -721,7 +735,7 @@ def cut_final_frame(data, bitvector):
     return_bitvector = {}
     for i, ((bidx, datum), bv) in enumerate(zip(data.items(), bitvector)):
         # If the data contains the final frame, remove it
-        if bv[-1] == '1' and len(datum) > 1:
+        if bv[-1] == 1 and len(datum) > 1:
             return_data[bidx] = list(datum)[:-1]
         else:
             return_data[bidx] = list(datum)
