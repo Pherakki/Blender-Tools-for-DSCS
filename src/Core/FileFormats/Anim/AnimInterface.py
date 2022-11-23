@@ -207,7 +207,7 @@ class AnimInterface:
         binary.animated_scales_count        = len(anim_scls)
         binary.animated_float_channel_count = len(anim_fchs)
         binary.padding_0x26 = 0
-        binary.animation_masks_size = None  # Calculate later
+        binary.animation_masks_size = 0  # Calculate later
 
         # Fill in section 1: Bone indices used by the relevant data sections
         binary.static_rotation_idxs        = list(static_rots.keys())
