@@ -302,7 +302,7 @@ class AnimInterface:
         binary.animation_masks_offset = ot.tell()
         binary.bone_mask_offset = ot.tell() if len(binary.bone_masks) or len(binary.float_channel_masks) else 0
         ot.rw_obj_method(binary, binary.rw_animation_masks)
-        binary.animation_masks_size = ot.tell() - binary.bone_mask_offset
+        binary.animation_masks_size = ot.tell() - binary.animation_masks_offset
         keyframes_size = (binary.animated_rotations_count + binary.animated_locations_count + binary.animated_scales_count + binary.animated_float_channel_count) / 8
         for kf in binary.keyframe_chunks:
             kf.offset = ot.tell()
