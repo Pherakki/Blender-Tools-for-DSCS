@@ -203,7 +203,7 @@ class AnimBinary(Serializable):
 
     def rw_animation_masks(self, rw):
         rw.assert_local_file_pointer_now_at("Animation Masks", self.animation_masks_offset)
-        if self.animation_masks_size:
+        if self.bone_mask_offset:
             self.bone_masks = rw.rw_uint8s(self.bone_masks, self.bone_count)
             rw.align(rw.local_tell(), 4)
             self.float_channel_masks = rw.rw_uint8s(self.float_channel_masks, self.skel_binary_ref.float_channel_count)
