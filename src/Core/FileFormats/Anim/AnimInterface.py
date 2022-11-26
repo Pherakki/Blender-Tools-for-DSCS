@@ -173,7 +173,7 @@ class AnimInterface:
         max_rotation_bones = max(self.rotations.keys()) if len(self.rotations) else 0
         max_location_bones = max(self.locations.keys()) if len(self.locations) else 0
         max_scale_bones    = max(self.scales.keys())    if len(self.scales) else 0
-        bone_count = max((max_rotation_bones, max_location_bones, max_scale_bones))
+        bone_count = max((max_rotation_bones, max_location_bones, max_scale_bones)) + 1  # +1 to count bone 0
 
         # Find out how many float channels there are
         float_channel_count = max(self.float_channels) if len(self.float_channels) else 0
