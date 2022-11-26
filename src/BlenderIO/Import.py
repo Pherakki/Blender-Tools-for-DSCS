@@ -23,7 +23,7 @@ class ImportMediaVision(bpy.types.Operator):
     def import_file(self, context, filepath):
         bpy.ops.object.select_all(action='DESELECT')
 
-        model_name = os.path.split(filepath)[-1]
+        directory, model_name = os.path.split(os.path.splitext(filepath)[0])
         armature_name = model_name + "_armature"
 
         parent_obj = bpy.data.objects.new(model_name, None)
