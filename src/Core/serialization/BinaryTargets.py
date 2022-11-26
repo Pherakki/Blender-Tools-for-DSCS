@@ -322,7 +322,6 @@ class Reader(BinaryTargetBase):
         components = [c / (2**.5) for c in components]
 
         square_vector_length = sum([c ** 2 for c in components])
-        largest_component = (1 - square_vector_length)**.5
         if square_vector_length <= 1: # Should be smaller than 0.5...
             largest_component = (1 - square_vector_length)**.5
         else:
@@ -464,12 +463,12 @@ class Writer(BinaryTargetBase):
 
         # Now convert to big-endian uint15s
         packed_rep = [0, 0, 0, 0, 0, 0]
-        packed_rep[0] = (components[0] >> 8) & 0x7F
-        packed_rep[1] = components[0] & 0xFF
-        packed_rep[2] = (components[1] >> 7) & 0xFF
-        packed_rep[3] = ((components[1] & 0xFF) << 1) | ((components[2] & 0xC0) >> 7)
-        packed_rep[4] = (components[2] >> 6) & 0xFF
-        packed_rep[5] = ((components[2] & 0x3F) << 2) | largest_index
+        packed_rep[0] = ((components[0] & 0x7F00) >> 8)
+        packed_rep[1] = ((components[0] & 0x00FF) >> 0)
+        packed_rep[2] = ((components[1] & 0x7F80) >> 7)
+        packed_rep[3] = ((components[1] & 0x007F) << 1) | ((components[2] & 0xC000) >> 14)
+        packed_rep[4] = ((components[2] & 0x3FC0) >> 6)
+        packed_rep[5] = ((components[2] & 0x003F) << 2) | largest_index
 
         self.rw_uint8s(packed_rep, 6)
 
