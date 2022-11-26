@@ -3,6 +3,9 @@ import math
 from .Vector import dot
 
 
+def lerp_one(x, y, t):
+    return (1-t)*x + t*y
+
 def lerp(x, y, t):
     return [(1-t)*xi + t*yi for xi, yi in zip(x, y)]
 

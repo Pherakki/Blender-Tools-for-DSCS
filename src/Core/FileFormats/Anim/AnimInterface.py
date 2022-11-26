@@ -5,7 +5,7 @@ from .AnimBinary import AnimBinary, KeyframeChunk
 from ...serialization.BinaryTargets import OffsetTracker
 from ....Utilities.Bits import chunk_bitvector
 from ....Utilities.Math import roundup
-from ....Utilities.Interpolation import lerp, slerp
+from ....Utilities.Interpolation import lerp_one, lerp, slerp
 from ....Utilities.Vector import dot
 
 
@@ -363,7 +363,7 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
     rotation_keyframe_chunks_data, rotation_bitvector_data = strip_and_validate_all_bones(rotations, chunksizes, slerp)
     location_keyframe_chunks_data, location_bitvector_data = strip_and_validate_all_bones(locations, chunksizes, lerp)
     scale_keyframe_chunks_data, scale_bitvector_data       = strip_and_validate_all_bones(scales, chunksizes, lerp)
-    float_ch_keyframe_chunks_data, float_ch_bitvector_data = strip_and_validate_all_bones(float_chs, chunksizes, lerp)
+    float_ch_keyframe_chunks_data, float_ch_bitvector_data = strip_and_validate_all_bones(float_chs, chunksizes, lerp_one)
 
     # Now we can bundle all the chunks into a sequential list, ready for turning into KeyframeChunks instances
     chunk_data = [[{}, {}, {}, {}] for _ in range(len(chunksizes))]
