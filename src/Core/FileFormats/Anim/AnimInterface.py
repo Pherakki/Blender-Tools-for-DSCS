@@ -654,14 +654,14 @@ class ChunkHolder:
 
         packed_bitvector = [None]*(len(self.total_bitvector) // 8)
         for i, (a, b, c, d, e, f, g, h) in enumerate(chunks(self.total_bitvector, 8)):
-            elem = a
-            elem |= (b << 1)
-            elem |= (c << 2)
-            elem |= (d << 3)
-            elem |= (e << 4)
-            elem |= (f << 5)
-            elem |= (g << 6)
-            elem |= (h << 7)
+            elem  = (a << 7)
+            elem |= (b << 6)
+            elem |= (c << 5)
+            elem |= (d << 4)
+            elem |= (e << 3)
+            elem |= (f << 2)
+            elem |= (g << 1)
+            elem |= (h << 0)
             packed_bitvector[i] = elem.to_bytes(1, byteorder='little')
         self.total_bitvector = b''.join(packed_bitvector)
 
