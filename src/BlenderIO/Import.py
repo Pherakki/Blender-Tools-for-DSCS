@@ -9,6 +9,7 @@ from ..Core.FileFormats.Name.NameInterface import NameInterface
 from ..Core.FileFormats.Skel.SkelInterface import SkelInterface
 from ..Core.FileFormats.Geom.GeomInterface import GeomInterface
 from ..Core.FileFormats.Anim.AnimInterface import AnimInterface
+from .ArmatureImport import import_skeleton
 
 
 class ImportMediaVision(bpy.types.Operator):
@@ -29,8 +30,13 @@ class ImportMediaVision(bpy.types.Operator):
         parent_obj = bpy.data.objects.new(model_name, None)
         bpy.context.collection.objects.link(parent_obj)
 
+        # Load files
+        ni = NameInterface.from_file(os.path.join(directory, model_name + ".name"))
+        si = SkelInterface.from_file(os.path.join(directory, model_name + ".skel"))
+        gi = GeomInterface.from_file(os.path.join(directory, model_name + ".geom"), self.model_type)  # Pass as parameter
+
         # Import data
-        #import_skeleton(parent_obj, armature_name)
+        armature = import_skeleton(parent_obj, armature_name, ni, si, gi)
         # import_materials(model_data, self.img_to_dds, self.use_custom_nodes)
         # import_meshes(parent_obj, filename, model_data, armature_name, self.merge_vertices)
         # import_cameras(parent_obj, model_data)
@@ -48,17 +54,18 @@ class ImportMediaVision(bpy.types.Operator):
         # Rotate to the Blender coordinate convention
         parent_obj.rotation_euler = (math.pi / 2, 0, 0)
 
+
     #@handle_errors
     def execute(self, context):
         folder = (os.path.dirname(self.filepath))
 
-        # iterate through the selected files
-        for file in self.files:
-            path_to_file = (os.path.join(folder, file.name))
-            filepath, file_extension = os.path.splitext(path_to_file)
-            assert any([file_extension == ext for ext in
-                        ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
-            self.import_file(context, filepath)
+        # # iterate through the selected files
+        # for file in self.files:
+        #     path_to_file = (os.path.join(folder, file.name))
+        #     filepath, file_extension = os.path.splitext(path_to_file)
+        #     assert any([file_extension == ext for ext in
+        #                 ('.name', '.skel', '.geom')]), f"Extension is {file_extension}: Not a name, skel or geom file!"
+        self.import_file(context, self.filepath)
 
         return {'FINISHED'}
 
@@ -78,6 +85,8 @@ class ImportMediaVision(bpy.types.Operator):
 
 
 class ImportDSCS(ImportMediaVision, ImportHelper):
+    model_type = "DSCS_OpenGL"
+
     bl_idname = 'import_file.import_dscs'
     bl_label = 'Digimon Story: Cyber Sleuth (.name, .skel, .geom)'
     bl_options = {'REGISTER', 'UNDO'}
