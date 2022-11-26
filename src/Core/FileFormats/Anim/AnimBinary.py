@@ -127,7 +127,7 @@ class AnimBinary(Serializable):
         self.animated_float_channel_count = rw.rw_uint16(self.animated_float_channel_count)
         self.padding_0x26                 = rw.rw_uint16(self.padding_0x26)
 
-        self.animation_masks_size              = rw.rw_uint32(self.animation_masks_size)
+        self.animation_masks_size         = rw.rw_uint32(self.animation_masks_size)
         self.bone_mask_offset             = rw.rw_uint32(self.bone_mask_offset)
 
         self.keyframe_chunks_offsets_offset = rw.rw_offset_uint32(self.keyframe_chunks_offsets_offset, self.KEYFRAME_CHUNKS_OFFSETS_OFFSET_OFFSET)
