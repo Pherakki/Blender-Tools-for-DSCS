@@ -74,8 +74,6 @@ class AnimInterface:
             # file.
             nframes = keyframe_chunk.keyframe_count
             if nframes != 0:
-                # assert len(keyframe_chunk.keyframes_in_use)*8 % nframes == 0, \
-                #     f"{len(keyframe_chunk.keyframes_in_use)*8} keyframes cannot be split into chunks of {nframes}."
                 keyframe_indices = chunk_bitvector(keyframe_chunk.keyframes_in_use, nframes)
             else:
                 keyframe_indices = []
