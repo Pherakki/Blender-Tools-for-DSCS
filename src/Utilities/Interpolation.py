@@ -11,9 +11,11 @@ def lerp(x, y, t):
 
 
 def slerp(x, y, t):
-    omega = math.acos(dot(x, y))
-    if omega == 0 or math.isnan(omega):
+    val = dot(x, y)
+    if val < -1 or val >= 0.999999999:
         return x
+    
+    omega = math.acos(val)
     factor_1 = math.sin((1-t)*omega)
     factor_2 = math.sin(t*omega)
     invsomega = 1/math.sin(omega)
