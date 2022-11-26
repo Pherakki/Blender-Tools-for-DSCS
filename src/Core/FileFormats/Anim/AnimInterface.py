@@ -149,6 +149,9 @@ class AnimInterface:
         binary.write(path)
 
     def to_binary(self, sk, isBase):
+        # Need to get some error checking in here for missing bone indices
+        # Is it smarter to just store these as lists instead of dicts?
+
         # Determine how many frames are in the animation
         max_rotation_frames = max([max(keyframes.keys()) if len(keyframes) else 0 for keyframes in self.rotations.values()]) \
             if len(self.rotations) \
@@ -409,8 +412,8 @@ def generate_keyframe_chunks(animated_rotations, animated_locations, animated_sc
                                                          pen_r_bitvecs, pen_l_bitvecs, pen_s_bitvecs, pen_u_bitvecs,
                                                          chunksizes[-1]))
     chunks.append(ChunkHolder(final_rotations, final_locations, final_scales, final_float_chs,
-                              [1 for _ in final_rotations], [1 for _ in final_locations],
-                              [1 for _ in final_scales], [1 for _ in final_float_chs],
+                              [[1] for _ in final_rotations], [[1] for _ in final_locations],
+                              [[1] for _ in final_scales], [[1] for _ in final_float_chs],
                               1))
 
     return chunks
@@ -522,7 +525,7 @@ def strip_and_validate_all_bones(frame_data, chunksizes, interpolation_method):
         bitvector_data[bone_idx] = bitvectors
     for (bone_idx, bone_data), bitvectors in zip(keyframe_chunks_data.items(), bitvector_data.values()):
         for subdata, bitvector in zip(bone_data, bitvectors):
-            assert len(subdata) == sum([elem == '1' for elem in bitvector]), f"{bone_idx}"
+            assert len(subdata) == sum([elem == 1 for elem in bitvector]), f"{bone_idx}"
     return keyframe_chunks_data, bitvector_data
 
 
@@ -573,7 +576,7 @@ def strip_and_validate(keyframes, chunksizes, method):
                 # Interpolate
                 interpolated_frame_data = method(interp_start_data, interp_end_data, t)  # Needs to be lerp for pos, slerp for quat
                 # Make relevant assignments to register the interpolated frame
-                bitvectors[skipped_chunk_idx] = '1' + bitvectors[skipped_chunk_idx][1:]
+                bitvectors[skipped_chunk_idx] = [1] + bitvectors[skipped_chunk_idx][1:]
                 reduced_chunks[skipped_chunk_idx] = [interpolated_frame_data, *reduced_chunks[skipped_chunk_idx]]
                 already_handled_chunks.extend(skipped_chunks)
 
@@ -601,14 +604,14 @@ def generate_keyframe_chunks_entry_data(keyframes):
 
 
 def boil_down_chunk(chunk):
-    bitvector = ''
+    bitvector = []
     reduced_chunk = []
     indices = []
     for j, value in enumerate(chunk):
         if value is None:
-            bitvector += 0
+            bitvector += [0]
         else:
-            bitvector += 1
+            bitvector += [1]
             reduced_chunk.append(value)
             indices.append(j)
     return reduced_chunk, bitvector, indices
@@ -639,12 +642,12 @@ class ChunkHolder:
         self.initial_scale_bytes += (4 - (bytes_read % 4)) % 4
         bytes_read += (4 - (bytes_read % 4)) % 4
         bytes_read += self.initial_uvc_bytes
-
-        total_rotation_bitvector = rotation_bitvector[1:]
-        total_location_bitvector = location_bitvector[1:]
-        total_scale_bitvector = scale_bitvector[1:]
-        total_uvc_bitvector = uvc_bitvector[1:]
-
+        
+        total_rotation_bitvector = flatten_list([subvec[1:] for subvec in rotation_bitvector])
+        total_location_bitvector = flatten_list([subvec[1:] for subvec in location_bitvector])
+        total_scale_bitvector = flatten_list([subvec[1:] for subvec in scale_bitvector])
+        total_uvc_bitvector = flatten_list([subvec[1:] for subvec in uvc_bitvector])
+        
         self.total_bitvector = total_rotation_bitvector + total_location_bitvector + total_scale_bitvector + total_uvc_bitvector
         remainder = (8 - (len(self.total_bitvector) % 8)) % 8
         self.total_bitvector += [0]*remainder
