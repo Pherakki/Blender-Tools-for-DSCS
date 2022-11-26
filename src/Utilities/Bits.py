@@ -1,7 +1,7 @@
 def iter_bitvector(uint8_vector):
     for elem in uint8_vector:
-        for bit_index in range(8):  # or range(7, 0, -1)
-            yield (elem & bit_index) >> bit_index
+        for bit_index in range(7, -1, -1):
+            yield (elem >> bit_index) & 1
 
 
 def chunk_bitvector(uint8_vector, chunksize):
