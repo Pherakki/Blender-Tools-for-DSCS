@@ -87,8 +87,6 @@ class AnimBinary(Serializable):
         self.static_locations        = None
         self.static_scales           = None
         self.static_float_channels   = None
-        self.keyframe_chunk_offsets = None
-        self.keyframe_counts         = None
         self.bone_masks              = None
         self.float_channel_masks     = None
         self.keyframe_chunks         = None
