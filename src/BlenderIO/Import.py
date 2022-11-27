@@ -10,6 +10,7 @@ from ..Core.FileFormats.Skel.SkelInterface import SkelInterface
 from ..Core.FileFormats.Geom.GeomInterface import GeomInterface
 from ..Core.FileFormats.Anim.AnimInterface import AnimInterface
 from .ArmatureImport import import_skeleton
+from .MaterialImport import import_materials
 
 
 class ImportMediaVision(bpy.types.Operator):
@@ -37,8 +38,8 @@ class ImportMediaVision(bpy.types.Operator):
 
         # Import data
         armature = import_skeleton(parent_obj, armature_name, ni, si, gi)
-        # import_materials(model_data, self.img_to_dds, self.use_custom_nodes)
         # import_meshes(parent_obj, filename, model_data, armature_name, self.merge_vertices)
+        material_list = import_materials(ni, gi, directory, self.img_to_dds, self.use_custom_nodes)
         # import_cameras(parent_obj, model_data)
         # import_lights(parent_obj, model_data)
         # add_rest_pose_to_base_anim(filename, model_data)
@@ -111,3 +112,13 @@ class ImportDSCS(ImportMediaVision, ImportHelper):
         default=True
     )
 
+    img_to_dds: BoolProperty(
+        name="Import IMG as DDS",
+        description="Create a copy of each IMG file with a DDS extension before import."
+    )
+
+    use_custom_nodes: BoolProperty(
+        name="Emulate DSCS Materials",
+        description="Create a material node tree to partially emulate DSCS rendering.",
+        default=True
+    )
