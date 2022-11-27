@@ -58,7 +58,7 @@ class TriangleStrip(IndexType):
 
     def to_triangles(self):
         buffer = []
-        for i, (t1, t2, t3) in enumerate(zip(self.buffer[0::3], self.buffer[1::3], self.buffer[2::3])):
+        for i, (t1, t2, t3) in enumerate(zip(self.buffer[0:], self.buffer[1:], self.buffer[2:])):
             if len({t1, t2, t3}) < 3:
                 continue
             if i % 2:
