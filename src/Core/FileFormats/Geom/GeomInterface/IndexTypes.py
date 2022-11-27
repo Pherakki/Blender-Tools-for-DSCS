@@ -51,6 +51,9 @@ class Triangles(IndexType):
     def __init__(self, data_type, buffer):
         super().__init__(PrimitiveTypes.TRIANGLES, data_type, buffer)
 
+    def unpack(self):
+        return [(t1, t2, t3) for t1, t2, t3 in zip(self.buffer[0::3], self.buffer[1::3], self.buffer[2::3])]
+
 
 class TriangleStrip(IndexType):
     def __init__(self, data_type, buffer):
