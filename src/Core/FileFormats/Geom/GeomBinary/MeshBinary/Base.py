@@ -313,6 +313,9 @@ class Vertex:
     def __repr__(self):
         return f"[Geom::Mesh::Vertex] {self.position} {self.normal} {self.tangent} {self.binormal} {self.UV1} {self.UV2} {self.UV3} {self.color} {self.indices} {self.weights}"
 
+    def __getitem__(self, idx):
+        return self.buffer[idx]
+
     @property
     def position(self): return self.buffer[AttributeTypes.POSITION]
     @position.setter
