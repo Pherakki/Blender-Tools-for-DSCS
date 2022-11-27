@@ -6,8 +6,10 @@ import bpy
 def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
     texture_bank = {}
     shader_bank = set()
+    materials = []
     for material_name, material in zip(ni.material_names, gi.materials):
         bpy_material = bpy.data.materials.new(name=material_name)
+        materials.append(bpy_material)
 
         # Load up any custom properties we need
         bpy_material['shader_hex'] = f"{material.shader_file[0]:0>8x}_{material.shader_file[1]:0>8x}_{material.shader_file[2]:0>8x}_{material.shader_file[3]:0>8x}"
@@ -39,6 +41,7 @@ def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
         # # Import shader text
         # load_shader_text(path, bpy_material['shader_hex'], "_vp.shad", shader_bank)
         # load_shader_text(path, bpy_material['shader_hex'], "_fp.shad", shader_bank)
+    return materials
 
 
 def create_shader_nodes(path, bpy_material, material, gi, texture_bank):
