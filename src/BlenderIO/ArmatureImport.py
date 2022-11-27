@@ -68,7 +68,7 @@ def import_skeleton(parent_obj, armature_name, ni, si, gi):
         bpy_bone.roll = roll
 
         if bone.parent != -1:
-            bone.parent = list_of_bones[bone.parent]
+            bpy_bone.parent = list_of_bones[bone.parent]
 
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.context.view_layer.objects.active = parent_obj
