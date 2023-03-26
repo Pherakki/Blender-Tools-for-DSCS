@@ -26,14 +26,20 @@ class GeomInterface:
         "Megido72":  GeomBinaryMegido72
     }
 
+
     @classmethod
-    def from_file(cls, path, model_type):
+    def binary_type(cls, model_type):
         if model_type in cls.__KEY_MAPPING:
             binary_class = cls.__KEY_MAPPING[model_type]
         else:
             raise ValueError(f"Cannot initialise GeomInterface with the key '{model_type}'. "
                              f"Options are: {', '.join(cls.__KEY_MAPPING.keys())}")
-            
+        return binary_class
+
+    @classmethod
+    def from_file(cls, path, model_type):
+        binary_class = cls.binary_type(model_type)
+        
         binary = binary_class()
         binary.read(path)
 
@@ -75,11 +81,7 @@ class GeomInterface:
         binary.write(filepath)
 
     def to_binary(self, model_type):
-        if model_type in self.__KEY_MAPPING:
-            binary_class = self.__KEY_MAPPING[model_type]
-        else:
-            raise ValueError(f"Cannot serialise GeomInterface with the key '{model_type}'. "
-                             f"Options are: {', '.join(self.__KEY_MAPPING.keys())}")
+        binary_class = self.binary_type(model_type)
 
         binary = binary_class()
         binary.meshes     = [mi.to_binary(binary.MESH_TYPE) for mi in self.meshes]
