@@ -65,9 +65,9 @@ class TriangleStrip(IndexType):
             if len({t1, t2, t3}) < 3:
                 continue
             if i % 2:
-                buffer.extend((t1, t2, t3))
-            else:
                 buffer.extend((t2, t1, t3))
+            else:
+                buffer.extend((t1, t2, t3))
         return Triangles(self.data_type, buffer)
 
 
