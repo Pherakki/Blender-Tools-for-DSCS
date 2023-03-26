@@ -1,7 +1,0 @@
-The CamData2 mostly exists in Cam files and environments. It is made of 0x30 bytes.
-
-The data types are unclear and are mostly guesses.
-There are clear correlations between CamData1 and CamData2; both contain sections that
-look like int16 - half-float pairs.
-
-The purpose of the data is completely unclear.

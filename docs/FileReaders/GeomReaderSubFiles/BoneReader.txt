@@ -1,9 +1,0 @@
-The BoneDataReader is small and reads 12 floats.
-
-These are arranged in groups of 4 like (3D unit vector, float)
-The 3D unit vectors are orthogonal within precision errors, and appear to define a local xyz axis,
-although this needs to be checked. The first unit vector is generally in the purposed pure 'x' direction,
-the second in the 'y' direction, and the third in the 'z' direction. It needs to be verified if this is the case,
-and what it is used for - perhaps bone rotation.
-
-The scalars attached to each unit vector appear to give the x, y, and z positions of each bone respectively.

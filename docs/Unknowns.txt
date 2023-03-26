@@ -1,0 +1,127 @@
+################
+# BINARY FILES #
+################
+
+### NameBinary ###
+The .name files are believed to be 100% understood.
+
+### SkelBinary ###
+- In the parent_bone_dataline section of the SkelBinary, the parent bone indices are int15s (meaning there is a
+  maximum value of 0x3FFF = 16383 bones). The final bit (to take int15 -> 16 bits) is a flag. Each flag can be set
+  independently for each child-parent pair, although this is probably not intended.
+  It is unclear what this flag actually does. The only observed effect in-game is that it appears to enable some kind of
+  optimisation. The following test was performed (using Test Program 1) to come to this conclusion:
+
+  - Set the Position and Scale bone transforms for bones 5 ("neck") and 6 ("head") on pc002 to
+    (pos[0], pos[1]+0.2, pos[2], 1.0) and (2., 2., 2., 2.) respectively.
+  - Enter Shinjuku in Chapter 19.
+  - Some amount of stuttering observed when moving the character.
+  - Now set the flag on all bones that are not -1.
+  - Re-enter Shinjuku and observe the absence of stuttering.
+
+  It is hypothesised that the flag enables some kind of optimisation in the calculation of bone matrices, and that
+  a judicious choice of bone ordering with the optimisation enabled would lead to errors in the skeleton becoming
+  visible. This has not been confirmed by experiment.
+
+- The section float_channel_flags of the SkelBinary consists of a number of flags for each float channel. The purpose
+  of the flags is unknown, but might be related to some kind of animation blending choice. Requires investigation.
+
+### GeomBinary ###
+- All Mesh Flags are not currently documented. Documented flags:
+    - ???: IsRendered
+    - ???: IsWireframe
+    - ???: Contiguous MatrixPalette indices
+
+- All Material Flags are not currently documented. Documented flags:
+    - 0x0001: ???
+    - 0x0002: Draw Shadow
+    - 0x0004: ???
+    - 0x0008: ???
+    - 0x0010: ???
+    - 0x0020: ???
+    - 0x0040: ???
+    - 0x0080: ???
+    - 0x0100: ???
+    - 0x0200: ???
+    - 0x0400: ???
+    - 0x0800: ???
+    - 0x1000: ???
+    - 0x2000: ???
+    - 0x4000: ???
+    - 0x8000: ???
+
+- Material Shader Uniforms unknown_0x12: always 0xFF00
+
+- Material OpenGL settings unknown_0x11: always 0x64
+- Material OpenGL settings unknown_0x12: always 0xFF00
+
+### AnimBinary ###
+- Some Quaternions do no exactly de- and re-serialize.
+    - chr708_ba01.anim                [ 4781/15388] - Chunk 0, Element 186: Largest Index swaps over
+      [0.6912244757161575, -0.6912244999684902, -0.1490258615379119, -0.1490258615379119]
+      [-0.6912244999684902, 0.6912244757161575, 0.1490258615379119, 0.1490258615379119])
+    - chr719_ev17_1.anim              [ 4877/15388] - Many keyframes, quaternions deserialise to the -1 version
+    - d13001f.anim                    [ 6779/15388] - Chunk 3, Element 14; Chunk 4, Element 26: Largest Index swaps over
+    - d13002f.anim                    [ 6785/15388] - Chunk 7, Element 13: Largest Index swaps over
+    - d13003_hide.anim                [ 6789/15388] - Many keyframes, quaternions deserialise to the -1 version and Largest Index swaps
+    - d15008f.anim                    [ 7154/15388] - Chunk 3, Element 14; Chunk 4, Element 26: Largest Index swaps over
+    - d15115f.anim                    [ 7385/15388] - Chunk 7, Element 13: Largest Index swaps over
+    - e0002f.anim                     [ 8258/15388] - Many quaternions do not deserialise to the "smallest 3"
+    - eff_bts_chr011_spn.anim         [ 8277/15388] - Chunk 0, Element 22: Largest Index swaps over
+    - eff_bts_chr410_bbomb.anim       [ 8515/15388] - Chunk 1, Frame 0 Element 5; Chunk 1, Frame 0 Element 6: Largest Index swaps over
+    - eff_bts_chr747_strikeroll.anim  [ 8666/15388] - Chunk 0, Element 154; Chunk 0, Element 155: Largest Index swaps over
+    - eff_bts_chr784_bfa.anim         [ 8707/15388] - Chunk 4, Element 656: Largest Index swaps over
+    - eff_eve_com_037.anim            [ 9242/15388] - Chunk 0, Frame 0 Element 0; Chunk 0, Element 0: quaternions deserialise to the -1 version
+    - eff_eve_com_056l_dif.anim       [ 9259/15388] - Chunk 1, Frame 257: Largest Index swaps over
+    - eff_eve_grandlocomon_death.anim [ 9353/15388] - Chunk 0, Frame 28; Chunk 0, Frame 29; Chunk 1, Frame 316; Chunk 1, Frame 317: Largest Index swaps over
+    - eff_eve_sub_56.anim             [ 9362/15388] - Chunk 3, Frame 2: Largest Index swaps over
+    - eff_eve_sub_60.anim             [ 9364/15388] - Chunk 2, Frame 168; Chunk 2, Frame 170: Largest Index swaps over
+    - eff_fld_th.anim                 [ 9433/15388] - Chunk 0, Frame 81; Chunk 0, Frame 82; Chunk 0, Frame 84; Chunk 0, Frame 86: quaternions deserialise to the -1 version
+    - npc026_ev18_7.anim              [13096/15388] - Many frames, quaternions deserialise to the -1 version
+
+############################
+# POTENTIALLY BUGGED FILES #
+############################
+- e0002f.anim contains a rotation where the 3 smallest elements have a norm larger than 1 (should be root2 at most).
+  The first bit is also 1 instead of 0 - could be a flag...
+- uibtlconsole_attack.anim has a static scale Z dimension that is nan
+
+#################
+# TEST PROGRAMS #
+#################
+
+### Test Program 1 ###
+import os
+import struct
+
+from import_dscs.src.Core.FileFormats.Skel.SkelBinary import SkelBinary
+from import_dscs.src.Core.FileFormats.Name.NameInterface import NameInterface
+from import_dscs.src.Core.FileFormats.Skel.SkelInterface import SkelInterface
+
+# bone_scale_1 and bone_scale_2 mods already contain a METADATA.json, and in the 'modfiles' folder also contains
+# pc002.name, pc002.geom, and pc002.anim.
+path = r"../models"
+out_1 = r"../SimpleDSCSModManager/mods/bone_scale_1/modfiles"
+out_2 = r"../SimpleDSCSModManagerBuild/mods/bone_scale_2/modfiles"
+
+file = "pc002.skel"
+
+ni = NameInterface.from_file(os.path.join(path, file[:-5] + ".name"))
+
+sb = SkelBinary()
+sb.read(os.path.join(path, file))
+
+for nm in ["head", "neck"]:
+    bone_idx = ni.bone_names.index(nm)
+    p = sb.bone_transforms[bone_idx].pos
+    sb.bone_transforms[bone_idx].pos = (p[0], p[1] + 0.2, p[2], 1.)
+    sb.bone_transforms[bone_idx].scale = (2., 2., 2., 2.)
+
+sb.write(os.path.join(out_1, file))
+
+for line in sb.parent_bone_datalines:
+    for i, (child, parent) in enumerate(zip(line[0::2], line[1::2])):
+        if parent != -1:
+            line[i*2 + 1] = struct.unpack('h', struct.pack('H', parent + 0x8000))[0]
+
+sb.write(os.path.join(out_2, file))
