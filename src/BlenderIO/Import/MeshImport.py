@@ -1,14 +1,17 @@
 import array
+import math
 
 import bpy
-from mathutils import Vector
+from mathutils import Vector, Quaternion
 
-from ..Core.FileFormats.Geom.GeomBinary.MeshBinary.Base import PrimitiveTypes
-from ..Core.FileFormats.Geom.Constants import AttributeTypes
-from .VertexMerging import merge_opengl_vertices
+from ...Core.FileFormats.Geom.GeomBinary.MeshBinary.Base import PrimitiveTypes
+from ...Core.FileFormats.Geom.Constants import AttributeTypes
+from ..IOHelpersLib.Meshes import merge_vertices, import_loop_normals, create_uv_map
+from ..IOHelpersLib.Context import safe_active_object_switch, set_active_obj, set_mode
 
 
-def import_meshes(model_name, ni, gi, armature, material_list, merge_vertices):
+@safe_active_object_switch
+def import_meshes(model_name, ni, gi, armature, material_list, try_merge_vertices):
     meshes = []
     for i, mesh in enumerate(gi.meshes):
         #################
@@ -23,8 +26,8 @@ def import_meshes(model_name, ni, gi, armature, material_list, merge_vertices):
             raise Exception(f"Primitive Type '{mesh.indices.primitive_type}' not supported")
 
         # Now merge OpenGL vertices into Blender vertices
-        new_verts, new_tris, new_facevert_to_old_facevert_map = merge_opengl_vertices(mesh.vertices, faces, merge_vertices)
-        vert_positions = [Vector(v.position) for v in new_verts]
+        new_verts, new_tris, new_facevert_to_old_facevert_map = merge_vertices(mesh.vertices, faces, try_merge_vertices)
+        vert_positions = [Vector(v.position[:3]) for v in new_verts]
 
         ###############
         # CREATE MESH #
@@ -40,7 +43,9 @@ def import_meshes(model_name, ni, gi, armature, material_list, merge_vertices):
         # Assign materials
         active_material = material_list[mesh.material_id]
         bpy.data.objects[meshobj_name].active_material = active_material
-
+        
+        set_active_obj(bpy_mesh_object)
+        
         #################
         # ADD LOOP DATA #
         #################
@@ -60,14 +65,11 @@ def import_meshes(model_name, ni, gi, armature, material_list, merge_vertices):
         # Assign UVs
         for uv_idx, uv_type in enumerate([AttributeTypes.UV1, AttributeTypes.UV2, AttributeTypes.UV3]):
             if mesh.vertices[0][uv_type] is not None:
-                uv_layer = bpy_mesh.uv_layers.new(name=f"UVMap{uv_idx + 1}", do_init=True)
-                for loop_idx, loop in enumerate(bpy_mesh.loops):
-                    u, v = loop_data[loop_idx][uv_type]
-                    uv_layer.data[loop_idx].uv = (u, (v*-1) + 1)
+                create_uv_map(bpy_mesh, f"UV{uv_idx + 1}", ((l[uv_type][0], (l[uv_type][1]*-1) + 1) for l in loop_data))
 
         # Assign vertex colours
         if mesh.vertices[0][AttributeTypes.COLOR] is not None:
-            colour_map = bpy_mesh.vertex_colors.new(name=f"Map", do_init=True)
+            colour_map = bpy_mesh.vertex_colors.new(name="Map", do_init=True)
             for loop_idx, loop in enumerate(bpy_mesh.loops):
                 colour_map.data[loop_idx].color = loop_data[loop_idx].color
 
@@ -82,7 +84,7 @@ def import_meshes(model_name, ni, gi, armature, material_list, merge_vertices):
         # ADD MISC DATA #
         #################
         # Load the hashed mesh name
-        bpy_mesh_object['name_hash'] = hex(mesh.name_hash)
+        bpy_mesh_object.data.DSCS_MeshProperties.name_hash = hex(mesh.name_hash)
 
         # Set armature constraint
         bpy_mesh_object.parent = armature
@@ -90,39 +92,17 @@ def import_meshes(model_name, ni, gi, armature, material_list, merge_vertices):
         modifier.object = armature
 
         # Assign normals
-        # Works thanks to this stackexchange answer https://blender.stackexchange.com/a/75957
-        # which a few of these comments below are also taken from
         # Do this LAST because it can remove some loops
         if mesh.vertices[0][AttributeTypes.NORMAL] is not None:
-            bpy_mesh.create_normals_split()
-            for face in bpy_mesh.polygons:
-                face.use_smooth = True  # loop normals have effect only if smooth shading ?
-
-            # Set loop normals
-            loop_normals = [Vector(list(l.normal))for l in loop_data]
-            bpy_mesh.loops.foreach_set("normal", [subitem for item in loop_normals for subitem in item])
-
-            bpy_mesh.validate(clean_customdata=False)  # important to not remove loop normals here!
-            bpy_mesh.update()
-
-            clnors = array.array('f', [0.0] * (len(bpy_mesh.loops) * 3))
-            bpy_mesh.loops.foreach_get("normal", clnors)
-
-            bpy_mesh.polygons.foreach_set("use_smooth", [True] * len(bpy_mesh.polygons))
-            # This line is pretty smart (came from the stackoverflow answer)
-            # 1. Creates three copies of the same iterator over clnors
-            # 2. Splats those three copies into a zip
-            # 3. Each iteration of the zip now calls the iterator three times, meaning that three consecutive elements
-            #    are popped off
-            # 4. Turn that triplet into a tuple
-            # In this way, a flat list is iterated over in triplets without wasting memory by copying the whole list
-            bpy_mesh.normals_split_custom_set(tuple(zip(*(iter(clnors),) * 3)))
-
-            bpy_mesh.use_auto_smooth = True
+            import_loop_normals(bpy_mesh, (l.normal for l in loop_data))
 
         # Tell Blender what we've done
         bpy_mesh.validate(verbose=True, clean_customdata=False)
         bpy_mesh.update()
+        bpy_mesh.update()
+
+        # Convert meshes Y up -> Z up
+        bpy_mesh.transform(Quaternion([1/(2**.5), 1/(2**.5), 0, 0]).to_matrix().to_4x4())
 
         meshes.append(bpy_mesh)
 
