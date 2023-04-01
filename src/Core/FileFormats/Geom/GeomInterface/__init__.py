@@ -339,6 +339,8 @@ class Material:
 
 
 class ShaderUniform:
+    is_texture = False
+    
     def __init__(self):
         self.index = None
         self.data = None
@@ -351,7 +353,7 @@ class ShaderUniform:
         if binary.float_count == 0:
             instance = TextureUniform()
         else:
-            instance = cls()
+            instance = ShaderUniform()
         instance.index = binary.index
         instance.data = binary.unpack()
         return instance
@@ -365,6 +367,8 @@ class ShaderUniform:
 
 
 class TextureUniform:
+    is_texture = True
+    
     def __init__(self):
         self.index = None
         self.data = None
@@ -377,7 +381,7 @@ class TextureUniform:
         if binary.float_count == 0:
             instance = TextureUniform()
         else:
-            instance = cls()
+            instance = ShaderUniform()
         instance.index = binary.index
         instance.data = binary.unpack()
         return instance
