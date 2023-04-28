@@ -73,6 +73,9 @@ class ShaderUniformBinary(Serializable):
         self.unknown_0x12 = rw.rw_uint16(self.unknown_0x12)
         self.padding_0x14 = rw.rw_uint32(self.padding_0x14)
 
+    def __repr__(self):
+        return f"[ShaderUniformBinary] {self.index} {self.unknown_0x12} {self.unpack()}"
+
     def unpack(self):
         if self.float_count == 0:
             return struct.unpack('IIII', self.payload)
@@ -102,11 +105,14 @@ class OpenGLSettingBinary(Serializable):
         self.unknown_0x12 = rw.rw_uint16(self.unknown_0x12)
         self.padding_0x14 = rw.rw_uint32(self.padding_0x14)
 
+    def __repr__(self):
+        return f"[OpenGLSettingBinary] {self.index} {self.unknown_0x11} {self.unknown_0x12} {self.unpack()}"
+    
     def unpack(self):
-        return struct.unpack(OPENGL_SETTING_SIGNATURES[self.index], self.payload)
+        return struct.unpack(OPENGL_SETTING_SIGNATURES.get(self.index, 'IIII'), self.payload)
 
     def pack(self, value):
-        return struct.pack(OPENGL_SETTING_SIGNATURES[self.index], *value)
+        return struct.pack(OPENGL_SETTING_SIGNATURES.get(self.index, 'IIII'), *[int(v) for v in value])
 
 
 OPENGL_SETTING_SIGNATURES = {
