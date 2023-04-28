@@ -44,12 +44,18 @@ class OBJECT_PT_DSCSMaterialPanel(bpy.types.Panel):
     
     @classmethod
     def register(cls):
+        bpy.utils.register_class(OBJECT_PT_DSCSMaterialUV1Panel)
+        bpy.utils.register_class(OBJECT_PT_DSCSMaterialUV2Panel)
+        bpy.utils.register_class(OBJECT_PT_DSCSMaterialUV3Panel)
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialDiffusePanel)
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialReflectionPanel)
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialOpenGLPanel)
 
     @classmethod
     def unregister(cls):
+        bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialUV1Panel)
+        bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialUV2Panel)
+        bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialUV3Panel)
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialDiffusePanel)
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialReflectionPanel)
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialOpenGLPanel)
@@ -73,7 +79,7 @@ def make_texture_panel(sampler_name, parent_id, get_props):
             props = get_props(context)
             
             layout.prop(props, "active", text="")
-            image_name = props.image.name if props.image is not None else "None"
+            image_name = props.image if props.image is not None else "None"
             layout.label(text=f"{sampler_name}: {image_name}")
             
         def draw(self, context):
@@ -84,15 +90,73 @@ def make_texture_panel(sampler_name, parent_id, get_props):
             ctr.active = props.active
             
             row = ctr.row()
-            row.prop(props, "image")
+            row.prop_search(props, "image", bpy.data, "images")
             row = ctr.row()
             row.prop(props, "uv_map")
             row = ctr.row()
             row.prop(props, "data")
             
-    TextureSamplerPanel.__name__ = f"OBJECT_PT_DSCSMaterial{sampler_name}Panel"
-    return TextureSamplerPanel
+            # DEBUG
+            ctr.prop(props, "uv_1_used")
+            ctr.prop(props, "uv_2_used")
+            ctr.prop(props, "uv_3_used")
+    
+            # Add an operator to create the required sampler
             
+    TextureSamplerPanel.__name__ = f"OBJECT_PT_DSCSMaterial{sampler_name}Panel"
+    
+    return TextureSamplerPanel
+
+
+def make_uv_panel(idx, prop_getter):
+    class OBJECT_PT_DSCSMaterialUVPanel(bpy.types.Panel):
+        bl_label       = f"UV Map {idx}"
+        bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+        bl_space_type  = 'PROPERTIES'
+        bl_region_type = 'WINDOW'
+        bl_context     = "material"
+        bl_options     = {'DEFAULT_CLOSED'}
+
+        @classmethod
+        def poll(self, context):
+            return context.material is not None
+            
+        def draw(self, context):
+            mat = context.material
+            layout = self.layout
+            props = mat.DSCS_MaterialProperties
+            props = prop_getter(props)
+            
+            ctr = layout.column()
+            row = ctr.row()
+            row.prop(props, "use_scroll_speed", text="")
+            row.prop(props, "scroll_speed")
+            row.active = props.use_scroll_speed
+            
+            row = ctr.row()
+            row.prop(props, "use_rotation", text="")
+            row.prop(props, "rotation")
+            row.active = props.use_rotation
+            
+            row = ctr.row()
+            row.prop(props, "use_offset", text="")
+            row.prop(props, "offset")
+            row.active = props.use_offset
+            
+            row = ctr.row()
+            row.prop(props, "use_scale", text="")
+            row.prop(props, "scale")
+            row.active = props.use_scale
+    
+    OBJECT_PT_DSCSMaterialUVPanel.__name__ = f"OBJECT_PT_DSCSMaterialUV{idx}Panel"
+    
+    return OBJECT_PT_DSCSMaterialUVPanel
+
+
+OBJECT_PT_DSCSMaterialUV1Panel = make_uv_panel(1, lambda props: props.uv_transforms_1)
+OBJECT_PT_DSCSMaterialUV2Panel = make_uv_panel(2, lambda props: props.uv_transforms_2)
+OBJECT_PT_DSCSMaterialUV3Panel = make_uv_panel(3, lambda props: props.uv_transforms_3)
+
 
 class OBJECT_PT_DSCSMaterialDiffusePanel(bpy.types.Panel):
     bl_label       = "Diffuse Shading"
@@ -146,8 +210,8 @@ class OBJECT_PT_DSCSMaterialReflectionPanel(bpy.types.Panel):
     bl_context     = "material"
     bl_options     = {'DEFAULT_CLOSED'}
 
-    env_sampler_panel         = make_texture_panel("EnvSampler", "OBJECT_PT_DSCSMaterialReflectionPanel", lambda x: x.material.DSCS_MaterialProperties.env_sampler)
-    clut_sampler_panel         = make_texture_panel("ClutSampler", "OBJECT_PT_DSCSMaterialReflectionPanel", lambda x: x.material.DSCS_MaterialProperties.clut_sampler)
+    env_sampler_panel   = make_texture_panel("EnvSampler",  "OBJECT_PT_DSCSMaterialReflectionPanel", lambda x: x.material.DSCS_MaterialProperties.env_sampler )
+    clut_sampler_panel  = make_texture_panel("ClutSampler", "OBJECT_PT_DSCSMaterialReflectionPanel", lambda x: x.material.DSCS_MaterialProperties.clut_sampler)
     
     @classmethod
     def poll(self, context):
@@ -173,7 +237,7 @@ class OBJECT_PT_DSCSMaterialReflectionPanel(bpy.types.Panel):
         row.prop(props, "use_fresnel_exp", text="")
         row.prop(props, "fresnel_exp")
         row.active = props.use_fresnel_exp
-        
+    
     @classmethod
     def register(cls):
         bpy.utils.register_class(cls.env_sampler_panel)
