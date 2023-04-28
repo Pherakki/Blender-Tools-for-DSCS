@@ -62,8 +62,10 @@ class ImportMediaVision(bpy.types.Operator):
             if anim_root == model_name:  
                 ai = AnimInterface.from_file(os.path.join(directory, f), si)
                 if anim_name == model_name:
+                    pass
                 else:
                     ais[anim_name] = ai
+        
         add_rest_pose_to_base_anim(si, gi, base_anim)
         import_base_animation(directory, model_name, armature_obj, ni, base_anim)
         import_animations(directory, model_name, armature_obj, ni, ais)
