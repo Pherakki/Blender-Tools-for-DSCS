@@ -22,6 +22,23 @@ class SkelInterface:
         sb.read(path)
         return cls.from_binary(sb)
 
+    def add_bone(self, name_hash, parent, flag, pos, quat, scale):
+        b = Bone()
+        b.name_hash = name_hash
+        b.parent    = parent
+        b.flag      = flag
+        b.pos       = pos
+        b.quat      = quat
+        b.scale     = scale
+        self.bones.append(b)
+
+    def add_float_channel(self, name_hash, flags, array_index):
+        fc = FloatChannel()
+        fc.name_hash = name_hash
+        fc.flags = flags
+        fc.array_index = array_index
+        self.float_channels.append(fc)
+
     @classmethod
     def from_binary(cls, sb):
         instance = cls()
