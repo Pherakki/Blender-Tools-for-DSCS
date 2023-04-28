@@ -4,9 +4,11 @@ import struct
 
 from ....serialization.BinaryTargets import OffsetTracker
 from ..GeomBinary import GeomBinaryDSCSOpenGL, GeomBinaryDSCSPS, GeomBinaryMegido72
+from ..GeomBinary.CameraBinary import CameraBinary
+from ..GeomBinary.LightBinary import LightBinary
 from ..GeomBinary.MeshBinary.Base import VertexAttributeBinary
 from ..GeomBinary.MaterialBinary import MaterialBinary, ShaderUniformBinary, OpenGLSettingBinary
-from .IndexTypes import create_index_interface
+from .IndexTypes import create_index_interface, Triangles
 from .VertexAttributes import create_vertex_attribute_interface
 
 
@@ -27,6 +29,60 @@ class GeomInterface:
     }
 
 
+    def add_mesh(self, name_hash, flags, material_id, vertices, indices):
+        m = Mesh()
+        m.name_hash   = name_hash
+        m.flags       = flags
+        m.material_id = material_id
+        m.vertices    = vertices
+        m.indices     = Triangles.from_triangles("auto", indices)
+        m.vertex_attributes = None
+        self.meshes.append(m)
+        return m
+    
+    def add_material(self, name_hash, flags, shader_file, shader_uniforms=None, opengl_settings=None):
+        m = Material()
+        m.name_hash       = name_hash
+        m.flags           = flags
+        m.shader_file     = shader_file
+        if shader_uniforms is not None:
+            m.shader_uniforms = shader_uniforms
+        if opengl_settings is not None:
+            m.opengl_settings = opengl_settings
+        self.materials.append(m)
+        return m
+    
+    def add_camera(self, bone_name_hash, fov, aspect_ratio, zNear, zFar, orthographic_scale, projection):
+        c = CameraBinary()
+        c.bone_name_hash = bone_name_hash
+        c.fov            = fov
+        c.aspect_ratio   = aspect_ratio
+        c.zNear          = zNear
+
+        c.zFar               = zFar
+        c.orthographic_scale = orthographic_scale
+        c.projection         = projection
+        self.cameras.append(c)
+        return c
+
+    def add_light(self, bone_name_hash, mode, light_id, intensity, fog_height, red, green, blue, alpha, unknown_0x20, unknown_0x24, unknown_0x28, unknown_0x2C):
+        l = LightBinary()
+        l.bone_name_hash = bone_name_hash
+        l.mode              = mode
+        l.light_id          = light_id
+        l.intensity         = intensity
+        l.unknown_fog_param = fog_height
+        l.red               = red
+        l.green             = green
+        l.blue              = blue
+        l.alpha             = alpha
+        l.unknown_0x20      = unknown_0x20
+        l.unknown_0x24      = unknown_0x24
+        l.unknown_0x28      = unknown_0x28
+        l.unknown_0x2C      = unknown_0x2C
+        self.lights.append(l)
+        return l
+    
     @classmethod
     def binary_type(cls, model_type):
         if model_type in cls.__KEY_MAPPING:
@@ -62,31 +118,31 @@ class GeomInterface:
         #
         #     shaders.append((vertex_shader, fragment_shader))
 
-        return cls.from_binary(binary)
+        return cls.from_binary(binary, invalidate_binary_allowed=True)
 
     @classmethod
-    def from_binary(cls, binary):
+    def from_binary(cls, binary, invalidate_binary_allowed=False):
         instance = cls()
-        instance.meshes     = [Mesh.from_binary(mb) for mb in binary.meshes]
+        instance.meshes     = [Mesh.from_binary(mb, invalidate_binary_allowed) for mb in binary.meshes]
         instance.materials  = [Material.from_binary(mb) for mb in binary.materials]
-        instance.textures   = [t.rstrip(b'\x00').decode('ascii') for t in binary.textures]
+        instance.textures   = [t.rstrip(b'\x00').decode('utf8') for t in binary.textures]
         instance.cameras    = binary.cameras
         instance.lights     = binary.lights
         instance.ibpms      = binary.ibpms
         instance.extra_clut = binary.extra_clut
         return instance
 
-    def to_file(self, filepath, model_type):
-        binary = self.to_binary(model_type)
+    def to_file(self, filepath, model_type, invalidate_self_allowed=False):
+        binary = self.to_binary(model_type, invalidate_self_allowed)
         binary.write(filepath)
 
-    def to_binary(self, model_type):
+    def to_binary(self, model_type, invalidate_self_allowed=False):
         binary_class = self.binary_type(model_type)
 
         binary = binary_class()
-        binary.meshes     = [mi.to_binary(binary.MESH_TYPE) for mi in self.meshes]
+        binary.meshes     = [mi.to_binary(binary.MESH_TYPE, invalidate_self_allowed) for mi in self.meshes]
         binary.materials  = [mi.to_binary() for mi in self.materials]
-        binary.textures   = [t.encode('ascii').ljust(0x20, b'\x00') for t in self.textures]
+        binary.textures   = [t.encode('utf8').ljust(0x20, b'\x00') for t in self.textures]
         binary.cameras    = self.cameras
         binary.lights     = self.lights
         binary.ibpms      = self.ibpms
@@ -146,48 +202,38 @@ class Mesh:
         self.material_id = None
         self.vertices    = None
         self.indices     = None
-        self.vertex_attributes = None
+        self.vertex_attributes = []
 
     @classmethod
-    def from_binary(cls, binary):
+    def from_binary(cls, binary, invalidate_binary_allowed=False):
         instance = cls()
         instance.name_hash   = binary.name_hash
         instance.flags       = binary.flags
         instance.material_id = binary.material_id
-        instance.vertices    = cls.__from_binary_vertices(binary)
+        instance.vertices, vas = cls.__from_binary_vertices(binary, invalidate_binary_allowed)
 
         ptype = binary.PRIMITIVE_TYPES[binary.primitive_type]
         dtype = binary.DATA_TYPES[binary.index_type]
         instance.indices     = create_index_interface(ptype, dtype, binary.IBO)
 
-        instance.vertex_attributes = [create_vertex_attribute_interface(va, binary.DATA_TYPES) for va in binary.vertex_attributes]
+        # Going to get rid of this anyway
+        instance.vertex_attributes = None#[create_vertex_attribute_interface(va, binary.DATA_TYPES) for va in vas]
         return instance
 
-    def to_binary(self, ctor):
+    def to_binary(self, ctor, invalidate_self_allowed=False):
         binary = ctor()
 
         # Main data
-        binary.name_hash = self.name_hash
-        binary.flags     = self.flags
+        binary.name_hash   = self.name_hash
+        binary.flags       = self.flags
         binary.material_id = self.material_id
         binary.IBO         = self.indices.buffer
-        INVERSE_DATA_TYPES = {v: i for i, v in binary.DATA_TYPES.items()}
+        INVERSE_DATA_TYPES = binary.INVERSE_DATA_TYPES
+        
+        # Create vertex attributes
         binary.vertex_attributes = []
         binary.bytes_per_vertex = 0
-        for va in self.vertex_attributes:
-            vab = VertexAttributeBinary()
-            vab.index = va.index
-            vab.normalised = va.normalised
-            vab.elem_count = va.count
-            vab.type = INVERSE_DATA_TYPES[va.type]
-            vab.offset = binary.bytes_per_vertex
-            binary.vertex_attributes.append(vab)
-
-            # Update size of vertex
-            size = struct.calcsize(va.type)*va.count
-            size += (0x04 - (size % 0x04)) % 0x04
-            binary.bytes_per_vertex += size
-        self.__to_binary_vertices(binary, self.vertices)
+        self.__to_binary_vertices(binary, invalidate_self_allowed)
 
         # Counts
         binary.matrix_palette_count = len(binary.matrix_palette)
@@ -244,31 +290,37 @@ class Mesh:
         return binary
 
     @staticmethod
-    def __from_binary_vertices(binary):
-        vertices = binary.unpack_vertices()
+    def __from_binary_vertices(binary, invalidate_binary_allowed=False):
+        if invalidate_binary_allowed:
+            vertices   = binary.VAO
+            attributes = binary.vertex_attributes
+        else:
+            vertices   = copy.deepcopy(binary.VAO)
+            attributes = copy.deepcopy(binary.vertex_attributes)
+        binary.apply_shader_transforms_unpack(vertices, {va.index: va for va in attributes})
 
         if binary.vertex_groups_per_vertex == 0:
             for v in vertices:
                 v.indices = [0]
                 v.weights = [1.0]
-        elif binary.vertex_groups_per_vertex == 1:
-            for v in vertices:
-                v.indices = [int(v.position[3])]
-                v.weights = [1.0]
-
         if vertices[0].weights is not None:
             for v in vertices:
                 v.indices = [(binary.matrix_palette[idx // 3]) for idx in v.indices]
 
-        return vertices
+        return vertices, attributes
 
-    @staticmethod
-    def __to_binary_vertices(binary, vertices):
+
+    def __to_binary_vertices(self, binary, invalidate_self_allowed=False):
         """
         Sets the vertex_groups_per_vertex and matrix_palette variables, and prepares vertices for packing.
         """
-        vertices = copy.deepcopy(vertices)
-
+        if invalidate_self_allowed:
+            vertices   = self.vertices
+            attributes = self.vertex_attributes
+        else:
+            vertices   = copy.deepcopy(self.vertices)
+            attributes = copy.deepcopy(self.vertex_attributes)
+        
         # Deal with position / weights
         weights_used = set(v.weights is not None and len(v.weights) > 0 for v in vertices)
         if len(weights_used) > 1:
@@ -279,7 +331,7 @@ class Mesh:
             for v in vertices:
                 used_indices.update(set(v.indices))
                 max_weights = max(max_weights, len(v.weights))
-
+            
             if len(used_indices) == 1:
                 # Need to think carefully about how to generate the vertex attributes
                 binary.vertex_groups_per_vertex = 0
@@ -287,13 +339,6 @@ class Mesh:
                 for v in vertices:
                     v.indices = None
                     v.weights = None
-            elif max_weights == 1:
-                binary.vertex_groups_per_vertex = 1
-                binary.matrix_palette = sorted(used_indices)
-                idx_lookup = {idx: i*3 for i, idx in enumerate(binary.matrix_palette)}
-                for v in vertices:
-                    v.indices = [idx_lookup[w] for w in v.indices]
-                    v.weights = list(v.weights)
             else:
                 binary.vertex_groups_per_vertex = max_weights
                 binary.matrix_palette = sorted(used_indices)
@@ -301,10 +346,39 @@ class Mesh:
                 for v in vertices:
                     v.indices = [idx_lookup[w] for w in v.indices]
                     v.weights = list(v.weights)
-                    v.indices += [0 for _ in range(max_weights - len(v.weights))]
+                    v.indices += [0  for _ in range(max_weights - len(v.weights))]
                     v.weights += [0. for _ in range(max_weights - len(v.weights))]
 
-        binary.VAO = binary.pack_vertices(vertices)
+        # Create vertex attributes
+        if attributes is None:
+            if len(vertices):
+                vas = binary.get_default_vertex_attributes(vertices[0])
+                vas = {idx: create_vertex_attribute_interface(va, binary.DATA_TYPES) for idx, va in vas.items()}
+            else:
+                vas = {}
+        else:
+            vas = attributes
+            
+        # Edit vertices & attributes according to shader transforms
+        binary.apply_shader_transforms_pack(vertices, vas)
+        
+        # Give Vertex Attributes to mesh binary
+        INVERSE_DATA_TYPES = binary.INVERSE_DATA_TYPES
+        for va in vas.values():
+            vab = VertexAttributeBinary()
+            vab.index = va.index
+            vab.normalised = va.normalised
+            vab.elem_count = va.count
+            vab.type = INVERSE_DATA_TYPES[va.type]
+            vab.offset = binary.bytes_per_vertex
+            binary.vertex_attributes.append(vab)
+
+            # Update size of vertex
+            size = struct.calcsize(va.type)*va.count
+            size += (0x04 - (size % 0x04)) % 0x04
+            binary.bytes_per_vertex += size
+        
+        binary.VAO = vertices
 
 
 class Material:
@@ -312,8 +386,8 @@ class Material:
         self.name_hash       = None
         self.flags           = None
         self.shader_file     = None
-        self.shader_uniforms = None
-        self.opengl_settings = None
+        self.shader_uniforms = []
+        self.opengl_settings = []
 
     @classmethod
     def from_binary(cls, binary):
@@ -336,14 +410,22 @@ class Material:
         binary.shader_uniforms = [b.to_binary() for b in self.shader_uniforms]
         binary.opengl_settings = [b.to_binary() for b in self.opengl_settings]
         return binary
+    
+    def add_shader_uniform(self, index, data):
+        self.shader_uniforms.append(ShaderUniform(index, data))
+        
+    def add_texture_uniform(self, index, data):
+        self.shader_uniforms.append(TextureUniform(index, data))
 
+    def add_opengl_setting(self, index, data):
+        self.opengl_settings.append(OpenGLSetting(index, data))
 
 class ShaderUniform:
     is_texture = False
     
-    def __init__(self):
-        self.index = None
-        self.data = None
+    def __init__(self, index, data):
+        self.index = index
+        self.data  = data
 
     def __repr__(self):
         return f"[Geom::ShaderUniform {self.index}] {self.data}"
@@ -351,12 +433,10 @@ class ShaderUniform:
     @classmethod
     def from_binary(cls, binary):
         if binary.float_count == 0:
-            instance = TextureUniform()
+            u_cls = TextureUniform
         else:
-            instance = ShaderUniform()
-        instance.index = binary.index
-        instance.data = binary.unpack()
-        return instance
+            u_cls = ShaderUniform
+        return u_cls(binary.index, binary.unpack())
 
     def to_binary(self):
         binary = ShaderUniformBinary()
@@ -369,9 +449,9 @@ class ShaderUniform:
 class TextureUniform:
     is_texture = True
     
-    def __init__(self):
-        self.index = None
-        self.data = None
+    def __init__(self, index, data):
+        self.index = index
+        self.data  = data
 
     def __repr__(self):
         return f"[Geom::TextureUniform {self.index}] {self.data}"
@@ -379,12 +459,10 @@ class TextureUniform:
     @classmethod
     def from_binary(cls, binary):
         if binary.float_count == 0:
-            instance = TextureUniform()
+            u_cls = TextureUniform
         else:
-            instance = ShaderUniform()
-        instance.index = binary.index
-        instance.data = binary.unpack()
-        return instance
+            u_cls = ShaderUniform
+        return u_cls(binary.index, binary.unpack())
 
     def to_binary(self):
         binary = ShaderUniformBinary()
@@ -395,18 +473,16 @@ class TextureUniform:
 
 
 class OpenGLSetting:
-    def __init__(self):
-        self.index = None
-        self.data = None
+    def __init__(self, index, data):
+        self.index = index
+        self.data  = data
 
     def __repr__(self):
         return f"[Geom::OpenGLSetting {self.index}] {self.data}"
 
     @classmethod
     def from_binary(cls, binary):
-        instance = cls()
-        instance.index = binary.index
-        instance.data = binary.unpack()
+        instance = cls(binary.index, binary.unpack())
         return instance
 
     def to_binary(self):
