@@ -11,6 +11,7 @@ from ...Core.FileFormats.Geom.GeomInterface import GeomInterface
 from ...Core.FileFormats.Anim.AnimInterface import AnimInterface
 from .ArmatureImport import import_skeleton
 from .CameraImport   import import_cameras
+from .LightImport    import import_lights
 from .MaterialImport import import_materials
 from .MeshImport import import_meshes
 from .AnimationImport import import_base_animation, import_animations
@@ -46,10 +47,9 @@ class ImportMediaVision(bpy.types.Operator):
         collection = init_collection(model_name)
         armature_obj, dscs_to_bpy_bone_map = import_skeleton(collection, armature_name, ni, si, gi, [2* d for d in gb.bounding_box_diagonal])
         material_list = import_materials(ni, gi, directory, self.img_to_dds, self.use_custom_nodes)
-        # # import_lights(parent_obj, model_data)
-
         import_meshes(collection, model_name, ni, gi, armature_obj, material_list, errorlog, self.merge_vertices)
         import_cameras(collection, armature_obj, dscs_to_bpy_bone_map, gi)
+        import_lights(collection, armature_obj, dscs_to_bpy_bone_map, gi)
         # Animations
         base_anim = None
         ais = {}
