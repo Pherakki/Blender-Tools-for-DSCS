@@ -144,7 +144,7 @@ class GeomBinaryBase(Serializable):
 
     def rw_cameras(self, rw):
         if self.cameras_offset:
-            rw.assert_local_file_pointer_now_at("Lights", self.cameras_offset)
+            rw.assert_local_file_pointer_now_at("Cameras", self.cameras_offset)
             self.cameras = rw.rw_obj_array(self.cameras, CameraBinary, self.camera_count)
 
     def rw_ibpms(self, rw):
