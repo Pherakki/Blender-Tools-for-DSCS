@@ -19,6 +19,10 @@ class BlenderVertexInfo:
         self.weights = weights
 
 
+##################
+# 1) THIS NEEDS TO TAKE VERTEX WEIGHTS INTO ACCOUNT
+# 2) THIS ALSO NEEDS TO PREVENT VERTEX DROPS: KEEP NON-POLYGON VERTICES
+##################
 def merge_vertices(vertices, triangles, merge_vertices):
     """
     Given a list of input vertices and polygons, merge vertices with the same position attribute with face normals
