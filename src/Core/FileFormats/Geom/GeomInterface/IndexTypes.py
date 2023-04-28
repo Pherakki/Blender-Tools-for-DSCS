@@ -20,8 +20,8 @@ class IndexType:
         if value in ['auto', 'B', 'H', 'I']:
             self.__data_type = value
         else:
-            raise ValueError("Attempted to set the index type to an invalid value; can only accept "
-                             "'auto' (automatically choose smallest that fits buffer)"
+            raise ValueError("Attempted to set the index type to an invalid value; can only accept: "
+                             "'auto' (automatically choose smallest that fits buffer), "
                              "'B' (uint8), "
                              "'H' (uint16), "
                              "'I' (uint32)")
@@ -50,6 +50,11 @@ class LineStrip(IndexType):
 class Triangles(IndexType):
     def __init__(self, data_type, buffer):
         super().__init__(PrimitiveTypes.TRIANGLES, data_type, buffer)
+
+    @classmethod
+    def from_triangles(cls, data_type, triangles):
+        buffer = [idx for tri in triangles for idx in tri]
+        return cls(data_type, buffer)
 
     def unpack(self):
         return [(t1, t2, t3) for t1, t2, t3 in zip(self.buffer[0::3], self.buffer[1::3], self.buffer[2::3])]
