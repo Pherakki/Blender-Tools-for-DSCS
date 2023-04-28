@@ -1,5 +1,6 @@
 import array
 import math
+import struct
 
 import bpy
 from mathutils import Vector, Quaternion
@@ -9,10 +10,44 @@ from ...Core.FileFormats.Geom.Constants import AttributeTypes
 from ..IOHelpersLib.Meshes import merge_vertices, import_loop_normals, create_uv_map
 from ..IOHelpersLib.Context import safe_active_object_switch, set_active_obj, set_mode
 
+class VertexAttributeTracker:
+    __slots__ = ("bpy_mesh_objs", "normals", "tangents", "binormals", "colors", "uv1s", "uv2s", "uv3s")
+    
+    def __init__(self):
+        self.bpy_mesh_objs = []
+        self.normals   = []
+        self.tangents  = []
+        self.binormals = []
+        self.colors    = []
+        self.uv1s      = []
+        self.uv2s      = []
+        self.uv3s      = []
+        
+    def log_mesh(self, bpy_mesh_obj, dscs_mesh):
+        self.bpy_mesh_objs.append(bpy_mesh_obj)
+        if len(dscs_mesh.vertices):
+            v = dscs_mesh.vertices[0]
+            self.normals  .append(v.normal   is not None)
+            self.tangents .append(v.tangent  is not None)
+            self.binormals.append(v.binormal is not None)
+            self.colors   .append(v.color    is not None)
+            self.uv1s     .append(v.UV1      is not None)
+            self.uv2s     .append(v.UV2      is not None)
+            self.uv3s     .append(v.UV3      is not None)
+        else:
+            self.normals  .append(False)
+            self.tangents .append(False)
+            self.binormals.append(False)
+            self.colors   .append(False)
+            self.uv1s     .append(False)
+            self.uv2s     .append(False)
+            self.uv3s     .append(False)
+
 
 @safe_active_object_switch
-def import_meshes(model_name, ni, gi, armature, material_list, try_merge_vertices):
+def import_meshes(collection, model_name, ni, gi, armature, material_list, errorlog, try_merge_vertices):
     meshes = []
+    meshes_using_material = {}
     for i, mesh in enumerate(gi.meshes):
         #################
         # PURE GEOMETRY #
@@ -38,11 +73,16 @@ def import_meshes(model_name, ni, gi, armature, material_list, try_merge_vertice
         bpy_mesh_object = bpy.data.objects.new(meshobj_name, bpy_mesh)
 
         bpy_mesh_object.data.from_pydata(vert_positions, [], new_tris)
-        bpy.context.collection.objects.link(bpy_mesh_object)
+        collection.objects.link(bpy_mesh_object)
 
         # Assign materials
         active_material = material_list[mesh.material_id]
         bpy.data.objects[meshobj_name].active_material = active_material
+        
+        matname = active_material.name
+        if matname not in meshes_using_material:
+            meshes_using_material[matname] = VertexAttributeTracker()
+        meshes_using_material[matname].log_mesh(bpy_mesh_object, mesh)
         
         set_active_obj(bpy_mesh_object)
         
@@ -84,7 +124,8 @@ def import_meshes(model_name, ni, gi, armature, material_list, try_merge_vertice
         # ADD MISC DATA #
         #################
         # Load the hashed mesh name
-        bpy_mesh_object.data.DSCS_MeshProperties.name_hash = hex(mesh.name_hash)
+        signed_hash = struct.unpack('i', struct.pack('I', mesh.name_hash))[0]
+        bpy_mesh_object.data.DSCS_MeshProperties.name_hash = signed_hash
 
         # Set armature constraint
         bpy_mesh_object.parent = armature
@@ -105,6 +146,70 @@ def import_meshes(model_name, ni, gi, armature, material_list, try_merge_vertice
         bpy_mesh.transform(Quaternion([1/(2**.5), 1/(2**.5), 0, 0]).to_matrix().to_4x4())
 
         meshes.append(bpy_mesh)
+
+    set_material_vertex_attributes(meshes_using_material, errorlog)
+
+
+def set_material_vertex_attributes(meshes_using_material, errorlog):
+    for matname, vas in meshes_using_material.items():
+        bpy_mat = bpy.data.materials[matname]
+        props = bpy_mat.DSCS_MaterialProperties
+        
+        # Normals
+        if any(vas.normals):
+            if not all(vas.normals):
+                errorlog.log_warning_message(f"Meshes using material '{matname}' inconsistently possess vertex normals - assuming the material requires normals")
+            props.requires_normals = True
+        else:
+            props.requires_normals = False
+        
+        # Tangents
+        if any(vas.tangents):
+            if not all(vas.tangents):
+                errorlog.log_warning_message(f"Meshes using material '{matname}' inconsistently possess vertex tangents - assuming the material requires tangents")
+            props.requires_tangents = True
+        else:
+            props.requires_tangents = False
+
+        # Binormals
+        if any(vas.binormals):
+            if not all(vas.binormals):
+                errorlog.log_warning_message(f"Meshes using material '{matname}' inconsistently possess vertex binormals - assuming the material requires binormals")
+            props.requires_binormals = True
+        else:
+            props.requires_binormals = False
+
+        # Color
+        if any(vas.colors):
+            if not all(vas.colors):
+                errorlog.log_warning_message(f"Meshes using material '{matname}' inconsistently possess vertex colors - assuming the material requires a color map")
+            props.requires_colors = True
+        else:
+            props.requires_colors = False
+            
+        # UV1
+        if any(vas.uv1s):
+            if not all(vas.uv1s):
+                errorlog.log_warning_message(f"Meshes using material '{matname}' inconsistently possess UV Map 1 - assuming the material requires UV Map 1")
+            props.requires_uv1s = True
+        else:
+            props.requires_uv1s = False
+            
+        # UV2
+        if any(vas.uv2s):
+            if not all(vas.uv2s):
+                errorlog.log_warning_message(f"Meshes using material '{matname}' inconsistently possess UV Map 2 - assuming the material requires UV Map 2")
+            props.requires_uv2s = True
+        else:
+            props.requires_uv2s = False
+            
+        # UV3
+        if any(vas.uv3s):
+            if not all(vas.uv3s):
+                errorlog.log_warning_message(f"Meshes using material '{matname}' inconsistently possess UV Map 3 - assuming the material requires UV Map 3")
+            props.requires_uv3s = True
+        else:
+            props.requires_uv3s = False
 
 
 def make_vertex_groups(blender_vert_infos):

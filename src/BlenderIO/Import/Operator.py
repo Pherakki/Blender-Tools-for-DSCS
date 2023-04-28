@@ -45,10 +45,10 @@ class ImportMediaVision(bpy.types.Operator):
         collection = init_collection(model_name)
         armature_obj, dscs_to_bpy_bone_map = import_skeleton(collection, armature_name, ni, si, gi, [2* d for d in gb.bounding_box_diagonal])
         material_list = import_materials(ni, gi, directory, self.img_to_dds, self.use_custom_nodes)
-        import_meshes(model_name, ni, gi, armature, material_list, self.merge_vertices)
         # # import_cameras(parent_obj, model_data)
         # # import_lights(parent_obj, model_data)
 
+        import_meshes(collection, model_name, ni, gi, armature_obj, material_list, errorlog, self.merge_vertices)
         # Animations
         base_anim = None
         ais = {}
