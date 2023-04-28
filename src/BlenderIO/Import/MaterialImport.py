@@ -5,6 +5,7 @@ import bpy
 from .ShaderNodes.BuildTree import define_node_group
 from .ShaderNodes.BuildTree import define_clut_uv_node_group
 from .ShaderNodes.BuildTree import define_refl_uv_node_group
+from .ShaderNodes.BuildTree import define_uv_transforms_node_group
 
 
 def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
@@ -13,6 +14,10 @@ def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
     define_node_group()
     define_clut_uv_node_group()
     define_refl_uv_node_group()
+    define_uv_transforms_node_group("ColorSampler",         "color_sampler")
+    define_uv_transforms_node_group("OverlayColorSampler",  "overlay_color_sampler")
+    define_uv_transforms_node_group("NormalSampler",        "normal_sampler")
+    define_uv_transforms_node_group("OverlayNormalSampler", "overlay_normal_sampler")
     
     materials = []
     for material_name, material in zip(ni.material_names, gi.materials):
@@ -21,7 +26,7 @@ def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
         props = bpy_material.DSCS_MaterialProperties
 
         # Load up any custom properties we need
-        props.shader_name = f"{material.shader_file[0]:0>8x}_{material.shader_file[1]:0>8x}_{material.shader_file[2]:0>8x}_{material.shader_file[3]:0>8x}"
+        props.set_split_shader_name(material.shader_file)
         bpy_material.use_backface_culling = True
         
         def add_flag(is_true, name):
@@ -50,11 +55,14 @@ def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
         # load_shader_text(path, bpy_material['shader_hex'], "_fp.shad", shader_bank)
         
         # Import extra material data
-        import_shader_uniforms(material, props, texture_bank)
+        used_images = {}
+        import_shader_uniforms(material, props, texture_bank, used_images)
         import_opengl_settings(material, props, bpy_material)
         
         # Set up nodes
-        create_shader_nodes(path, bpy_material, material, gi, texture_bank)
+        create_shader_nodes(path, bpy_material, material, gi, texture_bank, used_images)
+        
+        bpy_material.update_tag()
         
     return materials
 
@@ -64,43 +72,40 @@ def import_images(gi, texture_bank, path):
         img_path = os.path.join(path, "images", texture_name + ".img")
         if os.path.isfile(img_path):
             texture_bank[idx] = bpy.data.images.load(img_path)
+            texture_bank[idx].name = os.path.splitext(texture_bank[idx].name)[0]
 
 
-def import_shader_uniforms(material, props, texture_bank):
+def import_shader_uniforms(material, props, texture_bank, used_images):    
+    def is_tex(uniform, idx):
+        return uniform.index == idx and uniform.is_texture
+    
+    def is_vec(uniform, idx, size):
+        return uniform.index == idx and len(uniform.data) == size and not uniform.is_texture
+    
+    def is_float(uniform, idx):
+        return is_vec(uniform, idx, 1)
+
+    def mk_tex(sampler, uniform):
+        used_images[sampler.typename] = texture_bank[uniform.data[0]]
+        sampler.data = uniform.data[1:4]
+    
     for uniform in material.shader_uniforms:
-        if uniform.index == 0x32:
-            props.color_sampler.active = True
-            props.color_sampler.image = texture_bank[uniform.data[0]]
-            props.color_sampler.data = uniform.data[1:4]
-            # Set UV by parsing shader name
-        elif uniform.index == 0x33:
-            props.use_diffuse_color = True
-            props.diffuse_color = uniform.data
-        elif uniform.index == 0x3A:
-            props.env_sampler.active = True
-            props.env_sampler.image = texture_bank[uniform.data[0]]
-            props.env_sampler.data = uniform.data[1:4]
-        elif uniform.index == 0x3B:
-            props.use_reflections = True
-            props.reflection_strength = uniform.data[0]
-        elif uniform.index == 0x3C:
-            props.use_fresnel_min = True
-            props.fresnel_min = uniform.data[0]
-        elif uniform.index == 0x3D:
-            props.use_fresnel_exp = True
-            props.fresnel_exp = uniform.data[0]
-        elif uniform.index == 0x44:
-            props.overlay_color_sampler.active = True
-            props.overlay_color_sampler.image = texture_bank[uniform.data[0]]
-            props.overlay_color_sampler.data = uniform.data[1:4]
-            # Set UV by parsing shader name
-        elif uniform.index == 0x47:
-            props.use_overlay_strength = True
-            props.overlay_strength = uniform.data
-        elif uniform.index == 0x48:
-            props.clut_sampler.active = True
-            props.clut_sampler.image = texture_bank[uniform.data[0]]
-            props.clut_sampler.data = uniform.data[1:4]
+        # Diffuse
+        if   is_tex  (uniform, 0x32):    mk_tex(props.color_sampler, uniform)
+        elif is_tex  (uniform, 0x44):    mk_tex(props.overlay_color_sampler, uniform)
+        elif is_vec  (uniform, 0x33, 4): props.set_diffuse_color(uniform)
+        elif is_float(uniform, 0x47):    props.set_overlay_str(uniform)
+        
+        # Lighting
+        elif is_tex  (uniform, 0x48):    mk_tex(props.clut_sampler, uniform)
+        
+        # Reflection
+        elif is_tex  (uniform, 0x3A):    mk_tex(props.env_sampler, uniform)
+        elif is_float(uniform, 0x3B):    props.set_refl_str(uniform)
+        elif is_float(uniform, 0x3C):    props.set_fres_min(uniform)
+        elif is_float(uniform, 0x3D):    props.set_fres_exp(uniform)
+        
+        # Anything not explicitly handled
         else:
             bpy_uniform = props.unhandled_uniforms.add()
             bpy_uniform.index = uniform.index
@@ -127,24 +132,26 @@ def import_shader_uniforms(material, props, texture_bank):
 
 def import_opengl_settings(material, props, bpy_material):
     for setting in material.opengl_settings:
-        if   setting.index == 0xA0: pass # glAlphaFunc
-        elif setting.index == 0xA1: props.use_gl_alpha = bool(setting.data[0])
-        elif setting.index == 0xA2: pass # glBlendFunc
-        elif setting.index == 0xA3: pass # glBlendEquationSeparate
+        #if   setting.index == 0xA0: pass # glAlphaFunc
+        if   setting.index == 0xA1: props.use_gl_alpha = bool(setting.data[0])
+        #elif setting.index == 0xA2: pass # glBlendFunc
+        #elif setting.index == 0xA3: pass # glBlendEquationSeparate
         elif setting.index == 0xA4: props.use_gl_blend = bool(setting.data[0])
-        elif setting.index == 0xA5: pass # glCullFace
+        #elif setting.index == 0xA5: pass # glCullFace
         elif setting.index == 0xA6: bpy_material.use_backface_culling = bool(setting.data[0])
-        elif setting.index == 0xA7: pass # glDepthFunc
-        elif setting.index == 0xA8: pass # glDepthMask
-        elif setting.index == 0xA9: pass # GL_DEPTH_TEST
-        elif setting.index == 0xAA: pass # glPolygonOffset
-        elif setting.index == 0xAB: pass # GL_POLYGON_OFFSET_FILL
-        elif setting.index == 0xAC: pass # glColorMask
+        #elif setting.index == 0xA7: pass # glDepthFunc
+        #elif setting.index == 0xA8: pass # glDepthMask
+        #elif setting.index == 0xA9: pass # GL_DEPTH_TEST
+        #elif setting.index == 0xAA: pass # glPolygonOffset
+        #elif setting.index == 0xAB: pass # GL_POLYGON_OFFSET_FILL
+        #elif setting.index == 0xAC: pass # glColorMask
         else:
-            assert 0 # Add to unhandled settings    
+            bpy_setting = props.unhandled_settings.add()
+            bpy_setting.index = setting.index
+            bpy_setting.data  = setting.data
         
         
-def create_shader_nodes(path, bpy_material, material, gi, texture_bank):
+def create_shader_nodes(path, bpy_material, material, gi, texture_bank, used_images):
         bpy_material.use_nodes = True
         nodes   = bpy_material.node_tree.nodes
         connect = bpy_material.node_tree.links.new
@@ -156,18 +163,30 @@ def create_shader_nodes(path, bpy_material, material, gi, texture_bank):
         main_group = nodes.new("ShaderNodeGroup")
         main_group.node_tree = bpy.data.node_groups['DSCS Shader']
         
+        color_sampler_uvs = nodes.new("ShaderNodeGroup")
+        color_sampler_uvs.name  = "ColorSampler UVs"
+        color_sampler_uvs.label = "ColorSampler UVs"
+        #color_sampler_uvs.node_tree = bpy.data.node_groups["DSCS ColorSampler UV"]
+        
         color_sampler = nodes.new('ShaderNodeTexImage')
         color_sampler.name  = "ColorSampler"
         color_sampler.label = "ColorSampler"
-        color_sampler.image = props.color_sampler.image
+        color_sampler.image = used_images.get(props.color_sampler.typename)
+        
+        overlay_color_sampler_uvs = nodes.new("ShaderNodeGroup")
+        overlay_color_sampler_uvs.name  = "OverlayColorSampler UVs"
+        overlay_color_sampler_uvs.label = "OverlayColorSampler UVs"
+        #overlay_color_sampler_uvs.node_tree = bpy.data.node_groups["DSCS OverlayColorSampler UV"]
         
         overlay_color_sampler = nodes.new('ShaderNodeTexImage')
         overlay_color_sampler.name  = "OverlayColorSampler"
         overlay_color_sampler.label = "OverlayColorSampler"
-        overlay_color_sampler.image = props.overlay_color_sampler.image
+        overlay_color_sampler.image = used_images.get(props.overlay_color_sampler.typename)
         
+        #connect(color_sampler_uvs.outputs["UV"], color_sampler.inputs["Vector"])
         connect(color_sampler.outputs["Color"], main_group.inputs["ColorSampler"])
         connect(color_sampler.outputs["Alpha"], main_group.inputs["ColorSamplerAlpha"])
+        #connect(overlay_color_sampler_uvs.outputs["UV"], overlay_color_sampler.inputs["Vector"])
         connect(overlay_color_sampler.outputs["Color"], main_group.inputs["OverlayColorSampler"])
         connect(overlay_color_sampler.outputs["Alpha"], main_group.inputs["OverlayColorSamplerAlpha"])
 
@@ -180,9 +199,9 @@ def create_shader_nodes(path, bpy_material, material, gi, texture_bank):
         clut_sampler = nodes.new('ShaderNodeTexImage')
         clut_sampler.name  = "CLUTSampler"
         clut_sampler.label = "CLUTSampler"
-        clut_sampler.image = props.clut_sampler.image
+        clut_sampler.image = used_images.get(props.clut_sampler.typename)
         clut_sampler.extension = "EXTEND"
-        if clut_sampler.image is not None: # Move this to import...
+        if clut_sampler.image is not None:
             clut_sampler.image.alpha_mode = "CHANNEL_PACKED"
 
         connect(clut_uvs.outputs["UV"], clut_sampler.inputs["Vector"])
@@ -200,7 +219,7 @@ def create_shader_nodes(path, bpy_material, material, gi, texture_bank):
         refl_sampler = nodes.new('ShaderNodeTexImage')
         refl_sampler.name  = "EnvSampler"
         refl_sampler.label = "EnvSampler"
-        refl_sampler.image = props.env_sampler.image
+        refl_sampler.image = used_images.get(props.env_sampler.typename)
         
         connect(refl_uvs    .outputs["UV"],    refl_sampler.inputs["Vector"])
         connect(refl_sampler.outputs["Color"], main_group  .inputs["EnvSampler"])
@@ -215,13 +234,15 @@ def create_shader_nodes(path, bpy_material, material, gi, texture_bank):
         mat_out = nodes.get('Material Output')
         connect(main_group.outputs["Shader"], mat_out.inputs["Surface"])
 
-        main_group           .location = (-200, 300)
-        color_sampler        .location = (-500, 300)
-        overlay_color_sampler.location = (-500, 0)
-        clut_sampler         .location = (-500, -300)
-        clut_uvs             .location = (-700, -300)
-        refl_sampler         .location = (-500, -600)
-        refl_uvs             .location = (-700, -600)
+        main_group               .location = (-200, 300)
+        #color_sampler_uvs        .location = (-700, 100)
+        color_sampler            .location = (-500, 300)
+        #overlay_color_sampler_uvs.location = (-700, -200)
+        overlay_color_sampler    .location = (-500, 0)
+        clut_sampler             .location = (-500, -300)
+        clut_uvs                 .location = (-700, -300)
+        refl_sampler             .location = (-500, -600)
+        refl_uvs                 .location = (-700, -600)
         
 
 # def load_shader_text(path, shader_name, suffix, shader_bank):
