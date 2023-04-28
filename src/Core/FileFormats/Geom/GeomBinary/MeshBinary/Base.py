@@ -104,18 +104,25 @@ class MeshBinaryBase(Serializable):
         self.bounding_box_diagonal    = rw.rw_float32s(self.bounding_box_diagonal, 3)
 
     def rw_contents(self, rw):
-        self.rw_VAO(rw)
+        
+        vao = self.rw_VAO(rw)
         self.rw_matrix_palette(rw)
         self.rw_IBO(rw)
         self.rw_vertex_attributes(rw)
+        
+        if rw.mode() == "read":
+            self.VAO = self.unpack_vertices(vao)
 
     def rw_VAO(self, rw):
         """
         Read/write the vertex data.
         Corresponds to an OpenGL Vertex Array Object (VAO).
         """
+        vao = None
+        if rw.mode() != "read":
+            vao = self.pack_vertices(self.VAO)
         rw.assert_local_file_pointer_now_at("VAO", self.vertices_offset)
-        self.VAO = rw.rw_bytestring(self.VAO, self.vertex_count*self.bytes_per_vertex)
+        return rw.rw_bytestring(vao, self.vertex_count*self.bytes_per_vertex)
 
     def rw_matrix_palette(self, rw):
         """
@@ -146,18 +153,12 @@ class MeshBinaryBase(Serializable):
     ########################################
     # Helpers for (de)serialising vertices #
     ########################################
-    def unpack_vertices(self, make_shader_transforms=None):
-        if make_shader_transforms is None:
-            shader_transform_functors = self.get_default_shader_transforms()
-        else:
-            shader_transform_functors = make_shader_transforms()
-
+    def unpack_vertices(self, vao):
         # Create unpack functions
         # Inefficient but can't do much more with Python without making the code very unclean
         vertices = [Vertex() for _ in range(self.vertex_count)]
         unpack_funcs = [None]*len(self.vertex_attributes)
         struct_fmts = [None]*len(self.vertex_attributes)
-        va_idxs = set(va.index for va in self.vertex_attributes)
         for i, vertex_attribute in enumerate(self.vertex_attributes):
             dtype = self.DATA_TYPES[vertex_attribute.type]*vertex_attribute.elem_count
             dsize = struct.calcsize(dtype)
@@ -183,27 +184,16 @@ class MeshBinaryBase(Serializable):
         for vertex_idx, vertex in enumerate(vertices):
             for unpack_func, (dtype, size), va in zip(unpack_funcs, struct_fmts, self.vertex_attributes):
                 byte_idx = vertex_idx * self.bytes_per_vertex + va.offset
-                bytes = self.VAO[byte_idx:byte_idx + size]
+                bytes = vao[byte_idx:byte_idx + size]
                 vertex.buffer[va.index] = unpack_func(bytes)
-
-            for transform_functor in shader_transform_functors:
-                for va_idx in transform_functor.APPLIES_TO:
-                    if va_idx in va_idxs:
-                        transform_functor.forwards(vertex, va_idx)
 
         return vertices
 
     def pack_vertices(self, vertices, make_shader_transforms=None):
-        if make_shader_transforms is None:
-            shader_transform_functors = self.get_default_shader_transforms()
-        else:
-            shader_transform_functors = make_shader_transforms()
-
         vertex_binaries = [None]*len(vertices)
         pack_funcs  = [None]*len(self.vertex_attributes)
         fmt_sizes = [None] * len(self.vertex_attributes)
         chunk_sizes = [None] * len(self.vertex_attributes)
-        va_idxs = set(va.index for va in self.vertex_attributes)
 
         # Generate pack funcs
         sorted_vas = sorted(self.vertex_attributes, key=lambda x: x.offset)
@@ -247,15 +237,67 @@ class MeshBinaryBase(Serializable):
         # Construct vertices
         vertex_binary = [None]*len(self.vertex_attributes)
         for vertex_idx, vertex in enumerate(vertices):
-            for transform_functor in shader_transform_functors:
-                for va_idx in transform_functor.APPLIES_TO:
-                    if va_idx in va_idxs:
-                        transform_functor.backwards(vertex, va_idx)
             for va_idx, (pack_func, fmt_size, alloc_size, va) in enumerate(zip(pack_funcs, fmt_sizes, chunk_sizes, sorted_vas)):
                 vertex_binary[va_idx] = pack_func(vertex.buffer[va.index])
                 vertex_binary[va_idx] += b'\x00'*(alloc_size - fmt_size)
             vertex_binaries[vertex_idx] = b''.join(vertex_binary)
         return b''.join(vertex_binaries)
+
+
+    def get_default_unpack_shader_transforms(self):
+        return self.get_default_shader_transforms()
+
+    def get_default_pack_shader_transforms(self):
+        return self.get_default_shader_transforms()[::-1]
+    
+    def get_unpack_shader_transforms(self, override_transforms=None):
+        if override_transforms is None:
+            return self.get_default_shader_transforms()
+        else:
+            return override_transforms
+    
+    def get_pack_shader_transforms(self, override_transforms=None):
+        if override_transforms is None:
+            return self.get_default_shader_transforms()[::-1]
+        else:
+            return override_transforms[::-1]
+        
+    def apply_shader_transforms_pack(self, vertices, vertex_attributes, override_transforms=None):
+        if not len(vertices):
+            return
+        
+        transforms = self.get_pack_shader_transforms(override_transforms)
+        transforms = [t for t in transforms if t.poll(vertices[0])]   
+        
+        attr_transforms = [t for t in transforms if t.TRANSFORM_ATTRS]
+        for transform in attr_transforms:
+            transform.attribute_transform_pack(vertex_attributes)
+            
+        vtx_transforms = [t for t in transforms if t.TRANSFORM_VERTICES]
+        for vertex in vertices:
+            for transform in vtx_transforms:
+                transform.vertex_transform_pack(vertex)
+        
+    def apply_shader_transforms_unpack(self, vertices, vertex_attributes, override_transforms=None):
+        if not len(vertices):
+            return
+        
+        transforms = self.get_unpack_shader_transforms(override_transforms)
+        transforms = [t for t in transforms if t.poll(vertices[0])]   
+        
+        # attr_transforms = [t for t in transforms if t.TRANSFORM_ATTRS]
+        # for transform in attr_transforms:
+        #     transform.attribute_transform_unpack(vertex_attributes)
+            
+        vtx_transforms = [t for t in transforms if t.TRANSFORM_VERTICES]
+        for vertex in vertices:
+            for transform in vtx_transforms:
+                transform.vertex_transform_unpack(vertex)
+        
+
+    @property
+    def INVERSE_DATA_TYPES(self):
+        return {v: i for i, v in self.DATA_TYPES.items()}
 
     # VIRTUAL PROPERTIES
     @property
@@ -277,21 +319,17 @@ class MeshBinaryBase(Serializable):
         # Deprecate in favour of the below two methods: this is not a commutative operation
         raise NotImplementedError("get_default_shader_transforms not implemented on subclass")
 
-    def get_default_unpack_shader_transforms(self):
-        raise NotImplementedError("get_default_unpack_shader_transforms not implemented on subclass")
-
-    def get_default_pack_shader_transforms(self):
-        raise NotImplementedError("get_default_pack_shader_transforms not implemented on subclass")
-
+    def get_default_vertex_attributes(cls, vertex, shader_transforms):
+        raise NotImplementedError("get_default_vertex_attributes not implemented on subclass")
 
 class VertexAttributeBinary(Serializable):
-    def __init__(self):
+    def __init__(self, index=None, normalised=None, elem_count=None, type=None, offset=None):
         super().__init__()
-        self.index      = None
-        self.normalised = None
-        self.elem_count = None
-        self.type       = None
-        self.offset     = None
+        self.index      = index
+        self.normalised = normalised
+        self.elem_count = elem_count
+        self.type       = type
+        self.offset     = offset
 
     def __repr__(self):
         return f"[Geom::Mesh::VertexAttributeBinary] {self.index} {self.normalised} {self.elem_count} {self.type} {self.offset}"
@@ -306,6 +344,7 @@ class VertexAttributeBinary(Serializable):
 
 class Vertex:
     __slots__ = ("buffer",)
+    ATTRIBUTES = AttributeTypes
 
     def __init__(self):
         self.buffer = [None]*12

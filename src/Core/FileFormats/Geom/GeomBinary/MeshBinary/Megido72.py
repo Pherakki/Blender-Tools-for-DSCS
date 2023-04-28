@@ -1,5 +1,6 @@
 from .Base import MeshBinaryBase, PrimitiveTypes
-from .ShaderTransforms import DeleteSingleIndices, DivideTexcoordBy1024
+from ...Constants import AttributeTypes
+from .ShaderTransforms import UVDiv1024
 
 
 class MeshBinaryMegido72(MeshBinaryBase):
@@ -42,7 +43,4 @@ class MeshBinaryMegido72(MeshBinaryBase):
         return lambda value, shape, endianness=None: rw.rw_multiple(dtype, value, shape, endianness)
 
     def get_default_shader_transforms(self):
-        if self.vertex_groups_per_vertex == 0:
-            return [DeleteSingleIndices, DivideTexcoordBy1024]
-        else:
-            return [DivideTexcoordBy1024]
+        return [UVDiv1024(AttributeTypes.UV1), UVDiv1024(AttributeTypes.UV2), UVDiv1024(AttributeTypes.UV3)]

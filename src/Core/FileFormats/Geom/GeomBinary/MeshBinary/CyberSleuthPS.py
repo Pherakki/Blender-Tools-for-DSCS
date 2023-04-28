@@ -1,5 +1,5 @@
 from .Base import MeshBinaryBase, PrimitiveTypes
-from .ShaderTransforms import CopySingleIndicesIntoPosition, DeleteSingleIndices
+from .ShaderTransforms import PosPackedIndex, IndexDiv3
 
 
 class MeshBinaryDSCSPS(MeshBinaryBase):
@@ -32,9 +32,7 @@ class MeshBinaryDSCSPS(MeshBinaryBase):
         return lambda value, shape, endianness=None: rw.rw_multiple(dtype, value, shape, endianness)
 
     def get_default_shader_transforms(self):
-        if self.vertex_groups_per_vertex == 0:
-            return [DeleteSingleIndices]
-        elif self.vertex_groups_per_vertex == 1:
-            return [CopySingleIndicesIntoPosition, DeleteSingleIndices]
+        if self.vertex_groups_per_vertex == 1:
+            return [PosPackedIndex()] # Index Div 3
         else:
             return []

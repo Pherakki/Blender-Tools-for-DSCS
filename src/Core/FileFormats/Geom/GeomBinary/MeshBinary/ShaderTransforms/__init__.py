@@ -1,85 +1,83 @@
 from ..Base import AttributeTypes
 
 
-class CopySingleIndicesIntoPosition:
-    # Needs implementing and behaviour removed from pack_vertices
-    APPLIES_TO = (AttributeTypes.POSITION,)
-
-    @staticmethod
-    def forwards(vertex, attribute):
-        pass
-
-    @staticmethod
-    def create_attributes(attribute_list):
-        pass
-
-    @staticmethod
-    def backwards(vertex, attribute):
-        pass
-
-    @staticmethod
-    def delete_attributes(attribute_list):
-        pass
-
-
-class DeleteSingleIndices:
-    # Needs implementing and behaviour removed from pack_vertices
-    APPLIES_TO = (AttributeTypes.INDEX, AttributeTypes.WEIGHT)
-
-    @staticmethod
-    def forwards(vertex, attribute):
-        pass
-
-    @staticmethod
-    def create_attributes(attribute_list):
-        pass
-
-    @staticmethod
-    def backwards(vertex, attribute):
-        pass
-
-    @staticmethod
-    def delete_attributes(attribute_list):
-        pass
+class ShaderTransform:
+    TRANSFORM_VERTICES = True
+    TRANSFORM_ATTRS    = True
+    
+    def poll(self, vertex):
+        raise NotImplementedError
+    
+    def vertex_transform_unpack(self, vertex):
+        raise NotImplementedError
+        
+    def vertex_transform_pack(self, vertex):
+        raise NotImplementedError
+    
+    def attribute_transform_pack(self, attributes):
+        raise NotImplementedError
+    
+    
+class PosPackedIndex(ShaderTransform):
+    TRANSFORM_VERTICES = True
+    TRANSFORM_ATTRS    = True
+    
+    def poll(self, vertex):
+        return vertex.position is not None
+    
+    def vertex_transform_unpack(self, vertex):
+        vertex.indices = [int(vertex.position[-1])]
+        vertex.weights = [1.]
+        vertex.position = vertex.position[:-1]
+        
+    def vertex_transform_pack(self, vertex):
+        vertex.position = [*vertex.position, *vertex.indices]
+        vertex.indices = None
+        vertex.weights = None
+    
+    def attribute_transform_pack(self, attributes):
+        attributes[AttributeTypes.POSITION].count += attributes[AttributeTypes.INDEX].count
+        del attributes[AttributeTypes.INDEX]
+        del attributes[AttributeTypes.WEIGHT]
 
 
-class DivideTexcoordBy1024:
-    APPLIES_TO = (AttributeTypes.UV1, AttributeTypes.UV2, AttributeTypes.UV3)
-
-    @staticmethod
-    def forwards(vertex, attribute):
-        vertex.buffer[attribute] = [d/1024 for d in vertex.buffer[attribute]]
-
-    @staticmethod
-    def create_attributes(attribute_list):
-        pass
-
-    @staticmethod
-    def backwards(vertex, attribute):
-        vertex.buffer[attribute] = [int(d*1024) for d in vertex.buffer[attribute]]
-
-    @staticmethod
-    def delete_attributes(attribute_list):
-        pass
+class UVDiv1024(ShaderTransform):
+    TRANSFORM_VERTICES = True
+    TRANSFORM_ATTRS    = False
+    
+    def __init__(self, attribute):
+        self.attribute = attribute
+        
+    def poll(self, vertex):
+        return vertex.buffer[self.attribute] is not None
+    
+    def vertex_transform_unpack(self, vertex):
+        vertex.buffer[self.attribute] = [d/1024 for d in vertex.buffer[self.attribute]]
+        
+    def vertex_transform_pack(self, vertex):
+        vertex.buffer[self.attribute] = [int(d*1024) for d in vertex.buffer[self.attribute]]
 
 
-class DivideIndicesBy3:
-    # Does not commute with CopySingleIndicesIntoPosition...
-    # forwards and backwards need to be separate lists...
-    APPLIES_TO = (AttributeTypes.INDEX,)
+class IndexDiv3(ShaderTransform):
+    TRANSFORM_VERTICES = True
+    TRANSFORM_ATTRS    = False
+    
+    def poll(self, vertex):
+        return vertex.indices is not None
+    
+    def vertex_transform_pack(self, vertex):
+        vertex.indices = [i//3 for i in vertex.indices]
+    
+    def vertex_transform_unpack(self, vertex):
+        vertex.indices = [int(i*3) for i in vertex.indices]
 
-    @staticmethod
-    def forwards(vertex, attribute):
-        vertex.buffer[attribute] = [d//3 for d in vertex.buffer[attribute]]
-
-    @staticmethod
-    def create_attributes(attribute_list):
-        pass
-
-    @staticmethod
-    def backwards(vertex, attribute):
-        vertex.buffer[attribute] = [d*3 for d in vertex.buffer[attribute]]
-
-    @staticmethod
-    def delete_attributes(attribute_list):
-        pass
+class TypeCast(ShaderTransform):
+    TRANSFORM_VERTICES = False
+    TRANSFORM_ATTRS    = True
+    
+    def __init__(self, attribute, to_type):
+        self.attribute = attribute
+        self.to_type   = to_type
+        
+    def attribute_transform_pack(self, attributes):
+        attributes[self.attribute].type = self.to_type
