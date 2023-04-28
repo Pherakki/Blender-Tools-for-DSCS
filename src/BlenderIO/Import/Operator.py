@@ -13,6 +13,7 @@ from .ArmatureImport import import_skeleton
 from .MaterialImport import import_materials
 from .MeshImport import import_meshes
 from .AnimationImport import import_base_animation, import_animations
+from ..IOHelpersLib.Collection import init_collection
 from ..Utils.ErrorLog import ImportErrorLog
 
 
@@ -41,7 +42,8 @@ class ImportMediaVision(bpy.types.Operator):
         gi = GeomInterface.from_binary(gb)
 
         # Import data
-        armature = import_skeleton(armature_name, ni, si, gi, [2* d for d in gb.bounding_box_diagonal])
+        collection = init_collection(model_name)
+        armature_obj, dscs_to_bpy_bone_map = import_skeleton(collection, armature_name, ni, si, gi, [2* d for d in gb.bounding_box_diagonal])
         material_list = import_materials(ni, gi, directory, self.img_to_dds, self.use_custom_nodes)
         import_meshes(model_name, ni, gi, armature, material_list, self.merge_vertices)
         # # import_cameras(parent_obj, model_data)
