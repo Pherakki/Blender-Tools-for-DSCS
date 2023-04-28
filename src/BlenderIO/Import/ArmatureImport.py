@@ -42,4 +42,16 @@ def import_skeleton(collection, armature_name, ni, si, gi, model_dims):
         model_dims = [10., 10., 10.]
     resize_bones(armature_obj, default_size=[.1*d for d in model_dims], min_bone_length=0.01)
     
+    # Import custom props
+    for bone_idx, bone in zip(list_of_bones.keys(), armature.bones):
+        bone.DSCS_BoneProperties.flag = si.bones[bone_idx].flag
+    
+    # Now get the float channels in
+    for fc in si.float_channels:
+        bpy_fc = armature.DSCS_ModelProperties.float_channels.add()
+        bpy_fc.obj_hash  = fc.name_hash
+        bpy_fc.flags     = fc.flags
+        bpy_fc.channel   = fc.array_idx // 16
+        bpy_fc.array_idx = fc.array_idx % 16
+    
     return armature_obj, dscs_to_bpy_bone_map
