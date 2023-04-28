@@ -1,4 +1,4 @@
-from ..GeomBinary.MeshBinary.Base import AttributeTypes
+from ..GeomBinary.MeshBinary.Base import AttributeTypes, VertexAttributeBinary
 
 
 class VertexAttribute:
@@ -14,6 +14,15 @@ class VertexAttribute:
 
     def __repr__(self):
         return f"[Geom::{self._ATTR_TYPE}] {self.count}{self.type}/{self.normalised}"
+
+    def to_binary(self, INVERSE_DATA_TYPES, offset=0):
+        vab = VertexAttributeBinary()
+        vab.index = self.index
+        vab.normalised = self.normalised
+        vab.elem_count = self.count
+        vab.type = INVERSE_DATA_TYPES[self.type]
+        vab.offset = offset
+        return vab
 
 
 class PositionAttribute(VertexAttribute):
