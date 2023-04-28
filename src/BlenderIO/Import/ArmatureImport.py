@@ -38,6 +38,8 @@ def import_skeleton(collection, armature_name, ni, si, gi, model_dims):
     bpy.ops.object.mode_set(mode='OBJECT')
     
     # Now edit their lengths
-    resize_bones(armature, default_size=[.1*d for d in model_dims], min_bone_length=0.01)
+    if all([e < 0.0001 for e in model_dims]):
+        model_dims = [10., 10., 10.]
+    resize_bones(armature_obj, default_size=[.1*d for d in model_dims], min_bone_length=0.01)
     
     return armature_obj, dscs_to_bpy_bone_map
