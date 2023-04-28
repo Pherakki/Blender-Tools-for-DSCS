@@ -185,10 +185,15 @@ class AnimInterface:
         binary.always_0x4000      = 0x4000
 
         # Time to figure out how to organise the keyframes...
-        static_rots, anim_rots, unused_rots = split_keyframes_by_role(self.rotations)
-        static_locs, anim_locs, unused_locs = split_keyframes_by_role(self.locations)
-        static_scls, anim_scls, unused_scls = split_keyframes_by_role(self.scales)
-        static_fchs, anim_fchs, unused_fchs = split_keyframes_by_role(self.float_channels)
+        sorted_locs = {bidx: {f: v for f, v in sorted(bdata.items())} for bidx, bdata in sorted(self.locations     .items())}
+        sorted_rots = {bidx: {f: v for f, v in sorted(bdata.items())} for bidx, bdata in sorted(self.rotations     .items())}
+        sorted_scls = {bidx: {f: v for f, v in sorted(bdata.items())} for bidx, bdata in sorted(self.scales        .items())}
+        sorted_fchs = {bidx: {f: v for f, v in sorted(bdata.items())} for bidx, bdata in sorted(self.float_channels.items())}
+        
+        static_rots, anim_rots, unused_rots = split_keyframes_by_role(sorted_rots)
+        static_locs, anim_locs, unused_locs = split_keyframes_by_role(sorted_locs)
+        static_scls, anim_scls, unused_scls = split_keyframes_by_role(sorted_scls)
+        static_fchs, anim_fchs, unused_fchs = split_keyframes_by_role(sorted_fchs)
         unused_bones = sorted(list(set(unused_rots).intersection(unused_locs).intersection(unused_scls)))
 
         # Sort the static bones into the correct order after adding malformed blend bones
