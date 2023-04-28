@@ -50,6 +50,9 @@ class ImportMediaVision(bpy.types.Operator):
         import_meshes(collection, model_name, ni, gi, armature_obj, material_list, errorlog, self.merge_vertices)
         import_cameras(collection, armature_obj, dscs_to_bpy_bone_map, gi)
         import_lights(collection, armature_obj, dscs_to_bpy_bone_map, gi)
+        if gi.extra_clut is not None:
+            armature_obj.data.DSCS_ModelProperties.extra_clut = gi.extra_clut.hex()
+            
         # Animations
         base_anim = None
         ais = {}
