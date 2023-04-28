@@ -54,30 +54,26 @@ class ImportMediaVision(bpy.types.Operator):
             armature_obj.data.DSCS_ModelProperties.extra_clut = gi.extra_clut.hex()
             
         # Animations
-        base_anim = None
+        base_anim = AnimInterface.from_file(os.path.join(directory, model_name + ".anim"), si)
         ais = {}
         for f in sorted([file for file in os.listdir(directory) if file.endswith(os.path.extsep + "anim")]):
             anim_name = f.rsplit('.')[0]
             anim_root = anim_name.rsplit("_")[0]
-            
             if anim_root == model_name:  
                 ai = AnimInterface.from_file(os.path.join(directory, f), si)
                 if anim_name == model_name:
-                    base_anim = ai
                 else:
                     ais[anim_name] = ai
-
         add_rest_pose_to_base_anim(si, gi, base_anim)
-        import_base_animation(directory, model_name, armature, ni, base_anim)
-        import_animations(directory, model_name, armature, ni, ais)
+        import_base_animation(directory, model_name, armature_obj, ni, base_anim)
+        import_animations(directory, model_name, armature_obj, ni, ais)
 
-        armature.animation_data.nla_tracks["base"].mute = False
+        armature_obj.animation_data.nla_tracks["base"].mute = False
 
+        # Finalise
         bpy.ops.object.mode_set(mode="OBJECT")
 
 
-
-    #@handle_errors
     def execute(self, context):
         folder = (os.path.dirname(self.filepath))
 
@@ -91,7 +87,7 @@ class ImportMediaVision(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# from mathutils import Matrix, Quaternion
+
 def add_rest_pose_to_base_anim(si, gi, base_animation):
     for bone_idx, bone in enumerate(si.bones):
         if not len(base_animation.rotations[bone_idx]):

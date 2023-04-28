@@ -6,7 +6,7 @@ from ..IOHelpersLib.Animations import parent_relative_to_bind_relative_preblend
 from ..IOHelpersLib.Context    import safe_active_object_switch, set_active_obj
 from ..Utils.BoneUtils import boneY_to_boneX_matrix, upY_to_upZ_matrix
 
-from mathutils import Matrix
+from mathutils import Matrix, Quaternion
 
 
 @safe_active_object_switch
@@ -15,8 +15,10 @@ def import_base_animation(directory, name_prefix, armature, ni, base_anim):
     set_active_obj(armature)
     
     bpy.ops.object.mode_set(mode="POSE")
-    construct_nla_action("base", name_prefix, armature, build_base_fcurves, 
-                         base_anim.locations, base_anim.rotations, base_anim.scales, 
+    rotations = convert_to_mathutils_quats(base_anim)
+    construct_nla_action("base", name_prefix, armature, build_base_fcurves,
+                         base_anim.locations, rotations, base_anim.scales,
+                         base_anim.float_channels,
                          ni.bone_names, base_anim.playback_rate, "REPLACE")
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -30,8 +32,10 @@ def import_animations(directory, name_prefix, armature, ni, ais):
     bpy.ops.object.mode_set(mode="POSE")    
     for animation_name, animation_data in list(ais.items()):
         track_name = animation_name[len(name_prefix)+1:]  # +1 to also remove the underscore
+        rotations = convert_to_mathutils_quats(animation_data)
         construct_nla_action(track_name, animation_name, armature, build_blend_fcurves,
-                             animation_data.locations, animation_data.rotations, animation_data.scales, 
+                             animation_data.locations, rotations, animation_data.scales,
+                             animation_data.float_channels,
                              ni.bone_names, animation_data.playback_rate, "COMBINE")
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -39,7 +43,10 @@ def import_animations(directory, name_prefix, armature, ni, ais):
 # UTILS #
 #########
 
-def construct_nla_action(track_name, action_name, armature, method, positions, rotations, scales, bone_names, playback_rate, blend_type):
+def convert_to_mathutils_quats(anim):
+    return {k: {k2: Quaternion([r[3], r[0], r[1], r[2]])  for k2, r in rdata.items()} for k, rdata in anim.rotations.items()}
+
+def construct_nla_action(track_name, action_name, armature, method, positions, rotations, scales, float_channels, bone_names, playback_rate, blend_type):
     action = bpy.data.actions.new(action_name)
 
     for positions, rotations, scales, bone_name in zip(positions.values(),
@@ -57,6 +64,15 @@ def construct_nla_action(track_name, action_name, armature, method, positions, r
     nla_strip.blend_type = blend_type
     armature.animation_data.action = None
 
+    props = action.DSCS_AnimationProperties
+    for idx, fc in float_channels.items():
+        bpy_fc = props.float_channels.add()
+        bpy_fc.channel_idx = idx
+        for f, v in fc.items():
+            bpy_kf = bpy_fc.add()
+            bpy_kf.frame = f
+            bpy_kf.value = v
+
 
 def build_base_fcurves(action, armature, bone_name, fps, positions, rotations, scales):
     # Set up action data
@@ -67,7 +83,7 @@ def build_base_fcurves(action, armature, bone_name, fps, positions, rotations, s
     b_rotations, \
     b_scales = parent_relative_to_bind_relative(bpy_bone, 
                                                 positions.values(), 
-                                                ([q[3], q[0], q[1], q[2]] for q in rotations.values()), 
+                                                rotations.values(), 
                                                 scales.values(),
                                                 upY_to_upZ_matrix.inverted(),
                                                 Matrix.Identity(4))
@@ -88,7 +104,7 @@ def build_blend_fcurves(action, armature, bone_name, fps, positions, rotations, 
     b_rotations, \
     b_scales = parent_relative_to_bind_relative_preblend(bpy_bone, 
                                                           positions.values(), 
-                                                          ([q[3], q[0], q[1], q[2]] for q in rotations.values()), 
+                                                          rotations.values(), 
                                                           scales.values(),
                                                           upY_to_upZ_matrix.inverted(),
                                                           Matrix.Identity(4))
