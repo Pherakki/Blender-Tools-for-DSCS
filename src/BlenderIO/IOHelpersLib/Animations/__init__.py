@@ -1,4 +1,6 @@
 from .FCurves import create_fcurves
+from .ExtractFCurves import group_fcurves_by_bone_and_type
+from .ExtractFCurves import extract_clean_animation_data
 from .ChannelTransform import parent_relative_to_bind_relative
 from .ChannelTransform import parent_relative_to_bind_relative_preblend
 from .ChannelTransform import bind_relative_to_parent_relative
