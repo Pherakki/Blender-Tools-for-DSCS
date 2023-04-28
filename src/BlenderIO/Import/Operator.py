@@ -13,6 +13,7 @@ from .ArmatureImport import import_skeleton
 from .MaterialImport import import_materials
 from .MeshImport import import_meshes
 from .AnimationImport import import_base_animation, import_animations
+from ..Utils.ErrorLog import ImportErrorLog
 
 
 class ImportMediaVision(bpy.types.Operator):
@@ -24,7 +25,9 @@ class ImportMediaVision(bpy.types.Operator):
 
     files: CollectionProperty(type=bpy.types.PropertyGroup)
 
+    @ImportErrorLog.display_exceptions()
     def import_file(self, context, filepath):
+        errorlog = ImportErrorLog()
         bpy.ops.object.select_all(action='DESELECT')
 
         directory, model_name = os.path.split(os.path.splitext(os.path.abspath(filepath))[0])
