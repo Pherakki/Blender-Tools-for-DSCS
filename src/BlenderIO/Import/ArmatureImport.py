@@ -51,7 +51,7 @@ def import_skeleton(collection, armature_name, ni, si, gi, model_dims):
         bpy_fc = armature.DSCS_ModelProperties.float_channels.add()
         bpy_fc.obj_hash  = fc.name_hash
         bpy_fc.flags     = fc.flags
-        bpy_fc.channel   = fc.array_idx // 16
-        bpy_fc.array_idx = fc.array_idx % 16
+        bpy_fc.channel   = fc.array_index // 16
+        bpy_fc.array_idx = fc.array_index % 16
     
     return armature_obj, dscs_to_bpy_bone_map
