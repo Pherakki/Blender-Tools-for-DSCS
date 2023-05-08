@@ -7,7 +7,7 @@ class OBJECT_UL_DSCSMaterialUniformUIList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         split = layout.split(factor=0.05)
         split.separator()
-        split.prop(item, "index", min=0, max=255)
+        split.prop(item, "index")
         split.prop(item, "dtype")
         if item.dtype == "FLOAT32":
             split.prop(item, "float32_data")
