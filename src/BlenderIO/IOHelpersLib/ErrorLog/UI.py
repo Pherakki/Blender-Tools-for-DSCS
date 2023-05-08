@@ -31,7 +31,7 @@ def ErrorBoxBase(namespace, plugin_name):
     
             col = layout.column()
     
-            msg_lines = wrapText(self.message, 128)
+            msg_lines = wrapText(self.message, 96)
             for line in msg_lines:
                 col.label(text=line)
     return ErrorBoxBaseImpl
@@ -64,7 +64,7 @@ def WarningBoxBase(namespace, plugin_name):
     
             col = layout.column()
     
-            msg_lines = wrapText(self.message, 128)
+            msg_lines = wrapText(self.message, 96)
             for line in msg_lines:
                 col.label(text=line)
     return WarningBoxBaseImpl
@@ -98,7 +98,7 @@ def UnhandledBoxBase(namespace, plugin_name, generate_unhandled_error_message):
     
             col = layout.column()
     
-            msg_lines = wrapText(generate_unhandled_error_message(self.exception_msg, self.context_msg), 128)
+            msg_lines = wrapText(generate_unhandled_error_message(self.exception_msg, self.context_msg), 96)
             for line in msg_lines:
                 col.label(text=line)
     return UnhandledBoxBaseImpl
