@@ -61,7 +61,7 @@ def import_meshes(collection, model_name, ni, gi, armature, material_list, error
             raise Exception(f"Primitive Type '{mesh.indices.primitive_type}' not supported")
 
         # Now merge OpenGL vertices into Blender vertices
-        new_verts, new_tris, new_facevert_to_old_facevert_map = merge_vertices(mesh.vertices, faces, try_merge_vertices)
+        new_verts, new_tris, new_facevert_to_old_facevert_map = merge_vertices(mesh.vertices, faces, try_merge_vertices, errorlog)
         vert_positions = [Vector(v.position[:3]) for v in new_verts]
 
         ###############

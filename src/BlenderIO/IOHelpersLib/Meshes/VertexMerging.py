@@ -23,7 +23,7 @@ class BlenderVertexInfo:
 # 1) THIS NEEDS TO TAKE VERTEX WEIGHTS INTO ACCOUNT
 # 2) THIS ALSO NEEDS TO PREVENT VERTEX DROPS: KEEP NON-POLYGON VERTICES
 ##################
-def merge_vertices(vertices, triangles, merge_vertices):
+def merge_vertices(vertices, triangles, merge_vertices, errorlog=None):
     """
     Given a list of input vertices and polygons, merge vertices with the same position attribute with face normals
     within 90 degrees of the normal of the best-fitting plane of the centres of all faces associated with that position.
@@ -113,8 +113,10 @@ def merge_vertices(vertices, triangles, merge_vertices):
     
             return new_vertices, new_triangles, new_facevert_to_old_facevert_map
     except Exception as e:
-        #errorlog.log_warning_message(f"Vertex merging failed because '{str(e)}'- falling back to unmerged vertices.")
-        print(''.join(traceback.TracebackException.from_exception(e).format()))
+        if errorlog is None:
+            print(''.join(traceback.TracebackException.from_exception(e).format()))
+        else:
+            errorlog.log_warning_message(f"Vertex merging failed because '{str(e)}'- falling back to unmerged vertices.")
         exception_generated = True
     
     if not merge_vertices or exception_generated:
