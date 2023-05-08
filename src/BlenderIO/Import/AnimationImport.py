@@ -69,7 +69,7 @@ def construct_nla_action(track_name, action_name, armature, method, positions, r
         bpy_fc = props.float_channels.add()
         bpy_fc.channel_idx = idx
         for f, v in fc.items():
-            bpy_kf = bpy_fc.add()
+            bpy_kf = bpy_fc.keyframes.add()
             bpy_kf.frame = f
             bpy_kf.value = v
 
