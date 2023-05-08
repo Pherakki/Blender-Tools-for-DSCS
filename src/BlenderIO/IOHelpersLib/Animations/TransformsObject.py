@@ -8,18 +8,18 @@ class ModelTransforms:
         self._bone_axis_permutation_inverse = Matrix.Identity(4)
 
     @property
-    def world_rotation(self):
+    def world_axis_rotation(self):
         return self._world_rotation
-    @world_rotation.setter
-    def world_rotation(self, value):
+    @world_axis_rotation.setter
+    def world_axis_rotation(self, value):
         self._world_rotation         = value
         self._world_rotation_inverse = value.inverted()
 
     @property
-    def world_rotation_inverse(self):
+    def world_axis_rotation_inverse(self):
         return self._world_rotation_inverse
-    @world_rotation_inverse.setter
-    def world_rotation_inverse(self, value):
+    @world_axis_rotation_inverse.setter
+    def world_axis_rotation_inverse(self, value):
         self._world_rotation_inverse = value
         self._world_rotation         = value.inverted()
     
