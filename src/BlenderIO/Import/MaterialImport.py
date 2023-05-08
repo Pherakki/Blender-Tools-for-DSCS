@@ -2,22 +2,10 @@ import os
 
 import bpy
 
-from .ShaderNodes.BuildTree import define_node_group
-from .ShaderNodes.BuildTree import define_clut_uv_node_group
-from .ShaderNodes.BuildTree import define_refl_uv_node_group
-from .ShaderNodes.BuildTree import define_uv_transforms_node_group
-
 
 def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
     texture_bank = {}
     import_images(gi, texture_bank, path)
-    define_node_group()
-    define_clut_uv_node_group()
-    define_refl_uv_node_group()
-    define_uv_transforms_node_group("ColorSampler",         "color_sampler")
-    define_uv_transforms_node_group("OverlayColorSampler",  "overlay_color_sampler")
-    define_uv_transforms_node_group("NormalSampler",        "normal_sampler")
-    define_uv_transforms_node_group("OverlayNormalSampler", "overlay_normal_sampler")
     
     materials = []
     for material_name, material in zip(ni.material_names, gi.materials):
@@ -56,11 +44,14 @@ def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
         
         # Import extra material data
         used_images = {}
+        props.bpy_dtype = "BASIC"
         import_shader_uniforms(material, props, texture_bank, used_images)
         import_opengl_settings(material, props, bpy_material)
         
         # Set up nodes
         create_shader_nodes(path, bpy_material, material, gi, texture_bank, used_images)
+        props.bpy_dtype = "ADVANCED"
+        props.build_bpy_material()
         
         bpy_material.update_tag()
         
@@ -86,24 +77,65 @@ def import_shader_uniforms(material, props, texture_bank, used_images):
         return is_vec(uniform, idx, 1)
 
     def mk_tex(sampler, uniform):
-        used_images[sampler.typename] = texture_bank[uniform.data[0]]
+        img = texture_bank[uniform.data[0]]
+        used_images[sampler.typename] = img
+        sampler.active = True
+        sampler.image = img
         sampler.data = uniform.data[1:4]
     
     for uniform in material.shader_uniforms:
+        # Normal Mapping
+        if   is_tex  (uniform, 0x35):    mk_tex(props.normal_sampler, uniform)
+        elif is_tex  (uniform, 0x45):    mk_tex(props.overlay_normal_sampler, uniform)
+        elif is_float(uniform, 0x36):    props.set_bumpiness(uniform)
+        elif is_float(uniform, 0x46):    props.set_overlay_bumpiness(uniform)
+        elif is_float(uniform, 0x4F):    props.set_parallax_x(uniform)
+        elif is_float(uniform, 0x50):    props.set_parallax_y(uniform)
+        elif is_float(uniform, 0x64):    props.set_distortion(uniform)
+        
         # Diffuse
-        if   is_tex  (uniform, 0x32):    mk_tex(props.color_sampler, uniform)
+        elif is_tex  (uniform, 0x32):    mk_tex(props.color_sampler, uniform)
         elif is_tex  (uniform, 0x44):    mk_tex(props.overlay_color_sampler, uniform)
         elif is_vec  (uniform, 0x33, 4): props.set_diffuse_color(uniform)
         elif is_float(uniform, 0x47):    props.set_overlay_str(uniform)
+        elif is_tex  (uniform, 0x43):    mk_tex(props.lightmap_sampler, uniform)
+        elif is_float(uniform, 0x71):    props.set_lightmap_power(uniform)
+        elif is_float(uniform, 0x72):    props.set_lightmap_strength(uniform)
         
         # Lighting
         elif is_tex  (uniform, 0x48):    mk_tex(props.clut_sampler, uniform)
+        elif is_float(uniform, 0x38):    props.set_spec_str(uniform)
+        elif is_float(uniform, 0x39):    props.set_spec_pow(uniform)
         
         # Reflection
         elif is_tex  (uniform, 0x3A):    mk_tex(props.env_sampler, uniform)
         elif is_float(uniform, 0x3B):    props.set_refl_str(uniform)
         elif is_float(uniform, 0x3C):    props.set_fres_min(uniform)
         elif is_float(uniform, 0x3D):    props.set_fres_exp(uniform)
+        
+        # Subsurface
+        elif is_vec  (uniform, 0x3E, 3): props.set_surface_color(uniform)
+        elif is_vec  (uniform, 0x3F, 3): props.set_subsurface_color(uniform)
+        elif is_vec  (uniform, 0x40, 3): props.set_fuzzy_spec_color(uniform)
+        elif is_float(uniform, 0x41):    props.set_rolloff(uniform)
+        elif is_float(uniform, 0x42):    props.set_velvet_strength(uniform)
+        
+        # UV transforms
+        elif is_vec  (uniform, 0x55, 2): props.uv_1.set_scroll(uniform)
+        elif is_vec  (uniform, 0x58, 2): props.uv_2.set_scroll(uniform)
+        elif is_vec  (uniform, 0x5B, 2): props.uv_3.set_scroll(uniform)
+        elif is_float(uniform, 0x78):    props.uv_1.set_rotation(uniform)
+        elif is_float(uniform, 0x7B):    props.uv_2.set_rotation(uniform)
+        elif is_float(uniform, 0x7E):    props.uv_3.set_rotation(uniform) 
+        elif is_vec  (uniform, 0x5E, 2): props.uv_1.set_offset(uniform)
+        elif is_vec  (uniform, 0x61, 2): props.uv_2.set_offset(uniform)
+        elif is_vec  (uniform, 0x74, 2): props.uv_3.set_offset(uniform)
+        elif is_vec  (uniform, 0x81, 2): props.uv_1.set_scale(uniform)
+        elif is_vec  (uniform, 0x84, 2): props.uv_2.set_scale(uniform)
+        elif is_vec  (uniform, 0x87, 2): props.uv_3.set_scale(uniform)
+        
+        # Scene Properties
+        elif is_float(uniform, 0x54):    props.set_time(uniform)
         
         # Anything not explicitly handled
         else:
@@ -127,13 +159,13 @@ def import_shader_uniforms(material, props, texture_bank, used_images):
                     bpy_uniform.dtype = "FLOAT32VEC4"
                     bpy_uniform.float32vec4_data = uniform.data
                 else:
-                    raise Exception("Invalid float count")    
+                    raise Exception("Invalid float count")
 
 
 def import_opengl_settings(material, props, bpy_material):
     for setting in material.opengl_settings:
-        #if   setting.index == 0xA0: pass # glAlphaFunc
-        if   setting.index == 0xA1: props.use_gl_alpha = bool(setting.data[0])
+        if    setting.index == 0xA0: props.set_gl_alpha_func(setting)
+        elif  setting.index == 0xA1: props.use_gl_alpha = bool(setting.data[0])
         #elif setting.index == 0xA2: pass # glBlendFunc
         #elif setting.index == 0xA3: pass # glBlendEquationSeparate
         elif setting.index == 0xA4: props.use_gl_blend = bool(setting.data[0])
@@ -157,92 +189,93 @@ def create_shader_nodes(path, bpy_material, material, gi, texture_bank, used_ima
         connect = bpy_material.node_tree.links.new
         props = bpy_material.DSCS_MaterialProperties
 
-        ########################
-        # DIFFUSE CONTRIBUTION #
-        ########################
-        main_group = nodes.new("ShaderNodeGroup")
-        main_group.node_tree = bpy.data.node_groups['DSCS Shader']
+        # ########################
+        # # DIFFUSE CONTRIBUTION #
+        # ########################
+        # main_group = nodes.new("ShaderNodeGroup")
+        # main_group.node_tree = bpy.data.node_groups['DSCS Shader']
         
-        color_sampler_uvs = nodes.new("ShaderNodeGroup")
-        color_sampler_uvs.name  = "ColorSampler UVs"
-        color_sampler_uvs.label = "ColorSampler UVs"
-        #color_sampler_uvs.node_tree = bpy.data.node_groups["DSCS ColorSampler UV"]
+        # color_sampler_uvs = nodes.new("ShaderNodeGroup")
+        # color_sampler_uvs.name  = "ColorSampler UVs"
+        # color_sampler_uvs.label = "ColorSampler UVs"
+        # #color_sampler_uvs.node_tree = bpy.data.node_groups["DSCS ColorSampler UV"]
         
-        color_sampler = nodes.new('ShaderNodeTexImage')
-        color_sampler.name  = "ColorSampler"
-        color_sampler.label = "ColorSampler"
-        color_sampler.image = used_images.get(props.color_sampler.typename)
+        # color_sampler = nodes.new('ShaderNodeTexImage')
+        # color_sampler.name  = "ColorSampler"
+        # color_sampler.label = "ColorSampler"
+        # color_sampler.image = used_images.get(props.color_sampler.typename)
         
-        overlay_color_sampler_uvs = nodes.new("ShaderNodeGroup")
-        overlay_color_sampler_uvs.name  = "OverlayColorSampler UVs"
-        overlay_color_sampler_uvs.label = "OverlayColorSampler UVs"
-        #overlay_color_sampler_uvs.node_tree = bpy.data.node_groups["DSCS OverlayColorSampler UV"]
+        # overlay_color_sampler_uvs = nodes.new("ShaderNodeGroup")
+        # overlay_color_sampler_uvs.name  = "OverlayColorSampler UVs"
+        # overlay_color_sampler_uvs.label = "OverlayColorSampler UVs"
+        # #overlay_color_sampler_uvs.node_tree = bpy.data.node_groups["DSCS OverlayColorSampler UV"]
         
-        overlay_color_sampler = nodes.new('ShaderNodeTexImage')
-        overlay_color_sampler.name  = "OverlayColorSampler"
-        overlay_color_sampler.label = "OverlayColorSampler"
-        overlay_color_sampler.image = used_images.get(props.overlay_color_sampler.typename)
+        # overlay_color_sampler = nodes.new('ShaderNodeTexImage')
+        # overlay_color_sampler.name  = "OverlayColorSampler"
+        # overlay_color_sampler.label = "OverlayColorSampler"
+        # overlay_color_sampler.image = used_images.get(props.overlay_color_sampler.typename)
         
-        #connect(color_sampler_uvs.outputs["UV"], color_sampler.inputs["Vector"])
-        connect(color_sampler.outputs["Color"], main_group.inputs["ColorSampler"])
-        connect(color_sampler.outputs["Alpha"], main_group.inputs["ColorSamplerAlpha"])
-        #connect(overlay_color_sampler_uvs.outputs["UV"], overlay_color_sampler.inputs["Vector"])
-        connect(overlay_color_sampler.outputs["Color"], main_group.inputs["OverlayColorSampler"])
-        connect(overlay_color_sampler.outputs["Alpha"], main_group.inputs["OverlayColorSamplerAlpha"])
+        # #connect(color_sampler_uvs.outputs["UV"], color_sampler.inputs["Vector"])
+        # connect(color_sampler.outputs["Color"], main_group.inputs["ColorSampler"])
+        # connect(color_sampler.outputs["Alpha"], main_group.inputs["ColorSamplerAlpha"])
+        # #connect(overlay_color_sampler_uvs.outputs["UV"], overlay_color_sampler.inputs["Vector"])
+        # connect(overlay_color_sampler.outputs["Color"], main_group.inputs["OverlayColorSampler"])
+        # connect(overlay_color_sampler.outputs["Alpha"], main_group.inputs["OverlayColorSamplerAlpha"])
 
-        ########
-        # CLUT #
-        ########
-        clut_uvs = nodes.new("ShaderNodeGroup")
-        clut_uvs.node_tree = bpy.data.node_groups['DSCS CLUT UV']
+        # ########
+        # # CLUT #
+        # ########
+        # clut_uvs = nodes.new("ShaderNodeGroup")
+        # clut_uvs.node_tree = bpy.data.node_groups['DSCS CLUT UV']
         
-        clut_sampler = nodes.new('ShaderNodeTexImage')
-        clut_sampler.name  = "CLUTSampler"
-        clut_sampler.label = "CLUTSampler"
-        clut_sampler.image = used_images.get(props.clut_sampler.typename)
-        clut_sampler.extension = "EXTEND"
-        if clut_sampler.image is not None:
-            clut_sampler.image.alpha_mode = "CHANNEL_PACKED"
+        # clut_sampler = nodes.new('ShaderNodeTexImage')
+        # clut_sampler.name  = "CLUTSampler"
+        # clut_sampler.label = "CLUTSampler"
+        # clut_sampler.image = used_images.get(props.clut_sampler.typename)
+        # clut_sampler.extension = "EXTEND"
+        # if clut_sampler.image is not None:
+        #     clut_sampler.image.alpha_mode = "CHANNEL_PACKED"
 
-        connect(clut_uvs.outputs["UV"], clut_sampler.inputs["Vector"])
-        connect(clut_sampler.outputs["Color"],                main_group.inputs["CLUTSampler"])
-        connect(clut_sampler.outputs["Alpha"],                main_group.inputs["CLUTSamplerAlpha"])
-        connect(clut_uvs    .outputs["Lambert Term"],         main_group.inputs["Lambert Term"])
-        connect(clut_uvs    .outputs["Reflection Intensity"], main_group.inputs["Reflection Intensity"])
+        # connect(clut_uvs.outputs["UV"], clut_sampler.inputs["Vector"])
+        # connect(clut_sampler.outputs["Color"],                main_group.inputs["CLUTSampler"])
+        # connect(clut_sampler.outputs["Alpha"],                main_group.inputs["CLUTSamplerAlpha"])
+        # connect(clut_uvs    .outputs["Lambert Term"],         main_group.inputs["Lambert Term"])
+        # connect(clut_uvs    .outputs["Reflection Intensity"], main_group.inputs["Reflection Intensity"])
 
-        ##############
-        # REFLECTION #
-        ##############
-        refl_uvs = nodes.new("ShaderNodeGroup")
-        refl_uvs.node_tree = bpy.data.node_groups['DSCS Reflection UV']
         
-        refl_sampler = nodes.new('ShaderNodeTexImage')
-        refl_sampler.name  = "EnvSampler"
-        refl_sampler.label = "EnvSampler"
-        refl_sampler.image = used_images.get(props.env_sampler.typename)
+        # ##############
+        # # REFLECTION #
+        # ##############
+        # refl_uvs = nodes.new("ShaderNodeGroup")
+        # refl_uvs.node_tree = bpy.data.node_groups['DSCS Reflection UV']
         
-        connect(refl_uvs    .outputs["UV"],    refl_sampler.inputs["Vector"])
-        connect(refl_sampler.outputs["Color"], main_group  .inputs["EnvSampler"])
-        connect(refl_sampler.outputs["Alpha"], main_group  .inputs["EnvSamplerAlpha"])
+        # refl_sampler = nodes.new('ShaderNodeTexImage')
+        # refl_sampler.name  = "EnvSampler"
+        # refl_sampler.label = "EnvSampler"
+        # refl_sampler.image = used_images.get(props.env_sampler.typename)
         
-        ##########
-        # OUTPUT #
-        ##########
-        bsdf_node = nodes.get('Principled BSDF')
-        nodes.remove(bsdf_node)
+        # connect(refl_uvs    .outputs["UV"],    refl_sampler.inputs["Vector"])
+        # connect(refl_sampler.outputs["Color"], main_group  .inputs["EnvSampler"])
+        # connect(refl_sampler.outputs["Alpha"], main_group  .inputs["EnvSamplerAlpha"])
         
-        mat_out = nodes.get('Material Output')
-        connect(main_group.outputs["Shader"], mat_out.inputs["Surface"])
+        # ##########
+        # # OUTPUT #
+        # ##########
+        # bsdf_node = nodes.get('Principled BSDF')
+        # nodes.remove(bsdf_node)
+        
+        # mat_out = nodes.get('Material Output')
+        # connect(main_group.outputs["Shader"], mat_out.inputs["Surface"])
 
-        main_group               .location = (-200, 300)
-        #color_sampler_uvs        .location = (-700, 100)
-        color_sampler            .location = (-500, 300)
-        #overlay_color_sampler_uvs.location = (-700, -200)
-        overlay_color_sampler    .location = (-500, 0)
-        clut_sampler             .location = (-500, -300)
-        clut_uvs                 .location = (-700, -300)
-        refl_sampler             .location = (-500, -600)
-        refl_uvs                 .location = (-700, -600)
+        # main_group               .location = (-200, 300)
+        # #color_sampler_uvs        .location = (-700, 100)
+        # color_sampler            .location = (-500, 300)
+        # #overlay_color_sampler_uvs.location = (-700, -200)
+        # overlay_color_sampler    .location = (-500, 0)
+        # clut_sampler             .location = (-500, -300)
+        # clut_uvs                 .location = (-700, -300)
+        # refl_sampler             .location = (-500, -600)
+        # refl_uvs                 .location = (-700, -600)
         
 
 # def load_shader_text(path, shader_name, suffix, shader_bank):

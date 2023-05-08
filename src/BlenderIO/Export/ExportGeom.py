@@ -314,14 +314,28 @@ def extract_shader_uniforms(bpy_mat, dscs_mat, texture_map):
                 data_prop = [data_prop]
             dscs_mat.add_shader_uniform(idx, data_prop)
     
+    # Normal Mapping
+    extract_texture_uniform(0x35, props.normal_sampler)
+    extract_texture_uniform(0x45, props.overlay_normal_sampler)
+    extract_shader_uniform (0x36, props.use_bumpiness,         props.bumpiness)
+    extract_shader_uniform (0x46, props.use_overlay_bumpiness, props.overlay_bumpiness)
+    extract_shader_uniform (0x4F, props.use_parallax_bias_x,   props.parallax_bias_x)
+    extract_shader_uniform (0x50, props.use_parallax_bias_y,   props.parallax_bias_y)
+    extract_shader_uniform (0x64, props.use_distortion,        props.distortion_strength)
+    
     # Diffuse
     extract_texture_uniform(0x32, props.color_sampler)
     extract_texture_uniform(0x44, props.overlay_color_sampler)
     extract_shader_uniform (0x33, props.use_diffuse_color,    props.diffuse_color)
     extract_shader_uniform (0x47, props.use_overlay_strength, props.overlay_strength)
+    extract_texture_uniform(0x43, props.lightmap_sampler)
+    extract_shader_uniform (0x71, props.use_lightmap_power,    props.lightmap_power)
+    extract_shader_uniform (0x72, props.use_lightmap_strength, props.lightmap_strength)
     
     # Lighting
     extract_texture_uniform(0x48, props.clut_sampler)
+    extract_shader_uniform (0x38, props.use_specular_strength, props.specular_strength)
+    extract_shader_uniform (0x39, props.use_specular_power,    props.specular_power   )
     
     # Reflection
     extract_texture_uniform(0x3A, props.env_sampler)
@@ -329,11 +343,34 @@ def extract_shader_uniforms(bpy_mat, dscs_mat, texture_map):
     extract_shader_uniform (0x3C, props.use_fresnel_min, props.fresnel_min)
     extract_shader_uniform (0x3D, props.use_fresnel_exp, props.fresnel_exp)
     
-    # extract_texture_uniform(0x32, props.normal_sampler)
-    # extract_texture_uniform(0x32, props.overlay_normal_sampler)
+    # Subsurface
+    extract_shader_uniform (0x3E, props.use_surface_color,    props.surface_color)
+    extract_shader_uniform (0x3F, props.use_subsurface_color, props.subsurface_color)
+    extract_shader_uniform (0x40, props.use_fuzzy_spec_color, props.fuzzy_spec_color)
+    extract_shader_uniform (0x41, props.use_rolloff,          props.rolloff)
+    extract_shader_uniform (0x42, props.use_velvet_strength,  props.velvet_strength)
+    
+    # UV Transforms
+    extract_shader_uniform (0x55, props.uv_1.use_scroll_speed, props.uv_1.scroll_speed)
+    extract_shader_uniform (0x58, props.uv_2.use_scroll_speed, props.uv_2.scroll_speed)
+    extract_shader_uniform (0x5B, props.uv_3.use_scroll_speed, props.uv_3.scroll_speed)
+    extract_shader_uniform (0x5E, props.uv_1.use_offset,       props.uv_1.offset)
+    extract_shader_uniform (0x61, props.uv_2.use_offset,       props.uv_2.offset)
+    extract_shader_uniform (0x74, props.uv_3.use_offset,       props.uv_3.offset)
+    extract_shader_uniform (0x78, props.uv_1.use_rotation,     props.uv_1.rotation)
+    extract_shader_uniform (0x7B, props.uv_2.use_rotation,     props.uv_2.rotation)
+    extract_shader_uniform (0x7E, props.uv_3.use_rotation,     props.uv_3.rotation)
+    extract_shader_uniform (0x81, props.uv_1.use_scale,        props.uv_1.scale)
+    extract_shader_uniform (0x84, props.uv_2.use_scale,        props.uv_2.scale)
+    extract_shader_uniform (0x87, props.uv_3.use_scale,        props.uv_3.scale)
+    
+    # Scene
+    extract_shader_uniform (0x54, props.use_time,              props.time)
+    
     # extract_texture_uniform(0x32, props.envs_sampler)
     
-    for u in props.unhandled_uniforms: dscs_mat.add_shader_uniform(*u.extract_data(texture_map))
+    for u in props.unhandled_uniforms: 
+        dscs_mat.add_shader_uniform(*u.extract_data(texture_map))
 
 
 def extract_opengl_settings(bpy_mat, dscs_mat):
@@ -344,10 +381,27 @@ def extract_opengl_settings(bpy_mat, dscs_mat):
     # 0xA3
     # 0xA6
     
-    for u in props.unhandled_settings:   dscs_mat.add_opengl_setting(u.index, u.data)
-    if props.use_gl_alpha:               dscs_mat.add_opengl_setting(0xA1, [1, 0, 0, 0])
-    if props.use_gl_blend:               dscs_mat.add_opengl_setting(0xA4, [1, 0, 0, 0])
-    if not bpy_mat.use_backface_culling: dscs_mat.add_opengl_setting(0xA6, [0, 0, 0, 0])
+    for u in props.unhandled_settings:
+        dscs_mat.add_opengl_setting(u.index, u.data)
+    # GL ALPHA
+    if props.use_gl_alpha:
+        dscs_mat.add_opengl_setting(0xA1, [1, 0, 0, 0])
+        func = props.gl_alpha_func
+        if   func == "GL_NEVER":    gl_func = 0x200
+        elif func == "GL_LESS":     gl_func = 0x201
+        elif func == "GL_EQUAL":    gl_func = 0x202
+        elif func == "GL_LEQUAL":   gl_func = 0x203
+        elif func == "GL_GREATER":  gl_func = 0x204
+        elif func == "GL_NOTEQUAL": gl_func = 0x205
+        elif func == "GL_GEQUAL":   gl_func = 0x206
+        elif func == "GL_ALWAYS":   gl_func = 0x207
+        elif func == "INVALID":     gl_func = props.gl_alpha_invalid_value
+        dscs_mat.add_opengl_setting(0xA0, [gl_func, props.gl_alpha_threshold, 0, 0])
+    # GL BLEND
+    if props.use_gl_blend:
+        dscs_mat.add_opengl_setting(0xA4, [1, 0, 0, 0])
+    if not bpy_mat.use_backface_culling:
+        dscs_mat.add_opengl_setting(0xA6, [0, 0, 0, 0])
 
 import os
 
