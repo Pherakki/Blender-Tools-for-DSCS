@@ -137,3 +137,42 @@ class ImportDSCS(ImportMediaVision, ImportHelper):
         description="Create a material node tree to partially emulate DSCS rendering.",
         default=True
     )
+
+
+class ImportDSCS_PS(ImportMediaVision, ImportHelper):
+    model_type = "DSCS_PS"
+
+    bl_idname = 'import_file.import_dscs_ps'
+    bl_label = 'Digimon Story: Cyber Sleuth - PS4/Vita (.name, .skel, .geom)'
+    bl_options = {'REGISTER', 'UNDO'}
+    # This will actually work with any file extension since the code just looks for the right ones...
+    filename_ext = "*.name"
+
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
+
+    filter_glob: bpy.props.StringProperty(
+                                             default="*.name",
+                                             options={'HIDDEN'},
+                                         )
+
+    import_anims: BoolProperty(
+        name="Import Animations",
+        description="Import animations or not."
+    )
+
+    merge_vertices: BoolProperty(
+        name="Merge Vertices",
+        description="Merge the OpenGL vertices (which look like duplicates in Blender) to Blender vertices.",
+        default=True
+    )
+
+    img_to_dds: BoolProperty(
+        name="Import IMG as DDS",
+        description="Create a copy of each IMG file with a DDS extension before import."
+    )
+
+    use_custom_nodes: BoolProperty(
+        name="Emulate DSCS Materials",
+        description="Create a material node tree to partially emulate DSCS rendering.",
+        default=True
+    )
