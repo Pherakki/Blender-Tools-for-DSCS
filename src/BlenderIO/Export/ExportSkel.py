@@ -31,6 +31,6 @@ def extract_skel(armature_obj, base_anim, errorlog, bpy_to_dscs_bone_map):
                     [*scale, 1.])
     
     for fc in props.float_channels:
-        si.add_float_channel(fc.name_hash, fc.flags, (fc.channel << 8) | fc.array_index)
+        si.add_float_channel(fc.name_hash, fc.flags, (fc.channel << 8) | fc.array_idx)
 
     return si
