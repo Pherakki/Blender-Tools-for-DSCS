@@ -99,36 +99,58 @@ def get_uvs(bpy_mesh_obj, use_uv, map_name, sigfigs, errorlog=None, transform=la
         return empty_attr(nloops)
 
 
-def get_colors(bpy_mesh_obj, use_colors, map_name, errorlog=None, transform=lambda x: x):
+def get_colors(bpy_mesh_obj, use_colors, map_name, data_format, errorlog=None, transform=lambda x: x):
     nloops = len(bpy_mesh_obj.data.loops)
+    if data_format not in ("BYTE", "FLOAT"):
+        raise NotImplementedError("Invalid data format provided to 'get_colors'. Options are 'BYTE' or 'FLOAT'.")
     if use_colors:
+        ################
+        # EXTRACT DATA #
+        ################
+        dtype = "BYTE_COLOR"
         # Blender 3.2+ 
         # vertex_colors is equivalent to color_attributes.new(name=name, type="BYTE_COLOR", domain="CORNER").
-        # Original data is just uint8s so this is accurate.
         if hasattr(bpy_mesh_obj, "color_attributes"):
             if map_name not in bpy_mesh_obj.color_attributes:
                 if errorlog is not None:
                     errorlog.log_warning_message(f"Unable to locate color map '{map_name}' on mesh '{bpy_mesh_obj.name}'; exporting a fallback blank map")
-                return make_blank_color(nloops) 
-            
-            ca = bpy_mesh_obj.color_attributes[map_name]
-            if ca.domain == "CORNER":
-                return tuple([transform(c.color) for c in ca.data])
-            elif ca.domain == "POINT":
-                # Copy vertex data to loop data
-                return tuple([transform(ca.data[loop.vertex_index].color) for loop in bpy_mesh_obj.data.loops])
+                data = make_blank_color(nloops) 
             else:
-                if errorlog is not None:
-                    errorlog.log_warning_message(f"Unable to extract data from unknown color map domain '{ca.domain}'; exporting a fallback blank map")
-                return make_blank_color(nloops)
+                ca = bpy_mesh_obj.color_attributes[map_name]
+                dtype = ca.data_type
+                if ca.domain == "CORNER":
+                    data = (c.color for c in ca.data)
+                elif ca.domain == "POINT":
+                    # Copy vertex data to loop data
+                    data = (ca.data[loop.vertex_index].color for loop in bpy_mesh_obj.data.loops)
+                else:
+                    if errorlog is not None:
+                        errorlog.log_warning_message(f"Unable to extract data from unknown color map domain '{ca.domain}'; exporting a fallback blank map")
+                    data = make_blank_color(nloops)
         # Blender 2.81-3.2
         else:
             if map_name not in bpy_mesh_obj.vertex_colors:
                 if errorlog is not None:
                     errorlog.log_warning_message(f"Unable to locate color map '{map_name}' on mesh '{bpy_mesh_obj.name}' - exporting a fallback blank map")
-                return make_blank_color(nloops)
-            vc = bpy_mesh_obj.vertex_colors[map_name]
-            return tuple([transform(l.color) for l in vc.data])
+                data = make_blank_color(nloops)
+            else:
+                vc = bpy_mesh_obj.vertex_colors[map_name]
+                data = (l.color for l in vc.data)
+                
+        #############################################
+        # Convert to the requested output data type #
+        #############################################
+        if dtype == "BYTE_COLOR" and data_format == "BYTE":
+            return [transform(d) for d in data]
+        elif dtype == "BYTE_COLOR" and data_format == "FLOAT":
+            return [transform([e/255. for e in d]) for d in data]
+        elif dtype == "FLOAT_COLOR" and data_format == "BYTE":
+            return [transform([min(1, max(0, int(e*255))) for e in d]) for d in data]
+        elif dtype == "FLOAT_COLOR" and data_format == "FLOAT":
+            return [transform(d) for d in data]
+        else:
+            raise NotImplementedError("Unhandled data type combination '{dtype}' and '{data_format}'")
+        
     else:
         return empty_attr(nloops)
 
