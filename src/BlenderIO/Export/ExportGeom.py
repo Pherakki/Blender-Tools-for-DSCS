@@ -138,7 +138,7 @@ def extract_vertices(bpy_mesh_obj, errorlog, bone_names):
         get_uvs(bpy_mesh_obj,       props.requires_uv1,      "UV1", 6, errorlog),
         get_uvs(bpy_mesh_obj,       props.requires_uv2,      "UV2", 6, errorlog),
         get_uvs(bpy_mesh_obj,       props.requires_uv3,      "UV3", 6, errorlog),
-        get_colors(bpy_mesh_obj,    props.requires_colors,   "Map", errorlog),
+        get_colors(bpy_mesh_obj,    props.requires_colors,   "Map", "FLOAT", errorlog),
         get_tangents (bpy_mesh_obj, props.requires_tangents,  4, transform=lambda x, l: (*x, l.bitangent_sign)),
         get_binormals(bpy_mesh_obj, props.requires_binormals, 4)
     ]
@@ -339,6 +339,7 @@ def extract_shader_uniforms(bpy_mat, dscs_mat, texture_map):
     
     # Reflection
     extract_texture_uniform(0x3A, props.env_sampler)
+    extract_texture_uniform(0x8E, props.envs_sampler)
     extract_shader_uniform (0x3B, props.use_reflections, props.reflection_strength)
     extract_shader_uniform (0x3C, props.use_fresnel_min, props.fresnel_min)
     extract_shader_uniform (0x3D, props.use_fresnel_exp, props.fresnel_exp)
@@ -364,13 +365,16 @@ def extract_shader_uniforms(bpy_mat, dscs_mat, texture_map):
     extract_shader_uniform (0x84, props.uv_2.use_scale,        props.uv_2.scale)
     extract_shader_uniform (0x87, props.uv_3.use_scale,        props.uv_3.scale)
     
-    # Scene
+    # Generated
     extract_shader_uniform (0x54, props.use_time,              props.time)
     
-    # extract_texture_uniform(0x32, props.envs_sampler)
+    # Vertex shader stuff
+    extract_shader_uniform (0x77, props.use_fat,               props.fat)
+    extract_shader_uniform (0x8D, props.use_zbias,             props.zbias)
     
     for u in props.unhandled_uniforms: 
-        dscs_mat.add_shader_uniform(*u.extract_data(texture_map))
+        if u.enabled:
+            dscs_mat.add_shader_uniform(*u.extract_data(texture_map))
 
 
 def extract_opengl_settings(bpy_mat, dscs_mat):
@@ -382,10 +386,15 @@ def extract_opengl_settings(bpy_mat, dscs_mat):
     # 0xA6
     
     for u in props.unhandled_settings:
-        dscs_mat.add_opengl_setting(u.index, u.data)
+        if u.enabled:
+            dscs_mat.add_opengl_setting(u.index, u.data)
+    
     # GL ALPHA
     if props.use_gl_alpha:
         dscs_mat.add_opengl_setting(0xA1, [1, 0, 0, 0])
+    
+    # GL ALPHA FUNC
+    if props.use_gl_alpha_func and props.use_gl_alpha:
         func = props.gl_alpha_func
         if   func == "GL_NEVER":    gl_func = 0x200
         elif func == "GL_LESS":     gl_func = 0x201
@@ -397,11 +406,93 @@ def extract_opengl_settings(bpy_mat, dscs_mat):
         elif func == "GL_ALWAYS":   gl_func = 0x207
         elif func == "INVALID":     gl_func = props.gl_alpha_invalid_value
         dscs_mat.add_opengl_setting(0xA0, [gl_func, props.gl_alpha_threshold, 0, 0])
+    
     # GL BLEND
     if props.use_gl_blend:
         dscs_mat.add_opengl_setting(0xA4, [1, 0, 0, 0])
+    
+    # GL BLEND FUNC
+    if props.use_gl_blend_func and props.use_gl_blend:
+        func = props.gl_blend_func_src
+        if   func == "GL_ZERO":                gl_func_src = 0x0000
+        elif func == "GL_ONE":                 gl_func_src = 0x0001
+        elif func == "GL_SRC_COLOR":           gl_func_src = 0x0300
+        elif func == "GL_ONE_MINUS_SRC_COLOR": gl_func_src = 0x0301
+        elif func == "GL_SRC_ALPHA":           gl_func_src = 0x0302
+        elif func == "GL_ONE_MINUS_SRC_ALPHA": gl_func_src = 0x0303
+        elif func == "GL_DST_ALPHA":           gl_func_src = 0x0304
+        elif func == "GL_ONE_MINUS_DST_ALPHA": gl_func_src = 0x0305
+        elif func == "GL_DST_COLOR":           gl_func_src = 0x0306
+        elif func == "GL_ONE_MINUS_DST_COLOR": gl_func_src = 0x0307
+        elif func == "INVALID":                gl_func_src = props.gl_blend_func_src_invalid_value
+        
+        func = props.gl_blend_func_dst
+        if   func == "GL_ZERO":                gl_func_dst = 0x0000
+        elif func == "GL_ONE":                 gl_func_dst = 0x0001
+        elif func == "GL_SRC_COLOR":           gl_func_dst = 0x0300
+        elif func == "GL_ONE_MINUS_SRC_COLOR": gl_func_dst = 0x0301
+        elif func == "GL_SRC_ALPHA":           gl_func_dst = 0x0302
+        elif func == "GL_ONE_MINUS_SRC_ALPHA": gl_func_dst = 0x0303
+        elif func == "GL_DST_ALPHA":           gl_func_dst = 0x0304
+        elif func == "GL_ONE_MINUS_DST_ALPHA": gl_func_dst = 0x0305
+        elif func == "GL_DST_COLOR":           gl_func_dst = 0x0306
+        elif func == "GL_ONE_MINUS_DST_COLOR": gl_func_dst = 0x0307
+        elif func == "INVALID":                gl_func_dst = props.gl_blend_func_dst_invalid_value
+        
+        dscs_mat.add_opengl_setting(0xA2, [gl_func_src, gl_func_dst, 0, 0])
+    
+    # GL BLEND EQUATION
+    if props.use_gl_blend_eq and props.use_gl_blend:
+        func = props.gl_blend_eq
+        
+        if   func == "GL_FUNC_ADD":              gl_func = 0x8006
+        elif func == "GL_FUNC_SUBTRACT":         gl_func = 0x800A
+        elif func == "GL_FUNC_REVERSE_SUBTRACT": gl_func = 0x800B
+        elif func == "GL_MIN":                   gl_func = 0x8007
+        elif func == "GL_MAX":                   gl_func = 0x8008
+        elif func == "INVALID":                  gl_func = props.gl_blend_eq_invalid_value
+        dscs_mat.add_opengl_setting(0xA3, [gl_func, 0, 0, 0])
+    
+    # GL CULL FACE
+    if props.use_gl_cull_face:
+        func = props.gl_cull_face
+        
+        if   func == "GL_BACK":           gl_func = 0x0405
+        elif func == "GL_FRONT":          gl_func = 0x0404
+        elif func == "GL_FRONT_AND_BACK": gl_func = 0x0408
+        elif func == "INVALID":           gl_func = props.gl_cull_face_invalid_value
+        dscs_mat.add_opengl_setting(0xA5, [gl_func, 0, 0, 0])
+    
+    # GL CULL
     if not bpy_mat.use_backface_culling:
         dscs_mat.add_opengl_setting(0xA6, [0, 0, 0, 0])
+    
+    # GL DEPTH TEST
+    if not props.use_gl_depth_test:
+        dscs_mat.add_opengl_setting(0xA9, [0, 0, 0, 0])
+        
+    # GL DEPTH MASK
+    if not props.use_gl_depth_mask:
+        dscs_mat.add_opengl_setting(0xA8, [0, 0, 0, 0])
+    
+    if props.use_gl_depth_func and props.use_gl_depth_test:
+        func = props.gl_alpha_func
+        if   func == "GL_NEVER":    gl_func = 0x200
+        elif func == "GL_LESS":     gl_func = 0x201
+        elif func == "GL_EQUAL":    gl_func = 0x202
+        elif func == "GL_LEQUAL":   gl_func = 0x203
+        elif func == "GL_GREATER":  gl_func = 0x204
+        elif func == "GL_NOTEQUAL": gl_func = 0x205
+        elif func == "GL_GEQUAL":   gl_func = 0x206
+        elif func == "GL_ALWAYS":   gl_func = 0x207
+        elif func == "INVALID":     gl_func = props.gl_alpha_invalid_value
+        dscs_mat.add_opengl_setting(0xA7, [gl_func, 0, 0, 0])
+        
+    # GL COLOR MASK
+    if props.use_gl_color_mask:
+        dscs_mat.add_opengl_setting(0xAC, [props.gl_color_mask_r, props.gl_color_mask_g, props.gl_color_mask_b, props.gl_color_mask_a])
+    
+        
 
 import os
 
