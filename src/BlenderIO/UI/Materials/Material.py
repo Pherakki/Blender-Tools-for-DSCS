@@ -1,5 +1,7 @@
 import bpy
 
+from .MaterialPresets import OBJECT_PT_DSCSPresetsPanel
+
 
 class OBJECT_PT_DSCSMaterialPanel(bpy.types.Panel):
     bl_label       = "DSCS Material"
@@ -17,8 +19,7 @@ class OBJECT_PT_DSCSMaterialPanel(bpy.types.Panel):
         mat = context.material
         layout = self.layout
         props = mat.DSCS_MaterialProperties
-        scene_props = context.scene.DSCS_SceneProperties
-        
+
         layout.prop(props, "flag_0")
         layout.prop(props, "cast_shadow")
         layout.prop(props, "flag_2")
@@ -37,15 +38,46 @@ class OBJECT_PT_DSCSMaterialPanel(bpy.types.Panel):
         layout.prop(props, "flag_15")
         
         layout.prop(props, "bpy_dtype")
+        layout.prop(props, "mat_def_type")
+        
+    @classmethod
+    def register(cls):
+        bpy.utils.register_class(OBJECT_PT_DSCSShaderUniformsPanel)
+        bpy.utils.register_class(OBJECT_PT_DSCSPresetsPanel)
+        bpy.utils.register_class(OBJECT_PT_DSCSMaterialOpenGLPanel)
+
+    @classmethod
+    def unregister(cls):
+        bpy.utils.unregister_class(OBJECT_PT_DSCSShaderUniformsPanel)
+        bpy.utils.unregister_class(OBJECT_PT_DSCSPresetsPanel)
+        bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialOpenGLPanel)
+
+
+class OBJECT_PT_DSCSShaderUniformsPanel(bpy.types.Panel):
+    bl_label       = "Shader Uniforms"
+    bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+    bl_space_type  = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context     = "material"
+    bl_options     = {'DEFAULT_CLOSED'}
+    
+    @classmethod
+    def poll(self, context):
+        if context.material is None:
+            return False
+        return context.material.DSCS_MaterialProperties.mat_def_type == "MANUAL"
+
+    def draw(self, context):
+        mat = context.material
+        layout = self.layout
+        props = mat.DSCS_MaterialProperties
         
         layout.prop(props, "shader_name")
-        
-        layout.prop(props, "use_dir_light")
-        layout.prop(scene_props, "dir_light_direction")
-        layout.prop(scene_props, "dir_light_color")
     
     @classmethod
     def register(cls):
+        bpy.utils.register_class(OBJECT_PT_DSCSMaterialScenePropertiesPanel)
+        bpy.utils.register_class(OBJECT_PT_DSCSMaterialVertexAttributesPanel)
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialGeneratedPanel)
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialUV1Panel)
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialUV2Panel)
@@ -55,10 +87,11 @@ class OBJECT_PT_DSCSMaterialPanel(bpy.types.Panel):
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialLightingPanel)
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialReflectionPanel)
         bpy.utils.register_class(OBJECT_PT_DSCSMaterialUnrenderedPanel)
-        bpy.utils.register_class(OBJECT_PT_DSCSMaterialOpenGLPanel)
 
     @classmethod
     def unregister(cls):
+        bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialScenePropertiesPanel)
+        bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialVertexAttributesPanel)
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialGeneratedPanel)
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialUV1Panel)
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialUV2Panel)
@@ -68,12 +101,84 @@ class OBJECT_PT_DSCSMaterialPanel(bpy.types.Panel):
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialLightingPanel)
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialReflectionPanel)
         bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialUnrenderedPanel)
-        bpy.utils.unregister_class(OBJECT_PT_DSCSMaterialOpenGLPanel)
+
+
+class OBJECT_PT_DSCSMaterialScenePropertiesPanel(bpy.types.Panel):
+    bl_label       = "Scene Properties"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
+    bl_space_type  = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context     = "material"
+    bl_options     = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(self, context):
+        return context.material is not None
+        
+    def draw(self, context):
+        mat = context.material
+        layout = self.layout
+        props = mat.DSCS_MaterialProperties
+        scene_props = context.scene.DSCS_SceneProperties
+        
+        col = layout.column()
+        checkbox_row = col.row()
+        checkbox_row.prop(props,   "use_dir_light")
+        data_col     = col.row()
+        data_col.prop(scene_props, "dir_light_direction")
+        data_col.enabled = props.use_dir_light
+        data_col     = col.row()
+        data_col.prop(scene_props, "dir_light_color")
+        data_col.enabled = props.use_dir_light
+        
+        col = layout.column()
+        checkbox_row = col.row()
+        checkbox_row.prop(props, "use_ambient_light")
+        data_col     = col.row()
+        data_col.prop(scene_props, "ambient_color")
+        data_col.enabled = props.use_ambient_light
+        
+        col = layout.column()
+        checkbox_row = col.row()
+        checkbox_row.prop(props, "use_hemisph_light")
+        data_col     = col.row()
+        data_col.prop(scene_props, "ground_color")
+        data_col.enabled = props.use_hemisph_light
+        data_col     = col.row()
+        data_col.prop(scene_props, "sky_direction")
+        data_col.enabled = props.use_hemisph_light
+        
+
+class OBJECT_PT_DSCSMaterialVertexAttributesPanel(bpy.types.Panel):
+    bl_label       = "Vertex Attributes"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
+    bl_space_type  = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context     = "material"
+    bl_options     = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(self, context):
+        return context.material is not None
+        
+    def draw(self, context):
+        mat = context.material
+        layout = self.layout
+        props = mat.DSCS_MaterialProperties
+        
+        ctr = layout.column()
+        ctr.prop(props, "requires_normals")
+        ctr.prop(props, "requires_tangents")
+        ctr.prop(props, "requires_binormals")
+        ctr.prop(props, "requires_colors")
+        ctr.prop(props, "requires_uv1")
+        ctr.prop(props, "requires_uv2")
+        ctr.prop(props, "requires_uv3")
 
 
 class OBJECT_PT_DSCSMaterialGeneratedPanel(bpy.types.Panel):
     bl_label       = "Generated Properties"
-    bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
     bl_space_type  = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context     = "material"
@@ -113,7 +218,7 @@ def make_texture_panel(sampler_name, parent_id, get_props, is_mapped):
             props = get_props(context)
             
             layout.prop(props, "active", text="")
-            image_name = props.image if props.image is not None else "None"
+            image_name = props.image.name if props.image is not None else "None"
             layout.label(text=f"{sampler_name}: {image_name}")
             
         def draw(self, context):
@@ -141,7 +246,7 @@ def make_texture_panel(sampler_name, parent_id, get_props, is_mapped):
 def make_uv_panel(idx, prop_getter):
     class OBJECT_PT_DSCSMaterialUVPanel(bpy.types.Panel):
         bl_label       = f"UV Map {idx}"
-        bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+        bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
         bl_space_type  = 'PROPERTIES'
         bl_region_type = 'WINDOW'
         bl_context     = "material"
@@ -194,7 +299,7 @@ OBJECT_PT_DSCSMaterialUV3Panel = make_uv_panel(3, lambda props: props.uv_3)
 
 class OBJECT_PT_DSCSMaterialNormalMapPanel(bpy.types.Panel):
     bl_label       = "Normal Mapping"
-    bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
     bl_space_type  = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context     = "material"
@@ -252,7 +357,7 @@ class OBJECT_PT_DSCSMaterialNormalMapPanel(bpy.types.Panel):
 
 class OBJECT_PT_DSCSMaterialDiffusePanel(bpy.types.Panel):
     bl_label       = "Diffuse Shading"
-    bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
     bl_space_type  = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context     = "material"
@@ -271,6 +376,7 @@ class OBJECT_PT_DSCSMaterialDiffusePanel(bpy.types.Panel):
         layout = self.layout
         props = mat.DSCS_MaterialProperties
         
+        
         ctr = layout.column()
         row = ctr.row()
         row.prop(props, "use_diffuse_color", text="")
@@ -282,12 +388,22 @@ class OBJECT_PT_DSCSMaterialDiffusePanel(bpy.types.Panel):
         row.prop(props, "diffuse_str_map_channel")
         row.active = props.use_diffuse_str_map
         
-        ctr.prop(props, "use_vertex_colors")
+        ctr.prop(props, "requires_colors", text="Use Vertex Colors")
         
         row = ctr.row()
         row.prop(props, "use_overlay_strength", text="")
         row.prop(props, "overlay_strength")
         row.active = props.use_overlay_strength
+        
+        row = ctr.row()
+        row.prop(props, "use_lightmap_strength", text="")
+        row.prop(props, "lightmap_strength")
+        row.active = props.use_lightmap_strength
+        
+        row = ctr.row()
+        row.prop(props, "use_lightmap_power", text="")
+        row.prop(props, "lightmap_power")
+        row.active = props.use_lightmap_power
         
     @classmethod
     def register(cls):
@@ -304,7 +420,7 @@ class OBJECT_PT_DSCSMaterialDiffusePanel(bpy.types.Panel):
 
 class OBJECT_PT_DSCSMaterialLightingPanel(bpy.types.Panel):
     bl_label       = "Lighting"
-    bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
     bl_space_type  = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context     = "material"
@@ -331,6 +447,11 @@ class OBJECT_PT_DSCSMaterialLightingPanel(bpy.types.Panel):
         row.prop(props, "use_specular_strength", text="")
         row.prop(props, "specular_strength")
         row.active = props.use_specular_strength
+        
+        row = ctr.row()
+        row.prop(props, "use_specular_map", text="")
+        row.prop(props, "specular_map_channel")
+        row.active = props.use_specular_map
         
         row = ctr.row()
         row.prop(props, "use_specular_power", text="")
@@ -373,13 +494,14 @@ class OBJECT_PT_DSCSMaterialLightingPanel(bpy.types.Panel):
 
 class OBJECT_PT_DSCSMaterialReflectionPanel(bpy.types.Panel):
     bl_label       = "Reflections"
-    bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
     bl_space_type  = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context     = "material"
     bl_options     = {'DEFAULT_CLOSED'}
 
-    env_sampler_panel   = make_texture_panel("EnvSampler",  "OBJECT_PT_DSCSMaterialReflectionPanel", lambda x: x.material.DSCS_MaterialProperties.env_sampler, is_mapped=False)
+    env_sampler_panel  = make_texture_panel("EnvSampler",   "OBJECT_PT_DSCSMaterialReflectionPanel", lambda x: x.material.DSCS_MaterialProperties.env_sampler,  is_mapped=False)
+    envs_sampler_panel = make_texture_panel("EnvsSampler",  "OBJECT_PT_DSCSMaterialReflectionPanel", lambda x: x.material.DSCS_MaterialProperties.envs_sampler, is_mapped=False)
     
     @classmethod
     def poll(self, context):
@@ -409,15 +531,17 @@ class OBJECT_PT_DSCSMaterialReflectionPanel(bpy.types.Panel):
     @classmethod
     def register(cls):
         bpy.utils.register_class(cls.env_sampler_panel)
+        bpy.utils.register_class(cls.envs_sampler_panel)
         
     @classmethod
     def unregister(cls):
         bpy.utils.unregister_class(cls.env_sampler_panel)
+        bpy.utils.unregister_class(cls.envs_sampler_panel)
 
 
 class OBJECT_PT_DSCSMaterialUnrenderedPanel(bpy.types.Panel):
     bl_label       = "Unrendered Uniforms"
-    bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
     bl_space_type  = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context     = "material"
@@ -437,6 +561,16 @@ class OBJECT_PT_DSCSMaterialUnrenderedPanel(bpy.types.Panel):
         row.prop(props, "use_distortion", text="")
         row.prop(props, "distortion_strength")
         row.active = props.use_distortion
+        
+        row = ctr.row()
+        row.prop(props, "use_fat", text="")
+        row.prop(props, "fat")
+        row.active = props.use_fat
+        
+        row = ctr.row()
+        row.prop(props, "use_zbias", text="")
+        row.prop(props, "zbias")
+        row.active = props.use_zbias
 
 
 class OBJECT_PT_DSCSMaterialOpenGLPanel(bpy.types.Panel):
@@ -457,9 +591,21 @@ class OBJECT_PT_DSCSMaterialOpenGLPanel(bpy.types.Panel):
         props = mat.DSCS_MaterialProperties
         
         ctr = layout.column()
+        
+        # ALPHA
         row = ctr.row()
+        row.prop(props, "use_gl_alpha")
+        
+        # --ALPHA FUNC
+        row = ctr.split(factor=0.1)
+        row.separator()
         col = row.column()
-        col.prop(props, "use_gl_alpha")
+        
+        row = col.row()
+        row.prop(props, "use_gl_alpha_func")
+        row.enabled = props.use_gl_alpha
+        
+        row = col.row()
         datacol = row.column()
         row = datacol.row()
         row.prop(props, "gl_alpha_func")
@@ -468,9 +614,108 @@ class OBJECT_PT_DSCSMaterialOpenGLPanel(bpy.types.Panel):
             row.prop(props, "gl_alpha_invalid_value")
         row = datacol.row()
         row.prop(props, "gl_alpha_threshold")
-        datacol.enabled = props.use_gl_alpha
+        datacol.enabled = props.use_gl_alpha and props.use_gl_alpha_func
         
+        # BLEND
         row = ctr.row()
         row.prop(props, "use_gl_blend")
-        # row.prop(props, "fresnel_min")
-        # row.active = props.use_fresnel_min
+        
+        # --BLEND FUNC
+        # ----SRC
+        row = ctr.split(factor=0.1)
+        row.separator()
+        col = row.column()
+        
+        row = col.row()
+        row.prop(props, "use_gl_blend_func")
+        row.enabled = props.use_gl_blend
+        
+        row = col.row()
+        datacol = row.column()
+        row = datacol.row()
+        row.prop(props, "gl_blend_func_src")
+        if props.gl_blend_func_src == "INVALID":
+            row = datacol.row()
+            row.prop(props, "gl_blend_func_src_invalid_value")
+        # ----DST
+        row = datacol.row()
+        row.prop(props, "gl_blend_func_dst")
+        if props.gl_blend_func_dst == "INVALID":
+            row = datacol.row()
+            row.prop(props, "gl_blend_func_dst_invalid_value")
+        datacol.enabled = props.use_gl_blend and props.use_gl_blend_func
+
+        # --BLEND EQUATION
+        row = ctr.split(factor=0.1)
+        row.separator()
+        col = row.column()
+        
+        row = col.row()
+        row.prop(props, "use_gl_blend_eq")
+        row.enabled = props.use_gl_blend
+        
+        row = col.row()
+        datacol = row.column()
+        row = datacol.row()
+        row.prop(props, "gl_blend_eq")
+        if props.gl_blend_eq == "INVALID":
+            row = datacol.row()
+            row.prop(props, "gl_blend_eq_invalid_value")
+        datacol.enabled = props.use_gl_blend and props.use_gl_blend_eq
+        
+        # CULL FACE
+        col = ctr.column()
+        
+        row = col.row()
+        row.prop(props, "use_gl_cull_face")
+        
+        row = col.split(factor=0.1)
+        row.separator()
+        datacol = row.column()
+        row = datacol.row()
+        row.prop(props, "gl_cull_face")
+        if props.gl_cull_face == "INVALID":
+            row = datacol.row()
+            row.prop(props, "gl_cull_face_invalid_value")
+        datacol.enabled = props.use_gl_cull_face
+        
+        # DEPTH MASK
+        row = ctr.row()
+        row.prop(props, "use_gl_depth_mask")
+        
+        # DEPTH TEST
+        row = ctr.row()
+        row.prop(props, "use_gl_depth_test")
+        
+        # --DEPTH FUNC
+        row = ctr.split(factor=0.1)
+        row.separator()
+        col = row.column()
+        
+        row = col.row()
+        row.prop(props, "use_gl_depth_func")
+        row.enabled = props.use_gl_depth_test
+        
+        row = col.row()
+        datacol = row.column()
+        row = datacol.row()
+        row.prop(props, "gl_depth_func")
+        if props.gl_depth_func == "INVALID":
+            row = datacol.row()
+            row.prop(props, "gl_depth_func_invalid_value")
+        datacol.enabled = props.use_gl_depth_test and props.use_gl_depth_func
+        
+        # COLOR MASK
+        col = ctr.column()
+        
+        row = col.row()
+        row.prop(props, "use_gl_color_mask")
+        
+        row = col.split(factor=0.1)
+        row.separator()
+        datacol = row.column()
+        datacol.prop(props, "gl_color_mask_r")
+        datacol.prop(props, "gl_color_mask_g")
+        datacol.prop(props, "gl_color_mask_b")
+        datacol.prop(props, "gl_color_mask_a")
+        datacol.enabled = props.use_gl_color_mask

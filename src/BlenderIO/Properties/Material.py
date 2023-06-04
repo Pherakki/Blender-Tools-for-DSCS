@@ -17,6 +17,8 @@ def setting_updated(self, context):
     props = bpy_mat.DSCS_MaterialProperties
     if props.bpy_dtype == "ADVANCED":
         props.build_bpy_material()
+    if props.mat_def_type == "MANUAL":
+        props.preset_id = ""
 
 
 def get_sampler_active(self, sampler_name):
@@ -127,6 +129,7 @@ class UVTransforms(bpy.types.PropertyGroup):
         self.scale = uniform.data
         
 class UnhandledTextureSampler(bpy.types.PropertyGroup):
+    enabled: bpy.props.BoolProperty(name="Enabled", default=True)
     image:  bpy.props.PointerProperty(type=bpy.types.Image, name="")
     data:   bpy.props.IntVectorProperty(name="Data", default=(0, 0, 0), size=3)
     
@@ -135,6 +138,8 @@ class UnhandledTextureSampler(bpy.types.PropertyGroup):
 
 
 class UnhandledMaterialUniform(bpy.types.PropertyGroup):
+    enabled: bpy.props.BoolProperty(name="Enabled", default=True)
+    
     index:  bpy.props.IntProperty(name="Index", default=0, min=0, max=255)
     dtype: bpy.props.EnumProperty(items=(
             ("FLOAT32",     "Float32",    "A single 32-bit floating-point number."),
@@ -166,8 +171,9 @@ class UnhandledMaterialUniform(bpy.types.PropertyGroup):
 
 
 class UnhandledOpenGLSetting(bpy.types.PropertyGroup):
-    index: bpy.props.IntProperty(name="Index", subtype="UNSIGNED")
-    data:  bpy.props.FloatVectorProperty(name="", size=4)
+    enabled: bpy.props.BoolProperty(name="Enabled", default=True)
+    index:   bpy.props.IntProperty(name="Index", subtype="UNSIGNED")
+    data:    bpy.props.FloatVectorProperty(name="", size=4)
 
 
 def set_shader_name(self, value):
@@ -202,9 +208,9 @@ def gl_blend_setter(self, value):
     set_blend_method(self)
 
 
-color_sampler_t          = make_mapped_texture_sampler("ColorSampler",         (0, 0, 5), (0, 0, 6), (0, 1, 7))
+color_sampler_t          = make_mapped_texture_sampler("ColorSampler",         (0, 0, 1), (0, 0, 2), (0, 1, 7))
 overlay_color_sampler_t  = make_mapped_texture_sampler("OverlayColorSampler",  (1, 3, 6), (1, 3, 7), (1, 3, 4))
-normal_sampler_t         = make_mapped_texture_sampler("NormalSampler",        (0, 0, 1), (0, 0, 2), (0, 0, 3))
+normal_sampler_t         = make_mapped_texture_sampler("NormalSampler",        (0, 0, 5), (0, 0, 6), (0, 0, 3))
 overlay_normal_sampler_t = make_mapped_texture_sampler("OverlayNormalSampler", (1, 2, 2), (1, 2, 3), (1, 2, 0))
 lightmap_sampler_t       = make_mapped_texture_sampler("LightSampler",         (1, 3, 2), (1, 3, 3), (1, 3, 0))
 env_sampler_t            = make_texture_sampler("EnvSampler")
@@ -225,11 +231,27 @@ def find_diffuse_map_channel(self):
     else:
         return 2 # LightSamplerA
     
+def find_specular_map_channel(self):
+    use_color_map = get_shader_bit(self, 0, 2, 2)
+    
+    if use_color_map:
+        return 0
+    else:
+        return 1
+
 class MaterialProperties(bpy.types.PropertyGroup):
-    bpy_dtype: bpy.props.EnumProperty(items=[("BASIC", "Basic", "A basic, minimalist shader that does not try to reproduce in-engine rendering"),
-                                             ("ADVANCED", "Advanced", "Guesses the shader tree that should be built based on the currently active properties. Automatically rebuilds the tree if settings and changed. Be mindful that switching material properties on and off may make the material inconsistent with the shader name, which will determine the in-engine shader properties")],
+    bpy_dtype: bpy.props.EnumProperty(items=[("BASIC",    "Basic",    "A basic, minimalist shader that does not try to guess settings from the shader name"),
+                                             ("ADVANCED", "Advanced", "Guesses the shader tree that should be built based on the currently active properties. Automatically rebuilds the tree if settings and changed. Be mindful that switching material properties on and off may make the material inconsistent with the shader name, which will determine the in-engine shader properties"),
+                                             ("DISABLED", "Disabled", "Prevent automatic shader node rebuilds")],
                                       name="Material Preview",
-                                      default="BASIC")
+                                      default="DISABLED")
+
+    mat_def_type: bpy.props.EnumProperty(items=[("MANUAL",   "Manual", "Manually enter a shader name, and manually select and deselect which shader uniforms and vertex attributes required by the shader in order for it to export properly"),
+                                                ("PRESET" ,  "Preset", "The material is determined from a preset")],
+                                         name="Material Definition",
+                                         default="MANUAL")
+    
+    preset_id: bpy.props.StringProperty(name="Preset")
     
     flag_0:      bpy.props.BoolProperty(name="Unknown Flag 0", default=False )
     cast_shadow: bpy.props.BoolProperty(name="Cast Shadow",    default=True  )
@@ -269,24 +291,23 @@ class MaterialProperties(bpy.types.PropertyGroup):
         return res
     
     flags: bpy.props.IntProperty(name="Flags", get=get_flags)
-
-    # Should be able to remove this later...
+    
     shader_name: bpy.props.StringProperty(name="Shader Name", default="00000000_00000000_00000000_00000000", get=lambda self: self["shader_name"], set=set_shader_name, update=setting_updated)
     
     # Properties derived from shader name
     # UV map, active lights, etc...
-    use_dir_light:  bpy.props.BoolProperty(name="Use Directional Light",  get=lambda self: get_shader_bit(self, 0, 3, 0), description=f"Whether to receive directional lighting. {from_shader_msg}.")
-    use_hem_light:  bpy.props.BoolProperty(name="Use Hemi-Ambient Light", get=lambda self: get_shader_bit(self, 0, 3, 5), description=f"Whether to receive hemispherical ambient lighting. {from_shader_msg}")
-    use_amb_light:  bpy.props.BoolProperty(name="Use Ambient Light",      get=lambda self: get_shader_bit(self, 0, 3, 6), description=f"Whether to receive ambient lighting. {from_shader_msg}")
+    use_dir_light:     bpy.props.BoolProperty(name="Use Directional Light",           get=lambda self: get_shader_bit(self, 0, 3, 0), description=f"Whether to receive directional lighting. {from_shader_msg}.")
+    use_hemisph_light: bpy.props.BoolProperty(name="Use Bidirectional Ambient Light", get=lambda self: get_shader_bit(self, 0, 3, 5), description=f"Whether to receive bidirectional ambient lighting. {from_shader_msg}")
+    use_ambient_light: bpy.props.BoolProperty(name="Use Ambient Light",               get=lambda self: get_shader_bit(self, 0, 3, 6), description=f"Whether to receive ambient lighting. {from_shader_msg}")
     
     # Vertex Attributes
-    requires_normals:   bpy.props.BoolProperty(name="Requires Normals",   default=True)
-    requires_tangents:  bpy.props.BoolProperty(name="Requires Tangents",  default=False)
-    requires_binormals: bpy.props.BoolProperty(name="Requires Binormals", default=False)
+    requires_normals:   bpy.props.BoolProperty(name="Requires Normals",       default=True)
+    requires_tangents:  bpy.props.BoolProperty(name="Requires Tangents",      default=False)
+    requires_binormals: bpy.props.BoolProperty(name="Requires Binormals",     default=False)
     requires_colors:    bpy.props.BoolProperty(name="Requires Vertex Colors", default=False)
-    requires_uv1:       bpy.props.BoolProperty(name="Requires UV1", default=False)
-    requires_uv2:       bpy.props.BoolProperty(name="Requires UV2", default=False)
-    requires_uv3:       bpy.props.BoolProperty(name="Requires UV3", default=False)
+    requires_uv1:       bpy.props.BoolProperty(name="Requires UV1",           default=False)
+    requires_uv2:       bpy.props.BoolProperty(name="Requires UV2",           default=False)
+    requires_uv3:       bpy.props.BoolProperty(name="Requires UV3",           default=False)
     
     # Unhandled material uniforms
     unhandled_uniforms:           bpy.props.CollectionProperty(name="Unhandled Uniforms", type=UnhandledMaterialUniform)
@@ -330,10 +351,9 @@ class MaterialProperties(bpy.types.PropertyGroup):
 
     # Colours
     use_diffuse_color:        bpy.props.BoolProperty(name="Use Diffuse Color", default=True, update=setting_updated)
-    diffuse_color:            bpy.props.FloatVectorProperty(subtype="COLOR", name="DiffuseColor", default=(1., 1., 1., 1.), size=4, min=0., max=1.) 
-    use_vertex_colors:        bpy.props.BoolProperty(name="Use Vertex Colors", default=False, update=setting_updated)
+    diffuse_color:            bpy.props.FloatVectorProperty(subtype="COLOR", name="DiffuseColor", default=(1., 1., 1., 1.), size=4, soft_min=0., soft_max=1.) 
     use_overlay_strength:     bpy.props.BoolProperty(name="Use Overlay Strength", default=False, update=setting_updated)
-    overlay_strength:         bpy.props.FloatProperty(name="OverlayStrength", default=0., min=0., max=1., subtype="FACTOR")
+    overlay_strength:         bpy.props.FloatProperty(name="OverlayStrength", default=0., soft_min=0., soft_max=1., subtype="FACTOR")
     use_vertex_alpha:         bpy.props.BoolProperty(name="Use Vertex Alpha", get=lambda self: get_shader_bit(self, 1, 1, 0))
     use_overlay_vertex_alpha: bpy.props.BoolProperty(name="Use Overlay Vertex Alpha", get=lambda self: get_shader_bit(self, 0, 1, 6))
     use_diffuse_str_map:      bpy.props.BoolProperty(name="Use Diffuse Strength Map", get=lambda self: get_shader_bit(self, 2, 2, 5), description=f"Whether to apply the Diffuse Color variably across the mesh according to a texture. {from_shader_msg}")
@@ -355,6 +375,10 @@ class MaterialProperties(bpy.types.PropertyGroup):
     specular_strength:     bpy.props.FloatProperty(name="Specular Strength", default=0.)
     use_specular_power:    bpy.props.BoolProperty(name="Use Specular Power", default=False, update=setting_updated)
     specular_power:        bpy.props.FloatProperty(name="Specular Power", default=1.)
+    use_specular_map:      bpy.props.BoolProperty(name="Use Specular Map", get=lambda self: get_shader_bit(self, 0, 2, 1), description=f"Whether to apply Specular Strength variably across the mesh according to a texture. {from_shader_msg}")
+    specular_map_channel:  bpy.props.EnumProperty(name="Specular Map Channel", get=find_specular_map_channel, description="Which texture and channel to use for the specular strength map. {from_shader_msg}",
+                                                  items=[(color_sampler_t .typename + "A", "ColorSampler - Alpha",  ""),
+                                                         (normal_sampler_t.typename + "A", "NormalSampler - Alpha", "")])
 
     # Reflections
     use_reflections:      bpy.props.BoolProperty       (name="Use Reflections",    default=False, update=setting_updated)
@@ -372,122 +396,125 @@ class MaterialProperties(bpy.types.PropertyGroup):
     use_fuzzy_spec_color: bpy.props.BoolProperty       (name="Use FuzzySpecColor",  default=False, update=setting_updated)
     velvet_strength:      bpy.props.FloatProperty      (name="VelvetStrength", default=0.)
     rolloff:              bpy.props.FloatProperty      (name="Rolloff",        default=0.)
-    surface_color:        bpy.props.FloatVectorProperty(subtype="COLOR", name="SurfaceColor",    default=(1., 1., 1.), size=3, min=0., max=1.) 
-    subsurface_color:     bpy.props.FloatVectorProperty(subtype="COLOR", name="SubSurfaceColor", default=(1., 1., 1.), size=3, min=0., max=1.) 
-    fuzzy_spec_color:     bpy.props.FloatVectorProperty(subtype="COLOR", name="FuzzySpecColor",  default=(1., 1., 1.), size=3, min=0., max=1.) 
+    surface_color:        bpy.props.FloatVectorProperty(subtype="COLOR", name="SurfaceColor",    default=(1., 1., 1.), size=3, soft_min=0., soft_max=1.) 
+    subsurface_color:     bpy.props.FloatVectorProperty(subtype="COLOR", name="SubSurfaceColor", default=(1., 1., 1.), size=3, soft_min=0., soft_max=1.) 
+    fuzzy_spec_color:     bpy.props.FloatVectorProperty(subtype="COLOR", name="FuzzySpecColor",  default=(1., 1., 1.), size=3, soft_min=0., soft_max=1.) 
 
-    # Scene
+    # Generated
     use_time:             bpy.props.BoolProperty       (name="Use Time",           default=False, update=setting_updated)
     time:                 bpy.props.FloatProperty      (name="Time",               default=0.)
+
+    # Vertex shader stuff
+    use_fat:              bpy.props.BoolProperty       (name="Use Fat",            default=False, update=setting_updated)
+    fat:                  bpy.props.FloatProperty      (name="Fat",                default=0.)
+    use_zbias:            bpy.props.BoolProperty       (name="Use ZBias",          default=False, update=setting_updated)
+    zbias:                bpy.props.FloatProperty      (name="ZBias",              default=0.)
 
     ###################
     # OPENGL SETTINGS #
     ###################
-    use_gl_alpha: bpy.props.BoolProperty(name="Enable Alpha Testing", default=False, get=lambda self: self.get("use_gl_alpha", False), set=gl_alpha_setter, update=setting_updated)
+    comp_options = [
+        ("GL_NEVER",    "Never Pass",  "Equivalent to GL_NEVER"   ),
+        ("GL_LESS",     "<",           "Equivalent to GL_LESS"    ),
+        ("GL_LEQUAL",   "<=",          "Equivalent to GL_LEQUAL"  ),
+        ("GL_EQUAL",    "=",           "Equivalent to GL_EQUAL"   ),
+        ("GL_NOTEQUAL", "!=",          "Equivalent to GL_NOTEQUAL"),
+        ("GL_GEQUAL",   ">=",          "Equivalent to GL_GEQUAL"  ),
+        ("GL_GREATER",  ">",           "Equivalent to GL_GREATER" ),
+        ("GL_ALWAYS",   "Always Pass", "Equivalent to GL_ALWAYS"  ),
+        ("INVALID",     "INVALID",     "An invalid input")
+    ]
+    
+    # GL_ALPHA
+    use_gl_alpha: bpy.props.BoolProperty(name="Enable Alpha Clipping", default=False, get=lambda self: self.get("use_gl_alpha", False), set=gl_alpha_setter, update=setting_updated)
+    
+    use_gl_alpha_func: bpy.props.BoolProperty(name="Use Alpha Func", default=True, update=setting_updated)
     gl_alpha_func: bpy.props.EnumProperty(name="Alpha Func",
-                                          items=[
-                                              ("GL_NEVER",    "Never Pass",  "Equivalent to GL_NEVER"   ),
-                                              ("GL_LESS",     "<",           "Equivalent to GL_LESS"    ),
-                                              ("GL_LEQUAL",   "<=",          "Equivalent to GL_LEQUAL"  ),
-                                              ("GL_EQUAL",    "=",           "Equivalent to GL_EQUAL"   ),
-                                              ("GL_NOTEQUAL", "!=",          "Equivalent to GL_NOTEQUAL"),
-                                              ("GL_GEQUAL",   ">=",          "Equivalent to GL_GEQUAL"  ),
-                                              ("GL_GREATER",  ">",           "Equivalent to GL_GREATER" ),
-                                              ("GL_ALWAYS",   "Always Pass", "Equivalent to GL_ALWAYS"  ),
-                                              ("INVALID",     "INVALID",     "An invalid input")
-                                          ],
+                                          items=comp_options,
                                           default="GL_GREATER",
                                           update=setting_updated)
     
     gl_alpha_invalid_value: bpy.props.IntProperty(name="Invalid Value", default=0)
     gl_alpha_threshold:     bpy.props.FloatProperty(name="Threshold", default=0.5, step=0.1)
     
-    use_gl_blend: bpy.props.BoolProperty(name="Enable Blending",      default=False, get=lambda self: self.get("use_gl_blend", False), set=gl_blend_setter, update=setting_updated)
-
-    # # Uniform 0x30
-    # diffuse_alpha       = bpy.props.FloatProperty      (name="DiffuseAlpha",       default=1.)
-    # specular_params     = bpy.props.FloatVectorProperty(name="SpecularParams",     default=(0., 0.), size=2)
+    # GL_BLEND
+    use_gl_blend: bpy.props.BoolProperty(name="Enable Alpha Blending",      default=False, get=lambda self: self.get("use_gl_blend", False), set=gl_blend_setter, update=setting_updated)
     
-    # # Uniform 0x40
-    # uniform_0x49           = bpy.props.FloatProperty      (name="Uniform 0x49",         default=0.)
-    # glass_params           = bpy.props.FloatVectorProperty(name="GlassParams",          default=(0., 0., 0.), size=3)
+    blend_func_options = [
+        ("GL_ZERO",                "Zero",                  "Equivalent to GL_ZERO"               ),
+        ("GL_ONE",                 "One",                   "Equivalent to GL_ONE"                ),
+        ("GL_SRC_COLOR",           "Source Color",          "Equivalent to GL_SRC_COLOR"          ),
+        ("GL_ONE_MINUS_SRC_COLOR", "1 - Source Color",      "Equivalent to GL_ONE_MINUS_SRC_COLOR"),
+        ("GL_DST_COLOR",           "Destination Color",     "Equivalent to GL_DST_COLOR"          ),
+        ("GL_ONE_MINUS_DST_COLOR", "1 - Destination Color", "Equivalent to GL_ONE_MINUS_DST_COLOR"),
+        ("GL_SRC_ALPHA",           "Source Alpha",          "Equivalent to GL_SRC_ALPHA"          ),
+        ("GL_ONE_MINUS_SRC_ALPHA", "1 - Source Alpha",      "Equivalent to GL_ONE_MINUS_SRC_ALPHA"),
+        ("GL_DST_ALPHA",           "Destination Alpha",     "Equivalent to GL_DST_ALPHA"          ),
+        ("GL_ONE_MINUS_DST_ALPHA", "1 - Destination Alpha", "Equivalent to GL_ONE_MINUS_DST_ALPHA"),
+        ("INVALID",                "INVALID",               "An invalid input")
+    ]
+    
+    use_gl_blend_func: bpy.props.BoolProperty(name="Use Blend Func", default=True)
+    gl_blend_func_src: bpy.props.EnumProperty(name="Blend Func Source Factor",
+                                          items=blend_func_options,
+                                          default="GL_SRC_ALPHA",
+                                          update=setting_updated)
+    gl_blend_func_src_invalid_value: bpy.props.IntProperty(name="Invalid Value", default=0)
+    gl_blend_func_dst: bpy.props.EnumProperty(name="Blend Func Destination Factor",
+                                          items=blend_func_options,
+                                          default="GL_ONE",
+                                          update=setting_updated)
+    gl_blend_func_dst_invalid_value: bpy.props.IntProperty(name="Invalid Value", default=0)
+    
+    use_gl_blend_eq: bpy.props.BoolProperty(name="Use Blend Equation", default=True)
+    gl_blend_eq: bpy.props.EnumProperty(name="Blend Equation",
+                                          items=[
+                                              ("GL_FUNC_ADD",              "Add",              "Equivalent to GL_FUNC_ADD"   ),
+                                              ("GL_FUNC_SUBTRACT",         "Subtract",         "Equivalent to GL_FUNC_SUBTRACT"    ),
+                                              ("GL_FUNC_REVERSE_SUBTRACT", "Reverse Subtract", "Equivalent to GL_FUNC_REVERSE_SUBTRACT"  ),
+                                              ("GL_MIN",                   "Min",              "Equivalent to GL_MIN"   ),
+                                              ("GL_MAX",                   "Max",              "Equivalent to GL_MAX"),
+                                              ("INVALID",                  "INVALID",          "An invalid input")
+                                          ],
+                                          default="GL_FUNC_ADD",
+                                          update=setting_updated)
+    gl_blend_eq_invalid_value: bpy.props.IntProperty(name="Invalid Value", default=0)
+
+    use_gl_cull_face: bpy.props.BoolProperty(name="Use Cull Face", default=False)
+    gl_cull_face: bpy.props.EnumProperty(name="Cull Setting",
+                                          items=[
+                                              ("GL_BACK",           "Back",           "Equivalent to GL_BACK"          ),
+                                              ("GL_FRONT",          "Front",          "Equivalent to GL_FRONT"         ),
+                                              ("GL_FRONT_AND_BACK", "Front and Back", "Equivalent to GL_FRONT_AND_BACK"),
+                                              ("INVALID",           "INVALID",        "An invalid input")
+                                          ],
+                                          default="GL_BACK",
+                                          update=setting_updated)
+    gl_cull_face_invalid_value: bpy.props.IntProperty(name="Invalid Value", default=0)
+    
+    # DEPTH BUFFER
+    use_gl_depth_test: bpy.props.BoolProperty(name="Use Depth Test", default=True)
+    use_gl_depth_mask: bpy.props.BoolProperty(name="Use Depth Mask", default=True)
+    
+    use_gl_depth_func: bpy.props.BoolProperty(name="Use Depth Func", default=False, update=setting_updated)
+    gl_depth_func: bpy.props.EnumProperty(name="Depth Func",
+                                          items=comp_options,
+                                          default="GL_GREATER",
+                                          update=setting_updated)
+    
+    gl_depth_func_invalid_value: bpy.props.IntProperty(name="Invalid Value", default=0)
+    
+    # COLOR MASK
+    use_gl_color_mask: bpy.props.BoolProperty(name="Use Color Mask", default=False)
+    gl_color_mask_r: bpy.props.BoolProperty(name="Red", default=True)
+    gl_color_mask_g: bpy.props.BoolProperty(name="Green", default=True)
+    gl_color_mask_b: bpy.props.BoolProperty(name="Blue", default=True)
+    gl_color_mask_a: bpy.props.BoolProperty(name="Alpha", default=True)
+    
     # glass_strength         = bpy.props.FloatProperty      (name="GlassStrength",        default=0.)
     # curvature              = bpy.props.FloatProperty      (name="Curvature",            default=0.)
     # upside_down            = bpy.props.FloatProperty      (name="UpsideDown",           default=0.)
-    # parallax_bias          = bpy.props.FloatVectorProperty(name="ParallaxBias",         default=(0., 0.), size=2)
-    
-    # # Uniform 0x50
-    # uniform_0x51         = bpy.props.FloatProperty      (name="Uniform 0x51",     default=0.)
-    # uniform_0x52         = bpy.props.FloatProperty      (name="Uniform 0x52",     default=0.)
-    # uniform_0x53         = bpy.props.FloatProperty      (name="Uniform 0x53",     default=0.)
-    # uniform_56           = bpy.props.FloatProperty      (name="Uniform 0x56",     default=0.)
-    # uniform_57           = bpy.props.FloatProperty      (name="Uniform 0x57",     default=0.)
-    # scroll_speed_set_2_u = bpy.props.FloatProperty      (name="ScrollSpeedSet2U", default=0.)
-    # scroll_speed_set_2_v = bpy.props.FloatProperty      (name="ScrollSpeedSet2V", default=0.)
-    # scroll_speed_set_3_u = bpy.props.FloatProperty      (name="ScrollSpeedSet3U", default=0.)
-    # scroll_speed_set_3_v = bpy.props.FloatProperty      (name="ScrollSpeedSet3V", default=0.)
-    # offset_set_1_u       = bpy.props.FloatProperty      (name="OffsetSet1U", default=0.)
-    
-    # # Uniform 0x60
-    # offset_set_1_v      = bpy.props.FloatProperty      (name="OffsetSet1V", default=0.)
-    # offset_set_2_u      = bpy.props.FloatProperty      (name="OffsetSet2U", default=0.)
-    # offset_set_2_v      = bpy.props.FloatProperty      (name="OffsetSet2V", default=0.)
-    # uniform_0x65        = bpy.props.FloatProperty      (name="Uniform 0x65", default=0.)
-    # uniform_0x66        = bpy.props.FloatProperty      (name="Uniform 0x66", default=0.)
-    # uniform_0x67        = bpy.props.FloatProperty      (name="Uniform 0x67", default=0.)
-    # uniform_0x68        = bpy.props.FloatProperty      (name="Uniform 0x68", default=0.)
-    # uniform_0x69        = bpy.props.FloatProperty      (name="Uniform 0x69", default=0.)
-    # uniform_0x6A        = bpy.props.FloatProperty      (name="Uniform 0x6A", default=0.)
-    # uniform_0x6B        = bpy.props.FloatProperty      (name="Uniform 0x6B", default=0.)
-    # uniform_0x6C        = bpy.props.FloatProperty      (name="Uniform 0x6C", default=0.)
-    # uniform_0x6D        = bpy.props.FloatProperty      (name="Uniform 0x6D", default=0.)
-    # uniform_0x6E        = bpy.props.FloatProperty      (name="Uniform 0x6E", default=0.)
-    # uniform_0x6F        = bpy.props.FloatProperty      (name="Uniform 0x6F", default=0.)
-    
-    # # Uniform 0x70
-    # mip_bias           = bpy.props.FloatProperty      (name="MipBias",          default=0.)
-    # saturation         = bpy.props.FloatProperty      (name="Saturation",       default=0.)
-    # offset_set_3_u     = bpy.props.FloatProperty      (name="OffsetSet3U",      default=0.)
-    # offset_set_3_v     = bpy.props.FloatProperty      (name="OffsetSet3V",      default=0.)
-    # fat                = bpy.props.FloatProperty      (name="Fat",              default=0.)
-    # uniform_0x79       = bpy.props.FloatProperty      (name="Uniform 0x79",     default=0.)
-    # uniform_0x7A       = bpy.props.FloatProperty      (name="Uniform 0x7A",     default=0.)
-    # uniform_0x7C       = bpy.props.FloatProperty      (name="Uniform 0x7C",     default=0.)
-    # uniform_0x7D       = bpy.props.FloatProperty      (name="Uniform 0x7D",     default=0.)
-    # uniform_0x7F       = bpy.props.FloatProperty      (name="Uniform 0x7F",     default=0.)
-    
-    # # Uniform 0x80
-    # uniform_0x80       = bpy.props.FloatProperty      (name="Uniform 0x80",    default=0.)
-    # scale_set_1_u      = bpy.props.FloatProperty      (name="ScaleSet1U",      default=0.)
-    # scale_set_1_v      = bpy.props.FloatProperty      (name="ScaleSet1V",      default=0.)
-    # scale_set_2_u      = bpy.props.FloatProperty      (name="ScaleSet1U",      default=0.)
-    # scale_set_2_v      = bpy.props.FloatProperty      (name="ScaleSet1V",      default=0.)
-    # scale_set_3_u      = bpy.props.FloatProperty      (name="ScaleSet3U",      default=0.)
-    # scale_set_3_v      = bpy.props.FloatProperty      (name="ScaleSet3V",      default=0.)
-    # uniform_0x8A       = bpy.props.FloatProperty      (name="Uniform 0x8A",    default=0.)
-    # uniform_0x8B       = bpy.props.FloatProperty      (name="Uniform 0x8B",    default=0.)
-    # uniform_0x8C       = bpy.props.FloatProperty      (name="Uniform 0x8C",    default=0.)
-    # z_bias             = bpy.props.FloatProperty      (name="ZBias",           default=0.)
-    # inner_grow_a_value = bpy.props.FloatVectorProperty(name="InnerGrowAValue", default=(0., 0., 0.), size=3)
-    
-    # # Uniform 0x90
-    # uniform_0x90 = bpy.props.FloatProperty(name="Uniform 0x90", default=0.)
-    # uniform_0x91 = bpy.props.FloatProperty(name="Uniform 0x91", default=0.)
-    # uniform_0x92 = bpy.props.FloatProperty(name="Uniform 0x92", default=0.)
-    # uniform_0x93 = bpy.props.FloatProperty(name="Uniform 0x93", default=0.)
-    # uniform_0x94 = bpy.props.FloatProperty(name="Uniform 0x94", default=0.)
-    # uniform_0x95 = bpy.props.FloatProperty(name="Uniform 0x95", default=0.)
-    # uniform_0x96 = bpy.props.FloatProperty(name="Uniform 0x96", default=0.)
-    # uniform_0x97 = bpy.props.FloatProperty(name="Uniform 0x97", default=0.)
-    # uniform_0x98 = bpy.props.FloatProperty(name="Uniform 0x98", default=0.)
-    # uniform_0x99 = bpy.props.FloatProperty(name="Uniform 0x99", default=0.)
-    # uniform_0x9A = bpy.props.FloatProperty(name="Uniform 0x9A", default=0.)
-    # uniform_0x9B = bpy.props.FloatProperty(name="Uniform 0x9B", default=0.)
-    # uniform_0x9C = bpy.props.FloatProperty(name="Uniform 0x9C", default=0.)
-    # uniform_0x9D = bpy.props.FloatProperty(name="Uniform 0x9D", default=0.)
-    # uniform_0x9E = bpy.props.FloatProperty(name="Uniform 0x9E", default=0.)
-    # uniform_0x9F = bpy.props.FloatProperty(name="Uniform 0x9F", default=0.)
-    
+
     def set_split_shader_name(self, shader_list):
         self.shader_name = f"{shader_list[0]:0>8x}_{shader_list[1]:0>8x}_{shader_list[2]:0>8x}_{shader_list[3]:0>8x}"
     
@@ -624,10 +651,20 @@ class MaterialProperties(bpy.types.PropertyGroup):
         self.use_time = True
         self.time = uniform.data[0]
     
+    def set_fat(self, uniform):
+        self.use_fat = True
+        self.fat = uniform.data[0]
+    
+    def set_zbias(self, uniform):
+        self.use_zbias = True
+        self.zbias = uniform.data[0]
+    
     ##########################
     # OPENGL SETTING SETTERS #
     ##########################
     def set_gl_alpha_func(self, setting):
+        self.use_gl_alpha_func = True
+        
         gl_enum = int(setting.data[0])
         self.gl_alpha_threshold = setting.data[1]
 
@@ -642,6 +679,163 @@ class MaterialProperties(bpy.types.PropertyGroup):
         else:
             self.gl_alpha_func = "INVALID"
             self.gl_alpha_invalid_value = gl_enum
+            
+
+    def set_gl_blend_func(self, setting):
+        self.use_gl_blend_func = True
         
+        for gl_enum, variable, err_variable in [
+                (int(setting.data[0]), "gl_blend_func_src", "gl_blend_func_src_invalid_value"),
+                (int(setting.data[1]), "gl_blend_func_dst", "gl_blend_func_dst_invalid_value")
+            ]:
+            
+            if   gl_enum == 0x0000: setattr(self, variable, "GL_ZERO")
+            elif gl_enum == 0x0001: setattr(self, variable, "GL_ONE")
+            elif gl_enum == 0x0300: setattr(self, variable, "GL_SRC_COLOR")
+            elif gl_enum == 0x0301: setattr(self, variable, "GL_ONE_MINUS_SRC_COLOR")
+            elif gl_enum == 0x0302: setattr(self, variable, "GL_SRC_ALPHA")
+            elif gl_enum == 0x0303: setattr(self, variable, "GL_ONE_MINUS_SRC_ALPHA")
+            elif gl_enum == 0x0304: setattr(self, variable, "GL_DST_ALPHA")
+            elif gl_enum == 0x0305: setattr(self, variable, "GL_ONE_MINUS_DST_ALPHA")
+            elif gl_enum == 0x0306: setattr(self, variable, "GL_DST_COLOR")
+            elif gl_enum == 0x0307: setattr(self, variable, "GL_ONE_MINUS_DST_COLOR")
+            else:
+                setattr(self, variable, "INVALID")
+                setattr(self, err_variable, gl_enum)
+    
+    def set_gl_blend_equation_separate(self, setting):
+        self.use_gl_blend_eq = True
+        gl_enum = int(setting[0])
+        
+        if   gl_enum == 0x8006: self.gl_blend_eq = "GL_FUNC_ADD"
+        elif gl_enum == 0x800A: self.gl_blend_eq = "GL_FUNC_SUBTRACT"
+        elif gl_enum == 0x800B: self.gl_blend_eq = "GL_FUNC_REVERSE_SUBTRACT"
+        elif gl_enum == 0x8007: self.gl_blend_eq = "GL_MIN"
+        elif gl_enum == 0x8008: self.gl_blend_eq = "GL_MAX"
+        else:
+            self.gl_blend_eq = "INVALID"
+            self.gl_blend_eq_invalid_value = gl_enum
+    
+    def set_gl_cull_face(self, setting):
+        self.use_gl_cull_face = True
+        gl_enum = int(setting[0])
+        
+        if   gl_enum == 0x0405: self.gl_cull_face = "GL_BACK"
+        elif gl_enum == 0x0404: self.gl_cull_face = "GL_FRONT"
+        elif gl_enum == 0x0408: self.gl_cull_face = "GL_FRONT_AND_BACK"
+        else:
+            self.gl_cull_face = "INVALID"
+            self.gl_cull_face_invalid_value = gl_enum
+    
+    def set_gl_depth_func(self, setting):
+        self.use_gl_depth_func = True
+        
+        gl_enum = int(setting.data[0])
+
+        if   gl_enum == 0x200: self.gl_depth_func = "GL_NEVER"
+        elif gl_enum == 0x201: self.gl_depth_func = "GL_LESS"
+        elif gl_enum == 0x202: self.gl_depth_func = "GL_EQUAL"
+        elif gl_enum == 0x203: self.gl_depth_func = "GL_LEQUAL"
+        elif gl_enum == 0x204: self.gl_depth_func = "GL_GREATER"
+        elif gl_enum == 0x205: self.gl_depth_func = "GL_NOTEQUAL"
+        elif gl_enum == 0x206: self.gl_depth_func = "GL_GEQUAL"
+        elif gl_enum == 0x207: self.gl_depth_func = "GL_ALWAYS"
+        else:
+            self.gl_depth_func = "INVALID"
+            self.gl_depth_func_invalid_value = gl_enum
+            
+    def set_gl_color_mask(self, setting):
+        self.use_gl_color_mask = True
+        
+        self.gl_color_mask_r = int(setting[0])
+        self.gl_color_mask_g = int(setting[1])
+        self.gl_color_mask_b = int(setting[2])
+        self.gl_color_mask_a = int(setting[3])
+
     def build_bpy_material(self):
         build_bpy_material(self)
+        
+    def unset_all_uniforms(self):
+        prev = self.bpy_dtype
+        self.bpy_dtype = "DISABLED"
+        
+        self.shader_name = "00000000_00000000_00000000_00000000"
+        
+        self.requires_normals   = False
+        self.requires_tangents  = False
+        self.requires_binormals = False
+        self.requires_colors    = False
+        self.requires_uv1       = False
+        self.requires_uv2       = False
+        self.requires_uv3       = False
+        
+        self.uv_1.use_scroll_speed = False
+        self.uv_1.use_rotation     = False
+        self.uv_1.use_offset       = False
+        self.uv_1.use_scale        = False
+        self.uv_2.use_scroll_speed = False
+        self.uv_2.use_rotation     = False
+        self.uv_2.use_offset       = False
+        self.uv_2.use_scale        = False
+        self.uv_3.use_scroll_speed = False
+        self.uv_3.use_rotation     = False
+        self.uv_3.use_offset       = False
+        self.uv_3.use_scale        = False
+        
+        # Texture Samplers
+        self.color_sampler         .active = False
+        self.overlay_color_sampler .active = False
+        self.normal_sampler        .active = False
+        self.overlay_normal_sampler.active = False
+        self.lightmap_sampler      .active = False
+        self.env_sampler           .active = False
+        self.envs_sampler          .active = False
+        self.clut_sampler          .active = False
+    
+        # Normal/Tex Manipulation
+        self.use_bumpiness         = False
+        self.use_overlay_bumpiness = False
+        self.use_parallax_bias_x   = False
+        self.use_parallax_bias_y   = False
+        self.use_distortion        = False
+        
+        # Colours
+        self.use_diffuse_color    = False
+        self.use_overlay_strength = False
+        
+        # Lightmap
+        self.use_lightmap_strength = False
+        self.use_lightmap_power    = False
+       
+        # Specular
+        self.use_specular_strength = False
+        self.use_specular_power    = False
+        
+        # Reflections
+        self.use_reflections = False
+        self.use_fresnel_min = False
+        self.use_fresnel_exp = False
+        
+        # Subsurface
+        self.use_velvet_strength  = False
+        self.use_rolloff          = False
+        self.use_surface_color    = False
+        self.use_subsurface_color = False
+        self.use_fuzzy_spec_color = False
+        
+        # Generated
+        self.use_time = False
+        
+        # Vertex shader stuff
+        self.use_fat   = False
+        self.use_zbias = False
+        
+        for uniform in self.unhandled_uniforms:
+            uniform.enabled = False
+            
+        for setting in self.unhandled_settings:
+            setting.enabled = False
+        
+        
+        self.bpy_dtype = prev
+        

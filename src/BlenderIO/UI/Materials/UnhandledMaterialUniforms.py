@@ -6,7 +6,10 @@ from ...IOHelpersLib.UI import UIListBase
 class OBJECT_UL_DSCSMaterialUniformUIList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         split = layout.split(factor=0.05)
-        split.separator()
+        split.prop(item, "enabled", text="")
+        split = split.split(factor=0.25)
+        split.enabled = item.enabled
+        
         split.prop(item, "index")
         split.prop(item, "dtype")
         if item.dtype == "FLOAT32":
@@ -35,7 +38,7 @@ _base_class = UIListBase(
 
 class OBJECT_PT_DSCSMaterialUnhandledUniformsPanel(_base_class):
     bl_label       = ""
-    bl_parent_id   = "OBJECT_PT_DSCSMaterialPanel"
+    bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
     bl_space_type  = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context     = "material"

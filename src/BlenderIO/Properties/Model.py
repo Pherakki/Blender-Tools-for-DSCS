@@ -2,6 +2,8 @@ import bpy
 
 from ..IOHelpersLib.UI import UIListBase
 
+
+
 class DSCSSkelFloatChannel(bpy.types.PropertyGroup):
     obj_name: bpy.props.StringProperty(name="Name")
     obj_hash: bpy.props.IntProperty(name="Hash", subtype="UNSIGNED")
@@ -16,3 +18,12 @@ class ModelProperties(bpy.types.PropertyGroup):
     extra_clut:     bpy.props.StringProperty(name="Extra CLUT", default="")
     new_cam_parent_bone: bpy.props.StringProperty(name="Assign to")
     new_lgt_parent_bone: bpy.props.StringProperty(name="Assign to")
+    
+    def get_meshes(self):
+        return [obj for obj in self.id_data.children if obj.type == "MESH"]
+
+    def get_cameras(self):
+        return find_bpy_objects(bpy.data.objects, self.id_data, [lambda x: x.type == "CAMERA"])
+    
+    def get_light(self):
+        return find_bpy_objects(bpy.data.objects, self.id_data, [lambda x: x.type == "LIGHT"])
