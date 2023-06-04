@@ -212,6 +212,10 @@ class BinaryTargetBase:
 
     def rw_str(self, value, length, encoding='ascii'):
         raise NotImplementedError
+        
+        
+    def rw_strs(self, value, length, count, encoding='ascii'):
+        raise NotImplementedError
 
     def rw_cstr(self, value, encoding='ascii'):
         raise NotImplementedError
@@ -286,7 +290,7 @@ class Reader(BinaryTargetBase):
 
     def rw_str(self, value, length, encoding='ascii'):
         return self.bytestream.read(length).decode(encoding)
-
+    
     def rw_cstr(self, value, encoding='ascii', end_char=b"\x00"):
         out = b""
         val = self.bytestream.read(1)
