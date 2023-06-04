@@ -32,19 +32,6 @@ def mk_attribute_node(nodes, type, attr_path, name, location, parent=None):
     set_node_metadata(node, name, location, parent)
     return node
 
-def mk_mul_node(nodes, name, location, parent=None):
-    node = nodes.new("ShaderNodeMath")
-    node.operation = "MULTIPLY"
-    set_node_metadata(node, name, location, parent)
-    return node
-
-
-def mk_scale_node(nodes, name, location, parent=None):
-    node = nodes.new("ShaderNodeVectorMath")
-    node.operation = "SCALE"
-    set_node_metadata(node, name, location, parent)
-    return node
-
 
 def mk_normalize_node(nodes, name, location, parent=None):
     node = nodes.new('ShaderNodeVectorMath')
@@ -66,23 +53,43 @@ def multiply_colors(nodes, connect, color_1, color_2, name, location, parent):
     return product.outputs[2]
 
 
-def multiply_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent):
-    product = nodes.new('ShaderNodeMath')
-    product.operation = "MULTIPLY"
+
+def binop_vectors(nodes, connect, vector_1, vector_2, name, location, parent, op):
+    vec_sum = nodes.new('ShaderNodeVectorMath')
+    vec_sum.operation = op
+    set_node_metadata(vec_sum, name, location, parent)
+    
+    connect_vector(connect, vector_1, vec_sum.inputs[0])
+    connect_vector(connect, vector_2, vec_sum.inputs[1])
+    return vec_sum.outputs[0]
+
+def add_vectors(nodes, connect, vector_1, vector_2, name, location, parent):
+    return binop_vectors(nodes, connect, vector_1, vector_2, name, location, parent, "ADD")
+
+def subtract_vectors(nodes, connect, vector_1, vector_2, name, location, parent):
+    return binop_vectors(nodes, connect, vector_1, vector_2, name, location, parent, "SUBTRACT")
+
+def multiply_vectors(nodes, connect, vector_1, vector_2, name, location, parent):
+    return binop_vectors(nodes, connect, vector_1, vector_2, name, location, parent, "MULTIPLY")
+
+def divide_vectors(nodes, connect, vector_1, vector_2, name, location, parent):
+    return binop_vectors(nodes, connect, vector_1, vector_2, name, location, parent, "DIVIDE")
+
+def maximum_vectors(nodes, connect, vector_1, vector_2, name, location, parent):
+    return binop_vectors(nodes, connect, vector_1, vector_2, name, location, parent, "MAXIMUM")
+
+def minimum_vectors(nodes, connect, vector_1, vector_2, name, location, parent):
+    return binop_vectors(nodes, connect, vector_1, vector_2, name, location, parent, "MINIMUM")
+
+def multiply_add_vectors(nodes, connect, vector, multiplier, addend, name, location, parent):
+    product = nodes.new('ShaderNodeVectorMath')
+    product.operation = "MULTIPLY_ADD"
     set_node_metadata(product, name, location, parent)
     
-    connect_scalar(connect, scalar_1, product.inputs[0])
-    connect_scalar(connect, scalar_2, product.inputs[1])
+    connect_vector(connect, vector,     product.inputs[0])
+    connect_vector(connect, multiplier, product.inputs[1])
+    connect_vector(connect, addend,     product.inputs[2])
     return product.outputs[0]
-
-
-def normalize_vector(nodes, connect, vector, name, location, parent):
-    node = nodes.new("ShaderNodeVectorMath")
-    node.operation = "SCALE"
-    set_node_metadata(node, name, location, parent)
-
-    connect_vector(connect, vector, node.inputs[0])
-    return node.outputs[0]
 
 
 def scale_vector(nodes, connect, vector, scalar, name, location, parent):
@@ -95,6 +102,92 @@ def scale_vector(nodes, connect, vector, scalar, name, location, parent):
     return node.outputs[0]
 
 
+def uop_scalar(nodes, connect, scalar, name, location, parent, op):
+    product = nodes.new('ShaderNodeMath')
+    product.operation = op
+    set_node_metadata(product, name, location, parent)
+    
+    connect_scalar(connect, scalar, product.inputs[0])
+    return product.outputs[0]
+
+def binop_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent, op):
+    product = nodes.new('ShaderNodeMath')
+    product.operation = op
+    set_node_metadata(product, name, location, parent)
+    
+    connect_scalar(connect, scalar_1, product.inputs[0])
+    connect_scalar(connect, scalar_2, product.inputs[1])
+    return product.outputs[0]
+
+def add_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent):
+    return binop_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent, "ADD")
+
+def subtract_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent):
+    return binop_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent, "SUBTRACT")
+
+def multiply_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent):
+    return binop_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent, "MULTIPLY")
+
+def divide_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent):
+    return binop_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent, "DIVIDE")
+
+def maximum_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent):
+    return binop_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent, "MAXIMUM")
+
+def minimum_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent):
+    return binop_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent, "MINIMUM")
+
+def clamp_scalars(nodes, connect, scalar_1, scalar_2, name, location, parent):
+    clamp = nodes.new('ShaderNodeClamp')
+    set_node_metadata(clamp, name, location, parent)
+    connect_scalar(connect, scalar_1, clamp.inputs[0])
+    connect_scalar(connect, scalar_2, clamp.inputs[1])
+    return clamp.outputs[0]
+
+def ceil_scalar(nodes, connect, scalar, name, location, parent):
+    return uop_scalar(nodes, connect, scalar, name, location, parent, "CEIL")
+
+def floor_scalar(nodes, connect, scalar, name, location, parent):
+    return uop_scalar(nodes, connect, scalar, name, location, parent, "FLOOR")
+
+def multiply_add_scalars(nodes, connect, scalar, multiplier, addend, name, location, parent):
+    product = nodes.new('ShaderNodeMath')
+    product.operation = "MULTIPLY_ADD"
+    set_node_metadata(product, name, location, parent)
+    
+    connect_scalar(connect, scalar,     product.inputs[0])
+    connect_scalar(connect, multiplier, product.inputs[1])
+    connect_scalar(connect, addend,     product.inputs[2])
+    return product.outputs[0]
+
+def normalize_vector(nodes, connect, vector, name, location, parent):
+    node = nodes.new("ShaderNodeVectorMath")
+    node.operation = "NORMALIZE"
+    set_node_metadata(node, name, location, parent)
+
+    connect_vector(connect, vector, node.inputs[0])
+    return node.outputs[0]
+
+
+def length_vector(nodes, connect, vector, name, location, parent):
+    node = nodes.new("ShaderNodeVectorMath")
+    node.operation = "LENGTH"
+    set_node_metadata(node, name, location, parent)
+
+    connect_vector(connect, vector, node.inputs[0])
+    return node.outputs[1]
+
+
+def dot_vector(nodes, connect, vector_1, vector_2, name, location, parent):
+    node = nodes.new("ShaderNodeVectorMath")
+    node.operation = "DOT_PRODUCT"
+    set_node_metadata(node, name, location, parent)
+
+    connect_vector(connect, vector_1, node.inputs[0])
+    connect_vector(connect, vector_2, node.inputs[1])
+    return node.outputs[1]
+
+
 def lerp_scalar(nodes, connect, interpolation_value, scalar_1, scalar_2, name, location, parent):
     # Fresnel Effect Reflection Strength
     lerp = nodes.new('ShaderNodeMix')
@@ -104,27 +197,23 @@ def lerp_scalar(nodes, connect, interpolation_value, scalar_1, scalar_2, name, l
     lerp.clamp_factor = True
     set_node_metadata(lerp, name, location, parent)
     
-    connect_scalar(connect, interpolation_value, lerp.outputs[0])
-    connect_vector(connect, scalar_1,            lerp.outputs[2])
-    connect_vector(connect, scalar_2,            lerp.outputs[3])
+    connect_scalar(connect, interpolation_value, lerp.inputs[0])
+    connect_scalar(connect, scalar_1,            lerp.inputs[2])
+    connect_scalar(connect, scalar_2,            lerp.inputs[3])
     return lerp.outputs[0]
 
 
 def lerp_vector(nodes, connect, interpolation_value, vector_1, vector_2, name, location, parent):
     lerp = nodes.new('ShaderNodeMix')
-    lerp.data_type = "Vector"
+    lerp.data_type = "VECTOR"
     lerp.blend_type = "MIX"
     lerp.clamp_result = False
     lerp.clamp_factor = True
     set_node_metadata(lerp, name, location, parent)
-
-    connect(interpolation_value, lerp.inputs[0])
-    connect(vector_1, lerp.inputs[4])
-    connect(vector_2, lerp.inputs[5])
     
-    connect_scalar(connect, interpolation_value, lerp.outputs[0])
-    connect_vector(connect, vector_1,            lerp.outputs[4])
-    connect_vector(connect, vector_2,            lerp.outputs[5])
+    connect_scalar(connect, interpolation_value, lerp.inputs[0])
+    connect_vector(connect, vector_1,            lerp.inputs[4])
+    connect_vector(connect, vector_2,            lerp.inputs[5])
     return lerp.outputs[1]
 
 
@@ -135,11 +224,67 @@ def lerp_color(nodes, connect, interpolation_value, color_1, color_2, name, loca
     lerp.clamp_result = False
     lerp.clamp_factor = True                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
     set_node_metadata(lerp, name, location, parent)
-
-    connect_scalar(connect, interpolation_value, lerp.outputs[0])
-    connect_vector(connect, color_1,             lerp.outputs[6])
-    connect_vector(connect, color_2,             lerp.outputs[7])
+    
+    connect_scalar(connect, interpolation_value, lerp.inputs[0])
+    connect_vector(connect, color_1,             lerp.inputs[6])
+    connect_vector(connect, color_2,             lerp.inputs[7])
     return lerp.outputs[2]
+
+class SplitVector:
+    def __init__(self, x, y, z):
+        self.X = x
+        self.Y = y
+        self.Z = z
+
+class SplitColor:
+    def __init__(self, r, g, b):
+        self.R = r
+        self.G = g
+        self.B = b
+
+def split_vector(nodes, connect, vector, name, location, parent):
+    split_vector = nodes.new('ShaderNodeSeparateXYZ')
+    set_node_metadata(split_vector, name, location, parent)
+    connect_vector(connect, vector, split_vector.inputs[0])
+    
+    return SplitVector(split_vector.outputs[0],
+                       split_vector.outputs[1],
+                       split_vector.outputs[2])
+
+def combine_vector(nodes, connect, x, y, z, name, location, parent):
+    vector = nodes.new('ShaderNodeCombineXYZ')
+    set_node_metadata(vector, name, location, parent)
+    connect_scalar(connect, x, vector.inputs[0])
+    connect_scalar(connect, y, vector.inputs[1])
+    connect_scalar(connect, z, vector.inputs[2])
+    
+    return vector.outputs[0]
+
+def split_color(nodes, connect, color, name, location, parent):
+    split_vector = nodes.new('ShaderNodeSeparateColor')
+    set_node_metadata(split_vector, name, location, parent)
+    connect_vector(connect, color, split_vector.inputs[0])
+    
+    return SplitColor(split_vector.outputs[0],
+                      split_vector.outputs[1],
+                      split_vector.outputs[2])
+
+def combine_color(nodes, connect, r, g, b, name, location, parent):
+    vector = nodes.new('ShaderNodeCombineColor')
+    set_node_metadata(vector, name, location, parent)
+    connect_scalar(connect, r, vector.inputs[0])
+    connect_scalar(connect, g, vector.inputs[1])
+    connect_scalar(connect, b, vector.inputs[2])
+    
+    return vector.outputs[0]
+
+def NodeFrame(nodes, name, location, parent):
+    frame = nodes.new("NodeFrame")
+    frame.name  = name
+    frame.label = name
+    frame.location = location
+    frame.parent = parent
+    return frame
 
 
 ############################
@@ -160,123 +305,31 @@ class ColorWrapper:
     def alpha(self):
         return self.A
 
-def mk_scene_attribute_node(nodes, attr_name, name, location, parent=None):
+def mk_scene_attribute_node(nodes, attr_name, name, location, parent):
     return mk_attribute_node(nodes, "VIEW_LAYER", f"DSCS_SceneProperties.{attr_name}", name, location, parent)
 
-def mk_material_attribute_node(nodes, attr_name, name, location, parent=None):
+def mk_material_attribute_node(nodes, attr_name, name, location, parent):
+    if len(attr_name) > 23:
+         raise ValueError(f"Attribute name too long: {attr_name}")
     return mk_attribute_node(nodes, "OBJECT", f"active_material.DSCS_MaterialProperties.{attr_name}", name, location, parent)
 
-def SceneColorAttribute(nodes, attr_name, name, location, parent=None):
+def SceneColorAttribute(nodes, attr_name, name, location, parent):
     return ColorWrapper(mk_scene_attribute_node(nodes, attr_name, name, location, parent))
 
-def SceneVectorAttribute(nodes, attr_name, name, location, parent=None):
+def SceneVectorAttribute(nodes, attr_name, name, location, parent):
     return mk_scene_attribute_node(nodes, attr_name, name, location, parent).outputs["Vector"]
 
-def SceneFloatAttribute(nodes, attr_name, name, location, parent=None):
+def SceneFloatAttribute(nodes, attr_name, name, location, parent):
     return mk_scene_attribute_node(nodes, attr_name, name, location, parent).outputs["Fac"]
 
-def MaterialColorAttribute(nodes, attr_name, name, location, parent=None):
+def MaterialColorAttribute(nodes, attr_name, name, location, parent):
     return ColorWrapper(mk_material_attribute_node(nodes, attr_name, name, location, parent))
 
-def MaterialVectorAttribute(nodes, attr_name, name, location, parent=None):
+def MaterialVectorAttribute(nodes, attr_name, name, location, parent):
     return mk_material_attribute_node(nodes, attr_name, name, location, parent).outputs["Vector"]
 
-def MaterialFloatAttribute(nodes, attr_name, name, location, parent=None):
+def MaterialFloatAttribute(nodes, attr_name, name, location, parent):
     return mk_material_attribute_node(nodes, attr_name, name, location, parent).outputs["Fac"]
-
-
-# # Could do this as a smarter way to create/organise the nodes...
-#
-# class NodeOrganizer:
-#     pass
-
-# class NodeValue:
-#     def __init__(self, socket_output, grid):
-#         self.value = socket_output
-#         self.grid = grid
-        
-#     @property
-#     def node(self):
-#         return self.value.node
-    
-#     def rename(self, value):
-#         self.node.name  = value
-#         self.node.label = value
-
-
-
-# class FloatNodeValue:
-#     def __add__(self, other):
-#         pass
-    
-#     def __sub__(self, other):
-#         pass
-    
-#     def __mul__(self, other):
-#         connect = self.grid.connect
-#         self_t = type(self)
-#         other_t = type(other)
-        
-#         # Is a Scalar Node
-#         if issubclass(other_t, self_t):
-#             node = mk_mul_node()
-#             connect(self.value,  node.inputs[0])
-#             connect(other.value, node.inputs[1])
-#             return node.outputs[0]
-#         # Is a Vector Node
-#         elif issubclass(other_t, VectorNodeValue):
-#             node = mk_scale_node()
-#             connect(other.value, node.inputs[0])
-#             connect(self.value,  node.inputs[3])
-#         # Is a scalar value
-#         elif other_t in (float, int):
-#             node = mk_mul_node()
-#             connect(self.value,  node.inputs[0])
-#             node.inputs[0].default_value = other
-#         # Is a vector value
-#         elif hasattr(other_t, "__iter__"):
-#             node = mk_scale_node()
-#             connect(self.value,  node.inputs[0])
-#             node.inputs[0].default_value = other
-#         else:
-#             raise ValueError("Unsupported operation for types '{self_t}' and '{other_t}'")
-            
-#     def __div__(self, other):
-#         pass
-
-
-# class VectorNodeValue:
-#     def __add__(self, other):
-#         pass
-    
-#     def __sub__(self, other):
-#         pass
-    
-#     def __mul__(self, other):
-#         pass
-    
-#     def __div__(self, other):
-#         pass
-
-
-def create_driver(obj, src, bool_var=None):
-    fcurve = obj.driver_add("default_value")
-    fcurve.driver.type = "SCRIPTED"
-    var = fcurve.driver.variables.new()
-    var.name = "var"
-    var.type = "SINGLE_PROP"
-    target = var.targets[0]
-    target.id_type = "MATERIAL"
-    target.data_path = "DSCS_MaterialProperties.overlay_strength"
-    fcurve.driver.expression = "var"
-    if bool_var is not None:
-        var = fcurve.driver.variables.new()
-        var.name = "bool_var"
-        var.type = "SINGLE_PROP"
-        target = var.targets[0]
-        target.id_type = "MATERIAL"
-        target.data_path = "DSCS_MaterialProperties.use_overlay_strength"
-        fcurve.driver.expression = "var*bool_var"
 
 
 class ShaderVariables:
@@ -349,7 +402,7 @@ def attach_UV1(sampler_node, shvar, connect, parallax=None):
 
 
 def rebuild_tree(bpy_material, used_images):
-    props = bpy_material.DSCS_MaterialProperties
+    props    = bpy_material.DSCS_MaterialProperties
     node_tree = bpy_material.node_tree
     nodes = node_tree.nodes
     links = node_tree.links
@@ -395,11 +448,16 @@ def rebuild_tree(bpy_material, used_images):
     build_reflections (props, nodes, connect, used_images, shvar, column_pos)
     # build_glassmap(...)
     # build_shadows(...)
-    # build_ambient_occlusion(...)
-    # build_ambient_light(...)
+    
+    column_pos = shvar.TREE_WIDTH
+    shvar.TREE_HEIGHT = 0
+    build_ambient_light(props, nodes, connect, shvar, column_pos)
+    
+    column_pos = shvar.TREE_WIDTH
+    shvar.TREE_HEIGHT = 0
     build_specular(props, nodes, connect, shvar)
     build_total_color(props, nodes, connect, shvar)
-    # build_fog(...)
+    # TODO: build_fog(...) # Need to figure out how to get the fogparams first
 
     # OpenGL settings
     build_GL_ALPHA(props, nodes, connect, shvar)
@@ -413,7 +471,7 @@ def rebuild_tree(bpy_material, used_images):
     mix_alpha = nodes.new('ShaderNodeMixShader')
     mix_alpha.name  = "+ Alpha"
     mix_alpha.label = "+ Alpha"
-    connect(shvar.DIFFUSE_ALPHA, mix_alpha.inputs[0])
+    connect_scalar(connect, shvar.DIFFUSE_ALPHA, mix_alpha.inputs[0])
     connect(transparency.outputs[0], mix_alpha.inputs[1])
     connect(shvar.DIFFUSE_COLOR,     mix_alpha.inputs[2])
     mix_alpha.location = (shvar.TREE_WIDTH, 0)
@@ -454,10 +512,11 @@ def build_geometry(props, nodes, connect, shvar, column_pos):
     shvar.TREE_WIDTH += 400
     shvar.TREE_HEIGHT = -500
     
-    if props.use_vertex_colors:
+    if props.requires_colors:
         vertex_color = nodes.new('ShaderNodeVertexColor')
         vertex_color.parent   = geometry_frame
         vertex_color.location = Vector((0, shvar.TREE_HEIGHT))
+        vertex_color.layer_name = "Map"
         shvar.VERTEX_COLOR = vertex_color.outputs["Color"]
         shvar.VERTEX_ALPHA = vertex_color.outputs["Alpha"]
         shvar.TREE_HEIGHT -= 200
@@ -537,50 +596,17 @@ def build_uv(uv_props, nodes, connect, shvar, is_proj, idx, column_pos):
         
     offset = 200
     # UV Scroll
-    if uv_props.use_scroll_speed:
-        scroll_speed = nodes.new("ShaderNodeAttribute")
-        scroll_speed.attribute_type = "OBJECT"
-        scroll_speed.attribute_name = f"active_material.DSCS_MaterialProperties.uv_{idx}.scroll_speed"
-        scroll_speed.name  = "Scroll Speed"
-        scroll_speed.label = "Scroll Speed"
-        scroll_speed.parent = frame
-        scroll_speed.location = Vector((offset, -200))
+    if uv_props.use_scroll_speed and shvar.TIME is not None:
+        SCROLL_SPEED  = MaterialVectorAttribute(nodes, f"uv_{idx}.scroll_speed", "Scroll Speed", (offset, -200), frame)
+        SCROLL_OFFSET = scale_vector(nodes, connect, SCROLL_SPEED,    shvar.TIME, "Scroll Offset", (offset + 200, -200), frame)
+        UV            = add_vectors (nodes, connect, UV,           SCROLL_OFFSET,      "+ Scroll", (offset + 400,    0), frame)            
 
-        # if shvar.TIME is None:
-        scroll_offset = nodes.new("ShaderNodeVectorMath")
-        scroll_offset.operation = "SCALE"
-        scroll_offset.name  = "Scroll Offset"
-        scroll_offset.label = "Scroll Offset"
-        scroll_offset.parent = frame
-        scroll_offset.location = Vector((offset + 200, -200))
-        connect(scroll_speed.outputs["Vector"], scroll_offset.inputs[0])
-        if shvar.TIME is None:
-            scroll_offset.inputs[3].default_value = 0.
-        else:
-            connect(shvar.TIME,                 scroll_offset.inputs[3])
-            
-        plus_scroll = nodes.new("ShaderNodeVectorMath")
-        plus_scroll.operation = "ADD"
-        plus_scroll.name  = "+ Scroll"
-        plus_scroll.label = "+ Scroll"
-        plus_scroll.parent = frame
-        plus_scroll.location = Vector((offset + 400, 0))
-        connect(UV,                       plus_scroll.inputs[0])
-        connect(scroll_offset.outputs[0], plus_scroll.inputs[1])
-        
-        UV = plus_scroll.outputs[0]
         offset += 600
         tree_height = min(tree_height, -450)
     
     # UV Rotation
     if uv_props.use_rotation:
-        rotation = nodes.new("ShaderNodeAttribute")
-        rotation.attribute_type = "OBJECT"
-        rotation.attribute_name = f"active_material.DSCS_MaterialProperties.uv_{idx}.rotation"
-        rotation.name  = "Rotation"
-        rotation.label = "Rotation"
-        rotation.parent = frame
-        rotation.location = Vector((offset, -200))
+        ROTATION  = MaterialFloatAttribute(nodes, f"uv_{idx}.rotation", "Rotation", (offset, -200), frame)
     
         # Rotation needs to be an rotation about the vector (0., 0., 1.) through the point (0.5, 0.5, 0.0)
         # Probably doable by defining the rotation vector as (0.5, 0.5, 0.) and providing the angle?
@@ -588,61 +614,30 @@ def build_uv(uv_props, nodes, connect, shvar, is_proj, idx, column_pos):
         # meanining that the input vector requires offsetting...
         plus_rotation = nodes.new("ShaderNodeVectorRotate")
         plus_rotation.rotation_type = "Z_AXIS"
-        plus_rotation.name  = "+ Rotation"
-        plus_rotation.label = "+ Rotation"
-        plus_rotation.parent = frame
+        plus_rotation.name     = "+ Rotation"
+        plus_rotation.label    = "+ Rotation"
+        plus_rotation.parent   = frame
         plus_rotation.location = Vector((offset + 200, 0))
         connect(UV, plus_rotation.inputs[0])
         plus_rotation.inputs[1].default_value = [0.5, 0.5, 0.]
-        connect(rotation.outputs["Fac"], plus_rotation.inputs[3])
+        connect(ROTATION, plus_rotation.inputs[3])
         
-        UV = plus_rotation.outputs[0]
         offset += 400
         tree_height = min(tree_height, -400)
 
     # UV Offset
     if uv_props.use_offset:
-        offset_node = nodes.new("ShaderNodeAttribute")
-        offset_node.attribute_type = "OBJECT"
-        offset_node.attribute_name = f"active_material.DSCS_MaterialProperties.uv_{idx}.offset"
-        offset_node.name  = "Offset"
-        offset_node.label = "Offset"
-        offset_node.parent = frame
-        offset_node.location = Vector((offset, -200))
-            
-        plus_offset = nodes.new("ShaderNodeVectorMath")
-        plus_offset.operation = "ADD"
-        plus_offset.name  = "+ Offset"
-        plus_offset.label = "+ Offset"
-        plus_offset.parent   = frame
-        plus_offset.location = Vector((offset+200, 0))
-        connect(UV,                            plus_offset.inputs[0])
-        connect(offset_node.outputs["Vector"], plus_offset.inputs[1])
-        
-        UV = plus_offset.outputs[0]
+        OFFSET = MaterialVectorAttribute(nodes, f"uv_{idx}.offset", "Offset", (offset, -200), frame)
+        UV     = add_vectors(nodes, connect, UV, OFFSET, "+ Offset", (offset + 200, 0), frame)            
+
         offset += 400
         tree_height = min(tree_height, -400)
 
     # UV Scale
     if uv_props.use_scale:
-        scale = nodes.new("ShaderNodeAttribute")
-        scale.attribute_type = "OBJECT"
-        scale.attribute_name = f"active_material.DSCS_MaterialProperties.uv_{idx}.scale"
-        scale.name  = "Scale"
-        scale.label = "Scale"
-        scale.parent = frame
-        scale.location = Vector((offset, -200))
-        
-        plus_scale = nodes.new("ShaderNodeVectorMath")
-        plus_scale.operation = "MULTIPLY"
-        plus_scale.name  = "+ Scale"
-        plus_scale.label = "+ Scale"
-        plus_scale.parent   = frame
-        plus_scale.location = Vector((offset + 200, 0))
-        connect(UV,                      plus_scale.inputs[0])
-        connect(scale.outputs["Vector"], plus_scale.inputs[1])
-        
-        UV = plus_scale.outputs[0]
+        SCALE = MaterialVectorAttribute(nodes, f"uv_{idx}.scale", "Scale", (offset, -200), frame)
+        UV    = multiply_vectors(nodes, connect, UV, SCALE, "+ Scale", (offset + 200, 0), frame)            
+
         offset += 400
         tree_height = min(tree_height, -400)
     
@@ -723,17 +718,10 @@ def build_textures(props, nodes, connect, used_images, shvar, column_pos):
         COLOR_WIDTH -= 300
     
     elif props.use_diffuse_color:
-        diffuse_color = nodes.new('ShaderNodeAttribute')
-        diffuse_color.attribute_type = "OBJECT"
-        diffuse_color.attribute_name = "active_material.DSCS_MaterialProperties.diffuse_color"
-        diffuse_color.name  = "Diffuse Color"
-        diffuse_color.label = "Diffuse Color"
-        diffuse_color.parent = samplers_frame
-        diffuse_color.location =  Vector((0, HEIGHT))
-        
+        diffuse = MaterialColorAttribute(nodes, "diffuse_color", "Diffuse Color", (0, HEIGHT), samplers_frame)
         NODES_HEIGHT = INCREMENT
-        DIFFUSE_COLOR = diffuse_color.outputs["Color"]
-        DIFFUSE_ALPHA = diffuse_color.outputs["Alpha"]
+        DIFFUSE_COLOR = diffuse.RGB
+        DIFFUSE_ALPHA = diffuse.A
     
     else:
         diffuse_color = nodes.new("ShaderNodeRGB")
@@ -816,48 +804,22 @@ def build_overlay_strength(props, nodes, connect, shvar, column_pos):
         WIDTH = 0
         
         # Mixing factor
-        overlay_strength = nodes.new('ShaderNodeAttribute')
-        overlay_strength.attribute_type = "OBJECT"
-        overlay_strength.attribute_name = "active_material.DSCS_MaterialProperties.overlay_strength"
-        overlay_strength.name  = "OverlayStrength"
-        overlay_strength.label = "OverlayStrength"
-        overlay_strength.parent = overlay_frame
-        overlay_strength.location =  Vector((WIDTH, 0))
+        OVERLAY_FACTOR = MaterialFloatAttribute(nodes, "overlay_strength", "OverlayStrength", (WIDTH, 0), overlay_frame)
         WIDTH += 200
-        
-        OVERLAY_FACTOR = overlay_strength.outputs["Fac"]
         
         # Overlay color alpha
-        overlay_factor = nodes.new('ShaderNodeMath')
-        overlay_factor.operation = "MULTIPLY"
-        overlay_factor.name  = "* Overlay Color Alpha"
-        overlay_factor.label = "* Overlay Color Alpha"
-        overlay_factor.parent = overlay_frame
-        overlay_factor.location = Vector((200, 0))
-        WIDTH += 200
-        
-        connect(OVERLAY_FACTOR,   overlay_factor.inputs[0])
-        overlay_factor.inputs[1].default_value = 1.
         if shvar.OVERLAY_COLOR_SAMPLER_ALPHA is not None:
-            connect(shvar.OVERLAY_COLOR_SAMPLER_ALPHA, overlay_factor.inputs[1])
-        OVERLAY_FACTOR = overlay_factor.outputs[0]
-        
+            OVERLAY_FACTOR = multiply_scalars(nodes, connect, shvar.OVERLAY_COLOR_SAMPLER_ALPHA, OVERLAY_FACTOR, "* Overlay Color Alpha", (WIDTH, 0), overlay_frame)
+            WIDTH += 200
+
         # Vertex alpha
         if props.use_overlay_vertex_alpha and shvar.VERTEX_ALPHA is not None:
-            overlay_factor = nodes.new('ShaderNodeMath')
-            overlay_factor.operation = "MULTIPLY"
-            overlay_factor.name  = "* Vertex Alpha"
-            overlay_factor.label = "* Vertex Alpha"
-            overlay_factor.parent = overlay_frame
-            overlay_factor.location = Vector((WIDTH, 0))
+            OVERLAY_FACTOR = multiply_scalars(nodes, connect, OVERLAY_FACTOR, shvar.VERTEX_ALPHA, "* Vertex Alpha", (WIDTH, 0), overlay_frame)
             WIDTH += 200
-                
-            connect(OVERLAY_FACTOR,     overlay_factor.inputs[0])
-            connect(shvar.VERTEX_ALPHA, overlay_factor.inputs[1])
-            OVERLAY_FACTOR = overlay_factor.outputs[0]
         
         shvar.TREE_WIDTH = max(shvar.TREE_WIDTH, column_pos + WIDTH + 30)
         shvar.OVERLAY_FACTOR = OVERLAY_FACTOR
+
 
 def build_parallax(props, nodes, connect, used_images, shvar, column_pos):
     if props.use_parallax_bias_x or props.use_parallax_bias_y:
@@ -866,12 +828,6 @@ def build_parallax(props, nodes, connect, used_images, shvar, column_pos):
         parallax_frame = nodes.new("NodeFrame")
         parallax_frame.label    = "Parallax"
         parallax_frame.location = Vector((column_pos, shvar.TREE_HEIGHT))
-    
-        # TODO
-        # CREATE PROPERTIES FOR SELECTING MAP
-        # SEE IF YOU CAN DEFINE PARALLAX_MAP_TYPE
-        # TODO
-        # UV SAMPLING: SPLIT/COMBINED
     
         parallax_sampler = nodes.new('ShaderNodeTexImage')
         parallax_sampler.name     = "Parallax Sampler"
@@ -888,110 +844,39 @@ def build_parallax(props, nodes, connect, used_images, shvar, column_pos):
         if (props.color_sampler.typename in used_images):    
             parallax_props = props.color_sampler
             
+            if not props.color_sampler.split_alpha:
+                attach_UV(parallax_sampler, parallax_props, shvar, connect)
+            else:
+                attach_UV1(parallax_sampler, shvar, connect)
+            
         if parallax_props is not None:
             parallax_sampler.image    = used_images.get(parallax_props.typename)
-        attach_UV(parallax_sampler, parallax_props, shvar, connect)
         
         PARALLAX_CHANNEL = parallax_sampler.outputs["Alpha"]
         
         # TODO
-        # CHECK IF PARALLAX IS DONE FROM TANGENT AND BITANGENT OR
-        # T/B/N X and T/B/N Y
+        # THIS IS WRONG FOR SOME REASON - UNSURE WHY
         
-        #######################
-        # MULTIPLICATIVE BIAS #
-        #######################
-        parallax_x = nodes.new('ShaderNodeAttribute')
-        parallax_x.attribute_type = "OBJECT"
-        parallax_x.attribute_name = "active_material.DSCS_MaterialProperties.parallax_bias_x"
-        parallax_x.name  = "Parallax Bias X"
-        parallax_x.label = "Parallax Bias X"
-        parallax_x.parent = parallax_frame
-        parallax_x.location = Vector((0, -300))
-        
-        mul_x = nodes.new('ShaderNodeMath')
-        mul_x.operation = "MULTIPLY"
-        mul_x.name  = "HEIGHT * Bias X"
-        mul_x.label = "HEIGHT * Bias X"
-        mul_x.parent = parallax_frame
-        mul_x.location = Vector((400, 0))
-        
-        if PARALLAX_CHANNEL is not None:
-            connect(PARALLAX_CHANNEL, mul_x.inputs[0])
-        else:
-            mul_x.inputs[0].default_value = 0.
-        connect(parallax_x.outputs["Fac"], mul_x.inputs[1])
-        
-        #################
-        # ADDITIVE BIAS #
-        #################
-        parallax_y = nodes.new('ShaderNodeAttribute')
-        parallax_y.attribute_type = "OBJECT"
-        parallax_y.attribute_name = "active_material.DSCS_MaterialProperties.parallax_bias_y"
-        parallax_y.name  = "Parallax Bias Y"
-        parallax_y.label = "Parallax Bias Y"
-        parallax_y.parent = parallax_frame
-        parallax_y.location = Vector((0, -500))
-        
-        add_y = nodes.new('ShaderNodeMath')
-        add_y.operation = "ADD"
-        add_y.name  = "(HEIGHT * Bias X) + Bias Y"
-        add_y.label = "(HEIGHT * Bias X) + Bias Y"
-        add_y.parent = parallax_frame
-        add_y.location = Vector((600, 0))
-        
-        connect(mul_x     .outputs[0],     add_y.inputs[0])
-        connect(parallax_y.outputs["Fac"], add_y.inputs[1])
+        ###################
+        # BIAS GENERATION #
+        ###################
+        PARALLAX_INPUT = PARALLAX_CHANNEL if PARALLAX_CHANNEL is not None else 0
+        PARALLAX_X     = MaterialFloatAttribute(nodes, "parallax_bias_x", "Parallax Bias X", (0, -300), parallax_frame)
+        PARALLAX_Y     = MaterialFloatAttribute(nodes, "parallax_bias_y", "Parallax Bias Y", (0, -500), parallax_frame)
+
+        PARALLAX = multiply_add_scalars(nodes, connect, PARALLAX_INPUT, PARALLAX_X, PARALLAX_Y, "(HEIGHT * Bias X) + Bias Y", (400, 0), parallax_frame)
         
         #######################
         # PARALLAX GENERATION #
         #######################
-        x_coord = nodes.new('ShaderNodeVectorMath')
-        x_coord.operation = "DOT_PRODUCT"
-        x_coord.name  = "U Coord"
-        x_coord.label = "U Coord"
-        connect(shvar.VVIEW,   x_coord.inputs[0])
-        connect(shvar.TANGENT, x_coord.inputs[1])
-        x_coord.parent = parallax_frame
-        x_coord.location = Vector((0, -700))
+        XCOORD = dot_vector(nodes, connect, shvar.VVIEW, shvar.TANGENT,  "U Coord", (0, -700), parallax_frame)
+        YCOORD = dot_vector(nodes, connect, shvar.VVIEW, shvar.BINORMAL, "V Coord", (0, -900), parallax_frame)
         
-        y_coord = nodes.new('ShaderNodeVectorMath')
-        y_coord.operation = "DOT_PRODUCT"
-        y_coord.name  = "V Coord"
-        y_coord.label = "V Coord"
-        connect(shvar.VVIEW,    y_coord.inputs[0])
-        connect(shvar.BINORMAL, y_coord.inputs[1])
-        y_coord.parent = parallax_frame
-        y_coord.location = Vector((0, -900))
-        
-        parallax_u = nodes.new('ShaderNodeMath')
-        parallax_u.operation = "MULTIPLY"
-        parallax_u.name  = "Parallax X"
-        parallax_u.label = "Parallax X"
-        parallax_u.parent = parallax_frame
-        parallax_u.location = Vector((800, 0))
-        connect(add_y  .outputs[0], parallax_u.inputs[0])
-        connect(x_coord.outputs[1], parallax_u.inputs[1])
-        
-        parallax_v = nodes.new('ShaderNodeMath')
-        parallax_v.operation = "MULTIPLY"
-        parallax_v.name  = "Parallax Y"
-        parallax_v.label = "Parallax Y"
-        parallax_v.parent = parallax_frame
-        parallax_v.location = Vector((800, -200))
-        connect(add_y  .outputs[0], parallax_v.inputs[0])
-        connect(x_coord.outputs[1], parallax_v.inputs[1])
+        PARALLAX_U = multiply_scalars(nodes, connect, PARALLAX, XCOORD, "Parallax X", (800,    0), parallax_frame)
+        PARALLAX_V = multiply_scalars(nodes, connect, PARALLAX, YCOORD, "Parallax Y", (800, -200), parallax_frame)
 
         # Output vector
-        parallax = nodes.new('ShaderNodeCombineXYZ')
-        parallax.name  = "Parallax"
-        parallax.label = "UV Parallax"
-        parallax.parent = parallax_frame
-        parallax.location = Vector((1000, 0))
-        connect(parallax_u.outputs[0], parallax.inputs[0])
-        connect(parallax_v.outputs[0], parallax.inputs[1])
-        
-        shvar.PARALLAX = parallax.outputs[0]
+        shvar.PARALLAX = combine_vector(nodes, connect, PARALLAX_U, PARALLAX_V, 0, "UV Parallax", (1000, 0), parallax_frame)
         
         shvar.TREE_HEIGHT -= 700
         shvar.TREE_WIDTH = max(shvar.TREE_WIDTH, column_pos + 1200)
@@ -1013,72 +898,19 @@ def build_bump(props, nodes, connect, shvar, column_pos):
             bump_channel_frame.location = Vector((0, HEIGHT-30))
             bump_channel_frame.use_custom_color = True
             bump_channel_frame.color = (0.3, 0.3, 0.3)
-            
-            bumpiness = nodes.new('ShaderNodeAttribute')
-            bumpiness.attribute_type = "OBJECT"
-            bumpiness.attribute_name = f"active_material.DSCS_MaterialProperties.{bump_attr}"
-            bumpiness.name  = f"{label}Bumpiness"
-            bumpiness.label = f"{label}Bumpiness"
-            bumpiness.parent = bump_channel_frame
-            bumpiness.location = Vector((0, -300))
-        
-            half_normal_sampler = nodes.new('ShaderNodeVectorMath')
-            half_normal_sampler.operation = "SUBTRACT"
-            half_normal_sampler.name  = f"{label} Half Normal"
-            half_normal_sampler.label = f"{label} Half Normal"
-            connect(sampler_color, half_normal_sampler.inputs[0])
-            half_normal_sampler.inputs[1].default_value[0] = 0.5
-            half_normal_sampler.inputs[1].default_value[1] = 0.5
-            half_normal_sampler.inputs[1].default_value[2] = 0.5
-            half_normal_sampler.parent = bump_channel_frame
-            half_normal_sampler.location = Vector((0, 0))
-                    
-            bump_map = nodes.new('ShaderNodeVectorMath')
-            bump_map.operation = "SCALE"
-            bump_map.name  = f"{label} Bump Map"
-            bump_map.label = f"{label} Bump Map"
-            connect(half_normal_sampler.outputs[0], bump_map.inputs[0])
-            connect(bumpiness.outputs["Fac"],       bump_map.inputs[3])
-            bump_map.parent = bump_channel_frame
-            bump_map.location = Vector((200, 0))
-            
-            split_bump_map = nodes.new('ShaderNodeSeparateXYZ')
-            split_bump_map.name  = f"Split {label} Bump Map"
-            split_bump_map.label = f"Split {label} Bump Map"
-            connect(bump_map.outputs[0], split_bump_map.inputs[0])
-            split_bump_map.parent = bump_channel_frame
-            split_bump_map.location = Vector((400, 0))
+
+            BUMPINESS       = MaterialFloatAttribute(nodes, bump_attr, f"{label}Bumpiness", (0, -300), bump_channel_frame)
+            HALF_NORMAL_MAP = subtract_vectors(nodes, connect, sampler_color, [0.5, 0.5, 0.5], f"{label} Half Normal", (0, 0), bump_channel_frame)
+            BUMP_MAP        = scale_vector(nodes, connect, HALF_NORMAL_MAP, BUMPINESS, f"{label} Bump Map", (200, 0), bump_channel_frame)
+            SPLIT_BUMP_MAP  = split_vector(nodes, connect, BUMP_MAP, f"Split {label} Bump Map", (400, 0), bump_channel_frame)
                 
-            x_coord = nodes.new('ShaderNodeVectorMath')
-            x_coord.operation = "SCALE"
-            x_coord.name  = "Tangent Influence"
-            x_coord.label = "Tangent Influence"
-            connect(shvar.TANGENT, x_coord.inputs[0])
-            connect(split_bump_map.outputs[0], x_coord.inputs[3])
-            x_coord.parent = bump_channel_frame
-            x_coord.location = Vector((600, 0))
-            
-            y_coord = nodes.new('ShaderNodeVectorMath')
-            y_coord.operation = "SCALE"
-            y_coord.name  = "Binormal Influence"
-            y_coord.label = "Binormal Influence"
-            connect(shvar.BINORMAL, y_coord.inputs[0])
-            connect(split_bump_map.outputs[1], y_coord.inputs[3])
-            y_coord.parent = bump_channel_frame
-            y_coord.location = Vector((600, -200))
-            
-            full_bump_map = nodes.new('ShaderNodeVectorMath')
-            full_bump_map.operation = "ADD"
-            full_bump_map.name  = f"Full {label} Bump Map"
-            full_bump_map.label = f"Full {label} Bump Map"
-            connect(x_coord.outputs[0], full_bump_map.inputs[0])
-            connect(y_coord.outputs[0], full_bump_map.inputs[1])
-            full_bump_map.parent = bump_channel_frame
-            full_bump_map.location = Vector((800, 0))
-            
+            XCOORD = scale_vector(nodes, connect, shvar.TANGENT,  SPLIT_BUMP_MAP.X, "Tangent Influence", (600, 0), bump_channel_frame)
+            YCOORD = scale_vector(nodes, connect, shvar.BINORMAL, SPLIT_BUMP_MAP.Y, "Binormal Influence", (600, -200), bump_channel_frame)
+            FULL_BUMP_MAP = add_vectors(nodes, connect, XCOORD, YCOORD, f"Full {label} Bump Map", (800, 0), bump_channel_frame)
+        
             shvar.TREE_HEIGHT -= 500
             
-            return full_bump_map.outputs[0]
+            return FULL_BUMP_MAP
         
         channel_height = 0
         if shvar.NORMAL_SAMPLER_COLOR is not None:
@@ -1091,45 +923,20 @@ def build_bump(props, nodes, connect, shvar, column_pos):
         CONTRIB = None
         EXTRA_OFFSET = 0
         if BUMP is not None and OVERLAY_BUMP is not None:
-            blended_bump = nodes.new('ShaderNodeMix')
-            blended_bump.data_type = "VECTOR"
-            blended_bump.blend_type = "MIX"
-            blended_bump.clamp_result = False
-            blended_bump.clamp_factor = True
-            blended_bump.parent = bump_frame
-            blended_bump.location = Vector((1000, -450))
-            connect(shvar.OVERLAY_FACTOR, blended_bump.inputs[0])
-            connect(BUMP,         blended_bump.inputs[4])
-            connect(OVERLAY_BUMP, blended_bump.inputs[5])
             EXTRA_OFFSET += 300
-            CONTRIB = blended_bump.outputs[1]
+            CONTRIB = lerp_vector(nodes, connect, shvar.OVERLAY_FACTOR, BUMP, OVERLAY_BUMP, "Mixed Bump", (1000, -450), bump_frame)
         elif BUMP is not None and OVERLAY_BUMP is None:
             CONTRIB = BUMP
         elif BUMP is None and OVERLAY_BUMP is not None:
             CONTRIB = OVERLAY_BUMP
             
         if CONTRIB is not None:
-            bumped_normal = nodes.new('ShaderNodeVectorMath')
-            bumped_normal.operation = "ADD"
-            bumped_normal.name  = "Bumped Normal"
-            bumped_normal.label = "Bumped Normal"
-            connect(shvar.NORMAL, bumped_normal.inputs[0])
-            connect(CONTRIB,      bumped_normal.inputs[1])
-            bumped_normal.parent = bump_frame
-            bumped_normal.location = Vector((EXTRA_OFFSET + 1000, 0))
-            
-            normed_normal = nodes.new('ShaderNodeVectorMath')
-            normed_normal.operation = "NORMALIZE"
-            normed_normal.name  = "Normalized Norm"
-            normed_normal.label = "Normalized Normal"
-            connect(bumped_normal.outputs[0], normed_normal.inputs[0])
-            normed_normal.parent = bump_frame
-            normed_normal.location = Vector((EXTRA_OFFSET + 1200, 0))
-            
-            shvar.NORMAL = normed_normal.outputs[0]
+            BUMPED_NORMAL = add_vectors(nodes, connect, shvar.NORMAL, CONTRIB, "Bumped Normal", (EXTRA_OFFSET + 1000, 0), bump_frame)
+            shvar.NORMAL = normalize_vector(nodes, connect, BUMPED_NORMAL, "BumpNormalized Normal", (EXTRA_OFFSET + 1200, 0), bump_frame)
 
         shvar.TREE_HEIGHT += channel_height
         shvar.TREE_WIDTH = max(shvar.TREE_WIDTH, column_pos + 1000 + EXTRA_OFFSET + 400)
+
 
 def build_distortion(props, nodes, connect, shvar):
     # TODO: DISTORTION SOURCE CAN BE OVERLAY NORMAL OR NORMAL MAP
@@ -1155,20 +962,14 @@ def build_distortion(props, nodes, connect, shvar):
         half_normal_sampler.parent = distortion_frame
         half_normal_sampler.location = Vector((0, 0))
 
-        d_strength = nodes.new('ShaderNodeAttribute')
-        d_strength.attribute_type = "OBJECT"
-        d_strength.attribute_name = "active_material.DSCS_MaterialProperties.distortion_strength"
-        d_strength.name  = "DistortionStrength"
-        d_strength.label = "DistortionStrength"
-        d_strength.parent = distortion_frame
-        d_strength.location = Vector((0, 0))
+        DISTORTION_STRENGTH = MaterialFloatAttribute(nodes, "distortion_strength", "DistortionStrength", (0, 0), distortion_frame)
                 
         distortion = nodes.new('ShaderNodeVectorMath')
         distortion.operation = "SCALE"
         distortion.name  = "Distortion"
         distortion.label = "Distortion"
         connect(half_normal_sampler.outputs[0], distortion.inputs[0])
-        connect(d_strength.outputs["Fac"],      distortion.inputs[2])
+        connect(DISTORTION_STRENGTH,            distortion.inputs[2])
         distortion.parent = distortion_frame
         distortion.location = Vector((0, 0))
 
@@ -1199,79 +1000,38 @@ def build_flat_diffuse(props, nodes, connect, used_images, shvar, column_pos):
     ###################
     if shvar.OVERLAY_COLOR_SAMPLER_COLOR is not None:
         WORKING_COLUMN = 280
-        
-        # Diffuse Texture Contribution
-        total_diffuse_texture = nodes.new('ShaderNodeMix')
-        total_diffuse_texture.data_type = "RGBA"
-        total_diffuse_texture.blend_type = "MIX"
-        total_diffuse_texture.clamp_result = False
-        total_diffuse_texture.clamp_factor = True
-        total_diffuse_texture.parent = diffuse_frame
-        total_diffuse_texture.location = Vector((WORKING_COLUMN, ROW_0))
-        
+
         # RGB only
-        connect(DIFFUSE_COLOR,                     total_diffuse_texture.inputs[6])
-        connect(shvar.OVERLAY_COLOR_SAMPLER_COLOR, total_diffuse_texture.inputs[7])
-        if shvar.OVERLAY_FACTOR is not None:
-            connect(shvar.OVERLAY_FACTOR,          total_diffuse_texture.inputs["Factor"])
-        else:
-            total_diffuse_texture.inputs["Factor"].default_value = 0.5
-        WORKING_COLUMN += 200
+        overlay_factor = 0.5 if shvar.OVERLAY_FACTOR is None else shvar.OVERLAY_FACTOR
+        DIFFUSE_COLOR = lerp_color(nodes, connect, overlay_factor, DIFFUSE_COLOR, shvar.OVERLAY_COLOR_SAMPLER_COLOR, "Mixed Texture", (WORKING_COLUMN, ROW_0), diffuse_frame)
         
-        DIFFUSE_COLOR = total_diffuse_texture.outputs[2]
+        WORKING_COLUMN += 200
         WORKING_ROW = min(WORKING_ROW, -200)
-    
     
     ##################
     # VERTEX COLOURS #
     ##################
     if shvar.VERTEX_COLOR is not None:
-        vertex_color_mix = nodes.new('ShaderNodeMix')
-        vertex_color_mix.data_type = "RGBA"
-        vertex_color_mix.blend_type = "MULTIPLY"
-        vertex_color_mix.clamp_result = False
-        vertex_color_mix.clamp_factor = True
-        vertex_color_mix.parent = diffuse_frame
-        vertex_color_mix.location = Vector((WORKING_COLUMN, ROW_0))
-    
-        connect(DIFFUSE_COLOR,      vertex_color_mix.inputs[6])
-        connect(shvar.VERTEX_COLOR, vertex_color_mix.inputs[7])
-        vertex_color_mix.inputs["Factor"].default_value = 1.
-        WORKING_COLUMN += 200
+        DIFFUSE_COLOR = multiply_colors(nodes, connect, DIFFUSE_COLOR, shvar.VERTEX_COLOR, "+ Vertex Color", (WORKING_COLUMN, ROW_0), diffuse_frame)
         
-        DIFFUSE_COLOR = vertex_color_mix.outputs[2]
         WORKING_ROW = min(WORKING_ROW, -450)
-    
+        DIFFUSE_ALPHA = 1.
         if props.use_vertex_alpha and shvar.VERTEX_ALPHA is not None:
-            vertex_alpha = nodes.new('ShaderNodeMath')
-            vertex_alpha.operation = "MULTIPLY"
-            vertex_alpha.name  = "* Vertex Alpha"
-            vertex_alpha.label = "* Vertex Alpha"
-            vertex_alpha.parent = diffuse_frame
-            vertex_alpha.location = Vector((WORKING_COLUMN, ROW_0))
-                
-            connect(DIFFUSE_ALPHA,      vertex_alpha.inputs[0])
-            connect(shvar.VERTEX_ALPHA, vertex_alpha.inputs[1])
-            WORKING_COLUMN += 200
-            DIFFUSE_ALPHA = vertex_alpha
-            
-     
+            DIFFUSE_ALPHA = multiply_scalars(nodes, connect, DIFFUSE_ALPHA, shvar.VERTEX_ALPHA, "* Vertex Alpha", (WORKING_COLUMN, ROW_0-200), diffuse_frame)
+            WORKING_ROW = min(WORKING_ROW, ROW_0 - 200)
+        
+        WORKING_COLUMN += 200
+    
     #######################
     # FLAT DIFFUSE COLOUR #
     #######################
     if shvar.COLOR_SAMPLER_COLOR is not None:
         # Create flat diffuse color
         if props.use_diffuse_color:
-            diffuse_color = nodes.new('ShaderNodeAttribute')
-            diffuse_color.attribute_type = "OBJECT"
-            diffuse_color.attribute_name = "active_material.DSCS_MaterialProperties.diffuse_color"
-            diffuse_color.name  = "Diffuse Color"
-            diffuse_color.label = "Diffuse Color"
-            diffuse_color.parent = diffuse_frame
-            diffuse_color.location = Vector((WORKING_COLUMN, -250))
+            diffuse_color = MaterialColorAttribute(nodes, "diffuse_color", "Diffuse Color", (WORKING_COLUMN, -250), diffuse_frame)
             
-            FLAT_DIFFUSE_COLOR = diffuse_color.outputs["Color"]
-            FLAT_DIFFUSE_ALPHA = diffuse_color.outputs["Alpha"]
+            FLAT_DIFFUSE_COLOR = diffuse_color.RGB
+            FLAT_DIFFUSE_ALPHA = diffuse_color.A
         else:
             diffuse_color = nodes.new("ShaderNodeRGB")
             diffuse_color.label = "Fallback Diffuse Color"
@@ -1322,56 +1082,13 @@ def build_flat_diffuse(props, nodes, connect, used_images, shvar, column_pos):
     # LIGHTMAP CONTRIBUTION #
     #########################
     if shvar.LIGHTMAP_SAMPLER_COLOR is not None:
-        lightmap_power = nodes.new('ShaderNodeAttribute')
-        lightmap_power.attribute_type = "OBJECT"
-        lightmap_power.attribute_name = "active_material.DSCS_MaterialProperties.lightmap_power"
-        lightmap_power.name  = "LightmapPower"
-        lightmap_power.label = "LightmapPower"
-        lightmap_power.parent = diffuse_frame
-        lightmap_power.location = Vector((WORKING_COLUMN, - 200))
+        LIGHTMAP_POWER    = MaterialFloatAttribute(nodes, "lightmap_power",    "LightmapPower",    (WORKING_COLUMN, - 200), diffuse_frame)
+        LIGHTMAP_STRENGTH = MaterialFloatAttribute(nodes, "lightmap_strength", "LightmapStrength", (WORKING_COLUMN, - 400), diffuse_frame)
         
-        lightmap_strength = nodes.new('ShaderNodeAttribute')
-        lightmap_strength.attribute_type = "OBJECT"
-        lightmap_strength.attribute_name = "active_material.DSCS_MaterialProperties.lightmap_strength"
-        lightmap_strength.name  = "LightmapStrength"
-        lightmap_strength.label = "LightmapStrength"
-        lightmap_strength.parent = diffuse_frame
-        lightmap_strength.location = Vector((WORKING_COLUMN, - 400))
-
-        lightmap_color = nodes.new("ShaderNodeVectorMath")
-        lightmap_color.operation = "SCALE"
-        lightmap_color.name  = "Lightmap Color"
-        lightmap_color.label = "Lightmap Color"
-        lightmap_color.parent = diffuse_frame
-        lightmap_color.location = Vector((WORKING_COLUMN + 200, -250))
-        connect(shvar.LIGHTMAP_SAMPLER_COLOR,  lightmap_color.inputs[0])
-        connect(lightmap_power.outputs["Fac"], lightmap_color.inputs[3])
+        LIGHTMAP_COLOR      = scale_vector(nodes, connect, shvar.LIGHTMAP_SAMPLER_COLOR, LIGHTMAP_POWER, "Lightmap Color", (WORKING_COLUMN+200, -250), diffuse_frame)
+        FULL_LIGHTMAP_COLOR = lerp_color(nodes, connect, LIGHTMAP_STRENGTH, [1., 1., 1., 1.], LIGHTMAP_COLOR, "Full Lightmap Color", (WORKING_COLUMN+400, -250), diffuse_frame)
+        DIFFUSE_COLOR       = multiply_vectors(nodes, connect, DIFFUSE_COLOR, FULL_LIGHTMAP_COLOR, "+ Lightmap", (WORKING_COLUMN + 600, -250), diffuse_frame)
         
-        full_lightmap_color = nodes.new('ShaderNodeMix')
-        full_lightmap_color.data_type = "RGBA"
-        full_lightmap_color.blend_type = "MIX"
-        full_lightmap_color.clamp_result = False
-        full_lightmap_color.clamp_factor = True
-        full_lightmap_color.name  = "Full Lightmap Color"
-        full_lightmap_color.label = "Full Lightmap Color"
-        full_lightmap_color.parent = diffuse_frame
-        full_lightmap_color.location = Vector((WORKING_COLUMN + 400, -250))
-        connect(lightmap_strength    .outputs["Fac"], full_lightmap_color.inputs[0])
-        full_lightmap_color.inputs[6].default_value[0] = 1.
-        full_lightmap_color.inputs[6].default_value[1] = 1.
-        full_lightmap_color.inputs[6].default_value[2] = 1.
-        connect(lightmap_color.outputs[0], full_lightmap_color.inputs[7])
-        
-        plus_lightmap_contrib = nodes.new("ShaderNodeVectorMath")
-        plus_lightmap_contrib.operation = "MULTIPLY"
-        plus_lightmap_contrib.name  = "+ Lightmap"
-        plus_lightmap_contrib.label = "+ Lightmap"
-        plus_lightmap_contrib.parent = diffuse_frame
-        plus_lightmap_contrib.location = Vector((WORKING_COLUMN + 600, -250))
-        connect(DIFFUSE_COLOR,                  plus_lightmap_contrib.inputs[0])
-        connect(full_lightmap_color.outputs[2], plus_lightmap_contrib.inputs[1])
-        
-        DIFFUSE_COLOR = plus_lightmap_contrib.outputs[0]
         WORKING_ROW = min(WORKING_ROW, -600)
         WORKING_COLUMN += 800
         
@@ -1397,17 +1114,6 @@ def build_lighting(props, nodes, connect, used_images, shvar, column_pos):
     
         diffuse_lighting_frame.location = (column_pos, shvar.TREE_HEIGHT + FRAME_OFFSET)
         
-        ###################
-        # SET UP SPECULAR #
-        ###################
-        # TODO
-        # if use_spec_map:
-        #     create spec map
-        # else:
-        #     spec strength
-        # if use_overlay_spec_map:
-        #     create overlay map
-        
         WORKING_COLUMN = 0
         CONTRIB_HEIGHT = 0
         #############
@@ -1420,46 +1126,18 @@ def build_lighting(props, nodes, connect, used_images, shvar, column_pos):
         WORKING_COLUMN += 200
         connect(LIGHT_DIRECTION, normed_light_dir.inputs[0])
         
-        lambert_term = nodes.new('ShaderNodeVectorMath')
-        lambert_term.operation = "DOT_PRODUCT"
-        lambert_term.name  = "Lambert Term"
-        lambert_term.label = "Lambert Term"
-        lambert_term.parent = diffuse_lighting_frame
-        lambert_term.location = Vector((WORKING_COLUMN, 0))
-        connect(normed_light_dir.outputs[0], lambert_term.inputs[0])
-        connect(shvar.NORMAL,                      lambert_term.inputs[1])
+        LAMBERT_TERM = dot_vector(nodes, connect, normed_light_dir.outputs[0], shvar.NORMAL, "Lambert Term", (WORKING_COLUMN, 0), diffuse_lighting_frame)
         
         # If specular?
         # Specular Intensity vector
-        raw_half_vector = nodes.new('ShaderNodeVectorMath')
-        raw_half_vector.operation = "ADD"
-        raw_half_vector.name  = "Raw Half Vector"
-        raw_half_vector.label = "Raw Half Vector"
-        raw_half_vector.parent = diffuse_lighting_frame
-        raw_half_vector.location = Vector((WORKING_COLUMN, -150))
-        connect(normed_light_dir.outputs[0], raw_half_vector.inputs[0])
-        connect(shvar.VVIEW,                       raw_half_vector.inputs[1])
+        RAW_HALF_VECTOR = add_vectors(nodes, connect, normed_light_dir.outputs[0], shvar.VVIEW, "Raw Half Vector", (WORKING_COLUMN, -150), diffuse_lighting_frame)
         WORKING_COLUMN += 200
         
-        half_vector = nodes.new('ShaderNodeVectorMath')
-        half_vector.operation = "NORMALIZE"
-        half_vector.name  = "Half Vector"
-        half_vector.label = "Half Vector"
-        half_vector.parent = diffuse_lighting_frame
-        half_vector.location = Vector((WORKING_COLUMN, -150))
-        connect(raw_half_vector.outputs["Vector"], half_vector.inputs[0])
+        HALF_VECTOR = normalize_vector(nodes, connect, RAW_HALF_VECTOR, "Half Vector", (WORKING_COLUMN, -150), diffuse_lighting_frame)
         WORKING_COLUMN += 200
         
-        specular_intensity = nodes.new('ShaderNodeVectorMath')
-        specular_intensity.operation = "DOT_PRODUCT"
-        specular_intensity.name  = "Specular Intensity"
-        specular_intensity.label = "Specular Intensity"
-        specular_intensity.parent = diffuse_lighting_frame
-        specular_intensity.location = Vector((WORKING_COLUMN, -200))
-        connect(half_vector.outputs["Vector"], specular_intensity.inputs[0])
-        connect(shvar.NORMAL,                  specular_intensity.inputs[1])
+        SPECULAR_INTENSITY = dot_vector(nodes, connect, HALF_VECTOR, shvar.NORMAL, "Specular Intensity", (WORKING_COLUMN, -200), diffuse_lighting_frame)
         WORKING_COLUMN += 200
-        
         
         toon_shading_frame = nodes.new("NodeFrame")
         toon_shading_frame.name  = "Toon Shading"
@@ -1476,61 +1154,10 @@ def build_lighting(props, nodes, connect, used_images, shvar, column_pos):
             # SAMPLE CLUT #
             ###############
             # U Coordinate
-            rescaled_u = nodes.new('ShaderNodeMath')
-            rescaled_u.operation = "MULTIPLY"
-            rescaled_u.name  = "Rescaled U"
-            rescaled_u.label = "Rescaled U"
-            rescaled_u.parent = toon_shading_frame
-            rescaled_u.location = Vector((LOCAL_WORKING_COLUMN, 0))
-            connect(lambert_term.outputs[1], rescaled_u.inputs[0])
-            rescaled_u.inputs[1].default_value = 0.495
-            
-            u_coord = nodes.new('ShaderNodeMath')
-            u_coord.operation = "ADD"
-            u_coord.name  = "V Coord"
-            u_coord.label = "V Coord"
-            u_coord.parent = toon_shading_frame
-            u_coord.location = Vector((LOCAL_WORKING_COLUMN + 200, 0))
-            connect(rescaled_u.outputs[0], u_coord.inputs[0])
-            u_coord.inputs[1].default_value = 0.500
-            
-            # If specular?
-            # V Coordinate
-            rescaled_v = nodes.new('ShaderNodeMath')
-            rescaled_v.operation = "MULTIPLY"
-            rescaled_v.name  = "Rescaled V"
-            rescaled_v.label = "Rescaled V"
-            rescaled_v.parent = toon_shading_frame
-            rescaled_v.location = Vector((LOCAL_WORKING_COLUMN, -300))
-            connect(specular_intensity.outputs[1], rescaled_v.inputs[0])
-            rescaled_v.inputs[1].default_value = 0.980
-            
-            v_coord = nodes.new('ShaderNodeMath')
-            v_coord.operation = "ADD"
-            v_coord.name  = "V Coord"
-            v_coord.label = "V Coord"
-            v_coord.parent = toon_shading_frame
-            v_coord.location = Vector((LOCAL_WORKING_COLUMN + 200, -300))
-            connect(rescaled_v.outputs[0], v_coord.inputs[0])
-            v_coord.inputs[1].default_value = 0.010
-            
-            flipped_v_coord = nodes.new('ShaderNodeMath')
-            flipped_v_coord.operation = "SUBTRACT"
-            flipped_v_coord.name  = "Flipped V Coord"
-            flipped_v_coord.label = "Flipped V Coord"
-            flipped_v_coord.parent = toon_shading_frame
-            flipped_v_coord.location = Vector((LOCAL_WORKING_COLUMN + 400, -300))
-            flipped_v_coord.inputs[0].default_value = 1
-            connect(v_coord.outputs[0], flipped_v_coord.inputs[1])
-            
-            # Output vector
-            uv_coord = nodes.new('ShaderNodeCombineXYZ')
-            uv_coord.name  = "UV Coords"
-            uv_coord.label = "UV Coords"
-            uv_coord.parent = toon_shading_frame
-            uv_coord.location = Vector((LOCAL_WORKING_COLUMN + 600, -150))
-            connect(u_coord        .outputs[0], uv_coord.inputs[0])
-            connect(flipped_v_coord.outputs[0], uv_coord.inputs[1])
+            U_COORD   = multiply_add_scalars(nodes, connect, LAMBERT_TERM,        0.495, 0.500, "U Coord", (LOCAL_WORKING_COLUMN,    0), toon_shading_frame)
+            V_COORD   = multiply_add_scalars(nodes, connect, SPECULAR_INTENSITY, -0.980, 0.990, "V Coord", (LOCAL_WORKING_COLUMN, -300), toon_shading_frame)
+            UV_COORDS = combine_vector(nodes, connect, U_COORD, V_COORD, 0, "UV Coords", (LOCAL_WORKING_COLUMN + 200, -150), toon_shading_frame)
+
                     
             clut_sampler = nodes.new('ShaderNodeTexImage')
             clut_sampler.name  = "CLUTSampler"
@@ -1540,106 +1167,34 @@ def build_lighting(props, nodes, connect, used_images, shvar, column_pos):
             if clut_sampler.image is not None:
                 clut_sampler.image.alpha_mode = "CHANNEL_PACKED"    
             clut_sampler.parent = toon_shading_frame
-            clut_sampler.location = Vector((LOCAL_WORKING_COLUMN + 800, -100))
-            connect(uv_coord.outputs[0], clut_sampler.inputs["Vector"])
-            WORKING_COLUMN += 1100
+            clut_sampler.location = Vector((LOCAL_WORKING_COLUMN + 400, -100))
+            connect(UV_COORDS, clut_sampler.inputs["Vector"])
+            WORKING_COLUMN += 700
             
             DIFFUSE_POWER  = clut_sampler.outputs["Color"]
-            if props.use_specular_strength:
+            if props.use_specular:
                     SPECULAR_POWER = clut_sampler.outputs["Alpha"]
                     
             CONTRIB_HEIGHT = min(CONTRIB_HEIGHT, -400)
         else:
             # Diffuse Power term
-            clamped_lambert_term = nodes.new('ShaderNodeMath')
-            clamped_lambert_term.operation = "MAXIMUM"
-            clamped_lambert_term.name  = "Clamped Lambert Term"
-            clamped_lambert_term.label = "Clamped Lambert Term"
-            clamped_lambert_term.parent = toon_shading_frame
-            clamped_lambert_term.location = Vector((LOCAL_WORKING_COLUMN, 0))
-            connect(lambert_term.outputs[1], clamped_lambert_term.inputs[0])
-            clamped_lambert_term.inputs[1].default_value = 0.
+            CLAMPED_LAMBERT_TERM = maximum_scalars(nodes, connect, LAMBERT_TERM, 0., "Clamped Lambert Term", (LOCAL_WORKING_COLUMN, 0), toon_shading_frame)
+            DIFFUSE_POWER = combine_color(nodes, connect, 
+                                          CLAMPED_LAMBERT_TERM, CLAMPED_LAMBERT_TERM, CLAMPED_LAMBERT_TERM,
+                                          "Lambert Factor", (LOCAL_WORKING_COLUMN + 200, 0), toon_shading_frame)
             
-            lambert_factor = nodes.new('ShaderNodeCombineColor')
-            lambert_factor.name  = "Lambert Factor"
-            lambert_factor.label = "Lambert Factor"
-            lambert_factor.parent = toon_shading_frame
-            lambert_factor.location = Vector((LOCAL_WORKING_COLUMN + 200, 0))
-            connect(clamped_lambert_term.outputs[0], lambert_factor.inputs["Red"])
-            connect(clamped_lambert_term.outputs[0], lambert_factor.inputs["Green"])
-            connect(clamped_lambert_term.outputs[0], lambert_factor.inputs["Blue"])
-            
-            DIFFUSE_POWER = lambert_factor.outputs[0]
             SPEC_HEIGHT = -350
             if props.use_specular:
                 # Specular Power Term
+                SPEC_POWER = MaterialFloatAttribute(nodes, "specular_power", "SpecularPower", (LOCAL_WORKING_COLUMN, SPEC_HEIGHT - 150), toon_shading_frame)
+                SPEC_COEFF = subtract_scalars(nodes, connect, 1, SPECULAR_INTENSITY, "1-d", (LOCAL_WORKING_COLUMN, SPEC_HEIGHT - 450), toon_shading_frame)
+                SPEC_DENOM = multiply_add_scalars(nodes, connect, SPEC_COEFF, SPEC_POWER, SPECULAR_INTENSITY, "SpecPow*(1-d) + d", (LOCAL_WORKING_COLUMN + 200, SPEC_HEIGHT - 250), toon_shading_frame)
+                SPEC_RATIO = divide_scalars(nodes, connect, SPECULAR_INTENSITY, SPEC_DENOM, "Specular Ratio", (LOCAL_WORKING_COLUMN + 400, SPEC_HEIGHT - 150), toon_shading_frame)
+                CLAMPED_SPECULAR = maximum_scalars(nodes, connect, SPEC_RATIO, 0., "Modulated Specular", (LOCAL_WORKING_COLUMN + 600, SPEC_HEIGHT - 150), toon_shading_frame)
+
+                CLIPPED_LAMBERT = ceil_scalar(nodes, connect, CLAMPED_LAMBERT_TERM, "Clipped Lambert Term", (LOCAL_WORKING_COLUMN + 600, SPEC_HEIGHT), toon_shading_frame)
+                SPECULAR_POWER  = multiply_scalars(nodes, connect, CLIPPED_LAMBERT, CLAMPED_SPECULAR, "Full Specular Power", (LOCAL_WORKING_COLUMN + 800, SPEC_HEIGHT), toon_shading_frame)
                 
-                spec_power = nodes.new('ShaderNodeAttribute')
-                spec_power.attribute_type = "OBJECT"
-                spec_power.attribute_name = "active_material.DSCS_MaterialProperties.specular_power"
-                spec_power.name  = "SpecularPower"
-                spec_power.label = "SpecularPower"
-                spec_power.parent = toon_shading_frame
-                spec_power.location = Vector((LOCAL_WORKING_COLUMN, SPEC_HEIGHT - 150))
-                
-                spec_coeff = nodes.new('ShaderNodeMath')
-                spec_coeff.operation = "SUBTRACT"
-                spec_coeff.name  = "1-d"
-                spec_coeff.label = "1-d"
-                spec_coeff.parent = toon_shading_frame
-                spec_coeff.location = Vector((LOCAL_WORKING_COLUMN, SPEC_HEIGHT - 450))
-                spec_coeff.inputs[0].default_value = 1.
-                connect(specular_intensity.outputs[1], spec_coeff.inputs[1])
-                
-                spec_denom = nodes.new('ShaderNodeMath')
-                spec_denom.operation = "MULTIPLY_ADD"
-                spec_denom.name  = "SpecPow*(1-d) + d"
-                spec_denom.label = "SpecPow*(1-d) + d"
-                spec_denom.parent = toon_shading_frame
-                spec_denom.location = Vector((LOCAL_WORKING_COLUMN + 200, SPEC_HEIGHT - 250))
-                spec_denom.inputs[0].default_value = 1.
-                connect(spec_coeff.outputs[0],         spec_denom.inputs[0])
-                connect(spec_power.outputs["Fac"],     spec_denom.inputs[1])
-                connect(specular_intensity.outputs[1], spec_denom.inputs[2])
-                
-                spec_ratio = nodes.new('ShaderNodeMath')
-                spec_ratio.operation = "DIVIDE"
-                spec_ratio.name  = "Specular Ratio"
-                spec_ratio.label = "Specular Ratio"
-                spec_ratio.parent = toon_shading_frame
-                spec_ratio.location = Vector((LOCAL_WORKING_COLUMN + 400, SPEC_HEIGHT - 150))
-                spec_ratio.inputs[0].default_value = 1.
-                connect(specular_intensity.outputs[1], spec_ratio.inputs[0])
-                connect(spec_denom.outputs[0],         spec_ratio.inputs[1])
-                
-                modulated_spec = nodes.new('ShaderNodeMath')
-                modulated_spec.operation = "MAXIMUM"
-                modulated_spec.name  = "Modulated Specular"
-                modulated_spec.label = "Modulated Specular"
-                modulated_spec.parent = toon_shading_frame
-                modulated_spec.location = Vector((LOCAL_WORKING_COLUMN + 600, SPEC_HEIGHT - 150))
-                modulated_spec.inputs[0].default_value = 1.
-                connect(spec_ratio.outputs[0], modulated_spec.inputs[0])
-                modulated_spec.inputs[1].default_value = 0.
-                
-                clipped_lambert_term = nodes.new('ShaderNodeMath')
-                clipped_lambert_term.operation = "CEIL"
-                clipped_lambert_term.name  = "Clipped Lambert Term"
-                clipped_lambert_term.label = "Clipped Lambert Term"
-                clipped_lambert_term.parent = toon_shading_frame
-                clipped_lambert_term.location = Vector((LOCAL_WORKING_COLUMN + 600, SPEC_HEIGHT))
-                connect(clamped_lambert_term.outputs[0], clipped_lambert_term.inputs[0])
-                
-                full_spec_pow = nodes.new('ShaderNodeMath')
-                full_spec_pow.operation = "MULTIPLY"
-                full_spec_pow.name  = "Full Specular Power"
-                full_spec_pow.label = "Full Specular Power"
-                full_spec_pow.parent = toon_shading_frame
-                full_spec_pow.location = Vector((LOCAL_WORKING_COLUMN + 800, SPEC_HEIGHT))
-                connect(clipped_lambert_term.outputs[0], full_spec_pow.inputs[0])
-                connect(modulated_spec      .outputs[0], full_spec_pow.inputs[1])
-                
-                SPECULAR_POWER = full_spec_pow.outputs[0]
                 WORKING_COLUMN += 1000
                 CONTRIB_HEIGHT = min(CONTRIB_HEIGHT, SPEC_HEIGHT - 650)
             else:    
@@ -1649,55 +1204,27 @@ def build_lighting(props, nodes, connect, used_images, shvar, column_pos):
         # Light color
         light_color = SceneColorAttribute(nodes, "dir_light_color", "Light Color", (WORKING_COLUMN, -200), diffuse_lighting_frame)
         
-        diffuse_lighting = nodes.new('ShaderNodeMix')
-        diffuse_lighting.data_type = "RGBA"
-        diffuse_lighting.blend_type = "MULTIPLY"
-        diffuse_lighting.clamp_result = False
-        diffuse_lighting.clamp_factor = True
-        diffuse_lighting.name  = "Diffuse Lighting"
-        diffuse_lighting.label = "Diffuse Lighting"
-        diffuse_lighting.parent = diffuse_lighting_frame
-        diffuse_lighting.location = Vector((WORKING_COLUMN + 200, 0))
-        diffuse_lighting.inputs["Factor"].default_value = 1.
-        connect(DIFFUSE_POWER,   diffuse_lighting.inputs[6])
-        connect(light_color.RGB, diffuse_lighting.inputs[7])
+        shvar.DIFFUSE_LIGHTING_COLOR = multiply_colors(nodes, connect, DIFFUSE_POWER, light_color.RGB, "Diffuse Lighting", (WORKING_COLUMN + 200, 0), diffuse_lighting_frame)
         
-        shvar.DIFFUSE_LIGHTING_COLOR = diffuse_lighting.outputs[2]
-        
-        # TODO: NEEDS TO WORK FOR SPECULAR MAPS TOO!!!!
         if props.use_specular:
-            spec_strength = nodes.new('ShaderNodeAttribute')
-            spec_strength.attribute_type = "OBJECT"
-            spec_strength.attribute_name = "active_material.DSCS_MaterialProperties.specular_strength"
-            spec_strength.name  = "SpecularStrength"
-            spec_strength.label = "SpecularStrength"
-            spec_strength.parent = diffuse_lighting_frame
-            spec_strength.location = Vector((WORKING_COLUMN, -480))
+            ###########################
+            # BUILD SPECULAR STRENGTH #
+            ###########################
+            if props.use_specular_map:
+                if props.specular_map_channel == "ColorSamplerA" and shvar.COLOR_SAMPLER_ALPHA is not None:
+                    SPECULAR_STRENGTH = shvar.COLOR_SAMPLER_ALPHA
+                elif props.specular_map_channel == "NormalSamplerA" and shvar.NORMAL_SAMPLER_ALPHA is not None:
+                    SPECULAR_STRENGTH = shvar.NORMAL_SAMPLER_ALPHA
+                else:
+                    raise ValueError(f"Unknown specular map channel '{props.specular_map_channel}'")
+            else:
+                SPECULAR_STRENGTH = MaterialFloatAttribute(nodes, "specular_strength", "SpecularStrength", (WORKING_COLUMN, -480), diffuse_lighting_frame)
+                WORKING_COLUMN += 200
             
-            SPECULAR_STRENGTH = spec_strength.outputs["Fac"]
-            
-            
-            m_full_spec_power = nodes.new('ShaderNodeMath')
-            m_full_spec_power.operation = "MULTIPLY"
-            m_full_spec_power.name  = "Modulated Full Spec Power"
-            m_full_spec_power.label = "Modulated Full Spec Power"
-            m_full_spec_power.parent = diffuse_lighting_frame
-            m_full_spec_power.location = Vector((WORKING_COLUMN + 200, -380))
-            connect(SPECULAR_POWER,    m_full_spec_power.inputs[0])
-            connect(SPECULAR_STRENGTH, m_full_spec_power.inputs[1])
-            
-            spec_lighting = nodes.new("ShaderNodeVectorMath")
-            spec_lighting.operation = "SCALE"
-            spec_lighting.name  = "Specular Lighting"
-            spec_lighting.label = "Specular Lighting"
-            spec_lighting.parent = diffuse_lighting_frame
-            spec_lighting.location = Vector((WORKING_COLUMN + 400, -380))
-            connect(shvar.DIFFUSE_LIGHTING_COLOR, spec_lighting.inputs[0])
-            connect(m_full_spec_power.outputs[0], spec_lighting.inputs[3])
-            
-            shvar.SPECULAR_LIGHTING_COLOR = spec_lighting.outputs[0]
-            
-            WORKING_COLUMN += 600
+            M_FULL_SPEC_POWER = multiply_scalars(nodes, connect, SPECULAR_POWER, SPECULAR_STRENGTH, "Modulated Full Spec Power", (WORKING_COLUMN, -380), diffuse_lighting_frame)
+            shvar.SPECULAR_LIGHTING_COLOR = scale_vector(nodes, connect, shvar.DIFFUSE_LIGHTING_COLOR, M_FULL_SPEC_POWER, "Specular Lighting", (WORKING_COLUMN + 200, -380), diffuse_lighting_frame)
+
+            WORKING_COLUMN += 400
             CONTRIB_HEIGHT = min(CONTRIB_HEIGHT, -680)
             
         ##############
@@ -1712,201 +1239,48 @@ def build_lighting(props, nodes, connect, used_images, shvar, column_pos):
             velvet_frame.parent = diffuse_lighting_frame
             velvet_frame.location = (WORKING_COLUMN, 0)
             
-            
-            velvet_strength = nodes.new('ShaderNodeAttribute')
-            velvet_strength.attribute_type = "OBJECT"
-            velvet_strength.attribute_name = "active_material.DSCS_MaterialProperties.velvet_strength"
-            velvet_strength.name  = "VelvetStrength"
-            velvet_strength.label = "VelvetStrength"
-            velvet_strength.parent = velvet_frame
-            velvet_strength.location = Vector((0, -200))
-            
-            rolloff = nodes.new('ShaderNodeAttribute')
-            rolloff.attribute_type = "OBJECT"
-            rolloff.attribute_name = "active_material.DSCS_MaterialProperties.rolloff"
-            rolloff.name  = "VelvetStrength"
-            rolloff.label = "VelvetStrength"
-            rolloff.parent = velvet_frame
-            rolloff.location = Vector((0, -400))
-            
-            neg_rolloff = nodes.new('ShaderNodeMath')
-            neg_rolloff.operation = "MULTIPLY"
-            neg_rolloff.name  = "-Rolloff"
-            neg_rolloff.label = "-Rolloff"
-            neg_rolloff.parent = velvet_frame
-            neg_rolloff.location = Vector((0 + 200, -400))
-            connect(rolloff.outputs["Fac"], neg_rolloff.inputs[0])
-            neg_rolloff.inputs[1].default_value = -1
-            
-            surface_color = nodes.new('ShaderNodeAttribute')
-            surface_color.attribute_type = "OBJECT"
-            surface_color.attribute_name = "active_material.DSCS_MaterialProperties.surface_color"
-            surface_color.name  = "SurfaceColor"
-            surface_color.label = "SurfaceColor"
-            surface_color.parent = velvet_frame
-            surface_color.location = Vector((0, -600))
-            
-            subsurface_color = nodes.new('ShaderNodeAttribute')
-            subsurface_color.attribute_type = "OBJECT"
-            subsurface_color.attribute_name = "active_material.DSCS_MaterialProperties.subsurface_color"
-            subsurface_color.name  = "SubSurfaceColor"
-            subsurface_color.label = "SubSurfaceColor"
-            subsurface_color.parent = velvet_frame
-            subsurface_color.location = Vector((0, -800))
+            VELVET_STRENGTH = MaterialFloatAttribute(nodes, "velvet_strength", "VelvetStrength", (0, -200), velvet_frame)
+            ROLLOFF         = MaterialFloatAttribute(nodes, "rolloff",         "Rolloff",        (0, -400), velvet_frame)
+            NEG_ROLLOFF     = multiply_scalars(nodes, connect, ROLLOFF, -1, "-Rolloff", (0 + 200, -400), velvet_frame)
+
+            SURFACE_COLOR    = MaterialColorAttribute(nodes, "surface_color",    "SurfaceColor",    (0, -600), velvet_frame)
+            SUBSURFACE_COLOR = MaterialColorAttribute(nodes, "subsurface_color", "SubSurfaceColor", (0, -800), velvet_frame)
             
             if props.use_fuzzy_spec_color:
-                fuzzy_spec_color = nodes.new('ShaderNodeAttribute')
-                fuzzy_spec_color.attribute_type = "OBJECT"
-                fuzzy_spec_color.attribute_name = "active_material.DSCS_MaterialProperties.fuzzy_spec_color"
-                fuzzy_spec_color.name  = "FuzzySpecColor"
-                fuzzy_spec_color.label = "FuzzySpecColor"
-                fuzzy_spec_color.parent = velvet_frame
-                fuzzy_spec_color.location = Vector((0, -1000))
+                FUZZY_SPEC_COLOR = MaterialColorAttribute(nodes, "fuzzy_spec_color", "FuzzySpecColor", (0, -1000), velvet_frame)
             
             def smoothstep(column_offset, row_offset, a, b, x):  
-                smoothstep_1 = nodes.new('ShaderNodeClamp')
-                smoothstep_1.name  = "t"
-                smoothstep_1.label = "t"
-                smoothstep_1.parent = velvet_frame
-                smoothstep_1.location = Vector((column_offset, row_offset-100))
-                connect(x, smoothstep_1.inputs[0])
-                if type(a) in (float, int): smoothstep_1.inputs[1].default_value = a
-                else:                       connect(a, smoothstep_1.inputs[1])
-                if type(b) in (float, int): smoothstep_1.inputs[2].default_value = b
-                else:                       connect(b, smoothstep_1.inputs[2])
-                
-                smoothstep_2 = nodes.new('ShaderNodeMath')
-                smoothstep_2.operation = "MULTIPLY_ADD"
-                smoothstep_2.name  = "3 - 2t"
-                smoothstep_2.label = "3 - 2t"
-                smoothstep_2.parent = velvet_frame
-                smoothstep_2.location = Vector((column_offset + 200, row_offset))
-                connect(smoothstep_1.outputs[0], smoothstep_2.inputs[0])
-                smoothstep_2.inputs[1].default_value = 2.
-                smoothstep_2.inputs[2].default_value = 3.
-                
-                smoothstep_3 = nodes.new('ShaderNodeMath')
-                smoothstep_3.operation = "MULTIPLY"
-                smoothstep_3.name  = "t^2"
-                smoothstep_3.label = "t^2"
-                smoothstep_3.parent = velvet_frame
-                smoothstep_3.location = Vector((column_offset + 200, row_offset - 200))
-                connect(smoothstep_1.outputs[0], smoothstep_3.inputs[0])
-                connect(smoothstep_1.outputs[0], smoothstep_3.inputs[1])
-                
-                smoothstep_4 = nodes.new('ShaderNodeMath')
-                smoothstep_4.operation = "MULTIPLY"
-                smoothstep_4.name  = "(t^2)*(3-2t)"
-                smoothstep_4.label = "(t^2)*(3-2t)"
-                smoothstep_4.parent = velvet_frame
-                smoothstep_4.location = Vector((column_offset + 400, row_offset-100))
-                connect(smoothstep_2.outputs[0], smoothstep_4.inputs[0])
-                connect(smoothstep_3.outputs[0], smoothstep_4.inputs[1])
-                
-                return smoothstep_4.outputs[0]
+                SMOOTHSTEP_1 = clamp_scalars(nodes, connect, x, a, "t", (column_offset, row_offset-100), velvet_frame)
+                SMOOTHSTEP_2 = multiply_add_scalars(nodes, connect, SMOOTHSTEP_1, -2., 3., "3 - 2t", (column_offset + 200, row_offset), velvet_frame)
+                SMOOTHSTEP_3 = multiply_scalars(nodes, connect, SMOOTHSTEP_1, SMOOTHSTEP_1, "t^2", (column_offset + 200, row_offset - 200), velvet_frame)
+                return multiply_scalars(nodes, connect, SMOOTHSTEP_2, SMOOTHSTEP_3, "(t^2)*(3-2t)", (column_offset + 400, row_offset-100), velvet_frame)
         
-            sublambert_term_1 = smoothstep(400, -200, neg_rolloff.outputs[0], 1.0, lambert_term.outputs[1])
-            sublambert_term_2 = smoothstep(400, -600,                    0.0, 1.0, lambert_term.outputs[1])
+            sublambert_term_1 = smoothstep(400, -200, NEG_ROLLOFF, 1.0, LAMBERT_TERM)
+            sublambert_term_2 = smoothstep(400, -600,         0.0, 1.0, LAMBERT_TERM)
     
-            sublambert_term = nodes.new('ShaderNodeMath')
-            sublambert_term.operation = "SUBTRACT"
-            sublambert_term.name  = "SubLambert Term"
-            sublambert_term.label = "SubLambert Term"
-            sublambert_term.parent = velvet_frame
-            sublambert_term.location = Vector((1200, -450))
-            connect(sublambert_term_1, sublambert_term.inputs[0])
-            connect(sublambert_term_2, sublambert_term.inputs[1])
-            sublambert_term.use_clamp = True
-            
-            subcolor_contrib = nodes.new("ShaderNodeVectorMath")
-            subcolor_contrib.operation = "SCALE"
-            subcolor_contrib.name  = "Subcolor Contribution"
-            subcolor_contrib.label = "Subcolor Contribution"
-            subcolor_contrib.parent = velvet_frame
-            subcolor_contrib.location = Vector((1400, -450))
-            connect(subsurface_color.outputs["Color"], subcolor_contrib.inputs[0])
-            connect(sublambert_term .outputs[0],       subcolor_contrib.inputs[3])
-            
-            velvet_subcolor_contrib = nodes.new("ShaderNodeVectorMath")
-            velvet_subcolor_contrib.operation = "SCALE"
-            velvet_subcolor_contrib.name  = "* Strength"
-            velvet_subcolor_contrib.label = "* Strength"
-            velvet_subcolor_contrib.parent = velvet_frame
-            velvet_subcolor_contrib.location = Vector((1600, 0))
-            velvet_subcolor_contrib.inputs[0].default_value[0] = 0.
-            velvet_subcolor_contrib.inputs[0].default_value[1] = 0.
-            velvet_subcolor_contrib.inputs[0].default_value[2] = 0.
-            connect(subcolor_contrib.outputs[0],     velvet_subcolor_contrib.inputs[0])
-            connect(velvet_strength .outputs["Fac"], velvet_subcolor_contrib.inputs[3])
-            
-            plus_diffuse_contrib = nodes.new("ShaderNodeVectorMath")
-            plus_diffuse_contrib.operation = "MULTIPLY_ADD"
-            plus_diffuse_contrib.name  = "+ Diffuse Subsurface"
-            plus_diffuse_contrib.label = "+ Diffuse Subsurface"
-            plus_diffuse_contrib.parent = velvet_frame
-            plus_diffuse_contrib.location = Vector((1800, 0))
-            plus_diffuse_contrib.inputs[0].default_value[0] = 0.
-            plus_diffuse_contrib.inputs[0].default_value[1] = 0.
-            plus_diffuse_contrib.inputs[0].default_value[2] = 0.
+            SUBLAMBERT_TERM = subtract_scalars(nodes, connect, sublambert_term_1, sublambert_term_2, "SubLambert Term", (1200, -450), velvet_frame)
+            SUBLAMBERT_TERM.node.use_clamp = True
+            SUBCOLOR_CONTRIB = scale_vector(nodes ,connect, SUBSURFACE_COLOR.RGB, SUBLAMBERT_TERM, "Subcolor Contribution", (1400, -450), velvet_frame)            
+
+            VELVET_SUBCOLOR_CONTRIB = scale_vector(nodes, connect, SUBCOLOR_CONTRIB, VELVET_STRENGTH, "* Strength", (1600, 0), velvet_frame)
+
             if shvar.DIFFUSE_LIGHTING_COLOR is not None:
-                connect(shvar.DIFFUSE_LIGHTING_COLOR,         plus_diffuse_contrib.inputs[0])
-            connect(surface_color          .outputs["Color"], plus_diffuse_contrib.inputs[1])
-            connect(velvet_subcolor_contrib.outputs[0],       plus_diffuse_contrib.inputs[2])
+                lighting = shvar.DIFFUSE_LIGHTING_COLOR
+            else:
+                lighting = [0., 0., 0.]
             
-            shvar.DIFFUSE_LIGHTING_COLOR = plus_diffuse_contrib.outputs[0]
+            shvar.DIFFUSE_LIGHTING_COLOR = multiply_add_vectors(nodes, connect, lighting, SURFACE_COLOR.RGB, VELVET_SUBCOLOR_CONTRIB, "+ Diffuse Subsurface", (1800, 0), velvet_frame)
             CONTRIB_HEIGHT = min(CONTRIB_HEIGHT, -1000)
             
             if props.use_fuzzy_spec_color and props.use_specular:
-                inv_spec_fac = nodes.new('ShaderNodeVectorMath')
-                inv_spec_fac.operation = "DOT_PRODUCT"
-                inv_spec_fac.name  = "Inverse Specular Factor"
-                inv_spec_fac.label = "Inverse Specular Factor"
-                inv_spec_fac.parent = velvet_frame
-                inv_spec_fac.location = Vector((400, -1000))
-                connect(shvar.VVIEW,  inv_spec_fac.inputs[0])
-                connect(shvar.NORMAL, inv_spec_fac.inputs[1])
+                INV_SPEC_FAC       = dot_vector(nodes, connect, shvar.VVIEW, shvar.NORMAL, "Inverse Specular Factor", (400, -1000), velvet_frame)
+                SPEC_FAC           = subtract_scalars(nodes, connect, 1., INV_SPEC_FAC, "Specular Factor", (600, -1000), velvet_frame)
+                VELVET_SPEC_FAC    = multiply_scalars(nodes, connect, SPEC_FAC, VELVET_STRENGTH, "Velvet Specular Factor", (800, -1000), velvet_frame)
+                FUZZY_SPEC_CONTRIB = scale_vector(nodes, connect, FUZZY_SPEC_COLOR.RGB, VELVET_SPEC_FAC, "Subcolor Contribution", (1000, -1000), velvet_frame) 
                 
-                spec_fac = nodes.new('ShaderNodeMath')
-                spec_fac.operation = "SUBTRACT"
-                spec_fac.name  = "Specular Factor"
-                spec_fac.label = "Specular Factor"
-                spec_fac.parent = velvet_frame
-                spec_fac.location = Vector((600, -1000))
-                spec_fac.inputs[0].default_value = 1.
-                connect(inv_spec_fac.outputs[1], spec_fac.inputs[1])
-                
-                velvet_spec_fac = nodes.new('ShaderNodeMath')
-                velvet_spec_fac.operation = "MULTIPLY"
-                velvet_spec_fac.name  = "Velvet Specular Factor"
-                velvet_spec_fac.label = "Velvet Specular Factor"
-                velvet_spec_fac.parent = velvet_frame
-                velvet_spec_fac.location = Vector((800, -1000))
-                connect(spec_fac       .outputs[0],     velvet_spec_fac.inputs[0])
-                connect(velvet_strength.outputs["Fac"], velvet_spec_fac.inputs[1])
-                
-                fuzzy_spec_contrib = nodes.new("ShaderNodeVectorMath")
-                fuzzy_spec_contrib.operation = "SCALE"
-                fuzzy_spec_contrib.name  = "Subcolor Contribution"
-                fuzzy_spec_contrib.label = "Subcolor Contribution"
-                fuzzy_spec_contrib.parent = velvet_frame
-                fuzzy_spec_contrib.location = Vector((1000, -1000))
-                connect(fuzzy_spec_color.outputs["Color"], fuzzy_spec_contrib.inputs[0])
-                connect(velvet_spec_fac .outputs[0],       fuzzy_spec_contrib.inputs[3])
-                    
-                plus_spec_contrib = nodes.new("ShaderNodeVectorMath")
-                plus_spec_contrib.operation = "ADD"
-                plus_spec_contrib.name  = "+ Specular Subsurface"
-                plus_spec_contrib.label = "+ Specular Subsurface"
-                plus_spec_contrib.parent = velvet_frame
-                plus_spec_contrib.location = Vector((1200, -1000))
-                plus_spec_contrib.inputs[0].default_value[0] = 0.
-                plus_spec_contrib.inputs[1].default_value[1] = 0.
-                plus_spec_contrib.inputs[2].default_value[2] = 0.
-                if shvar.SPECULAR_LIGHTING_COLOR is not None:
-                    connect(shvar.SPECULAR_LIGHTING_COLOR, plus_spec_contrib.inputs[0])
-                connect(fuzzy_spec_contrib.outputs[0],     plus_spec_contrib.inputs[1])
-                
-                shvar.SPECULAR_LIGHTING_COLOR = plus_spec_contrib.outputs[0]
+                lighting = [0., 0., 0.] if shvar.SPECULAR_LIGHTING_COLOR is None else shvar.SPECULAR_LIGHTING_COLOR
+                shvar.SPECULAR_LIGHTING_COLOR  = add_vectors(nodes, connect, lighting, FUZZY_SPEC_CONTRIB, "+ Specular Subsurface", (1200, -1000), velvet_frame)
+
                 CONTRIB_HEIGHT = min(CONTRIB_HEIGHT, -1200)
             
             WORKING_COLUMN += 2000
@@ -1914,12 +1288,13 @@ def build_lighting(props, nodes, connect, used_images, shvar, column_pos):
         shvar.TREE_WIDTH = max(shvar.TREE_WIDTH, column_pos + WORKING_COLUMN)
         shvar.TREE_HEIGHT += CONTRIB_HEIGHT + FRAME_OFFSET
 
+
 def build_reflections(props, nodes, connect, used_images, shvar, column_pos):
     if props.use_reflections:
         reflections_frame = nodes.new("NodeFrame")
         reflections_frame.name  = "Reflections"
         reflections_frame.label = "Reflections"
-        reflections_frame.location = (column_pos, shvar.TREE_HEIGHT) # Replace with proper tree height
+        reflections_frame.location = (column_pos, shvar.TREE_HEIGHT)
         
         WORKING_COLUMN = 0
         
@@ -1977,68 +1352,83 @@ def build_reflections(props, nodes, connect, used_images, shvar, column_pos):
         reflection_texture_frame.color = (0.3, 0.3, 0.3)
         reflection_texture_frame.parent = reflections_frame
         reflection_texture_frame.location = (WORKING_COLUMN, 0)
+
+        if props.env_sampler.active:
+            reflection_texture_frame.label = "Cubemap"
+            
+            u_coordinate = nodes.new('ShaderNodeVectorMath')
+            u_coordinate.operation = "DOT_PRODUCT"
+            u_coordinate.name  = "U Coordinate"
+            u_coordinate.label = "U Coordinate"
+            u_coordinate.parent = reflection_texture_frame
+            u_coordinate.location = Vector((0, 0))
+            connect(reflection_vector.outputs["Vector"], u_coordinate.inputs[0])
+            u_coordinate.inputs[1].default_value[0] = -1.
+            u_coordinate.inputs[1].default_value[1] =  1.
+            u_coordinate.inputs[1].default_value[2] =  0.
+            
+            v_coordinate = nodes.new('ShaderNodeVectorMath')
+            v_coordinate.operation = "DOT_PRODUCT"
+            v_coordinate.name  = "V Coordinate"
+            v_coordinate.label = "V Coordinate"
+            v_coordinate.parent = reflection_texture_frame
+            v_coordinate.location = Vector((0, -300))
+            connect(reflection_vector.outputs["Vector"], v_coordinate.inputs[0])
+            v_coordinate.inputs[1].default_value[0] =  0.
+            v_coordinate.inputs[1].default_value[1] =  1.
+            v_coordinate.inputs[1].default_value[2] = -1.
+            
+            uv_coord = nodes.new('ShaderNodeCombineXYZ')
+            uv_coord.name  = "UV Coords"
+            uv_coord.label = "UV Coords"
+            uv_coord.parent = reflection_texture_frame
+            uv_coord.location = Vector((200, 0))
+            connect(u_coordinate.outputs[1], uv_coord.inputs[0])
+            connect(v_coordinate.outputs[1], uv_coord.inputs[1])
+            
+            refl_sampler = nodes.new('ShaderNodeTexImage')
+            refl_sampler.name  = "EnvSampler"
+            refl_sampler.label = "EnvSampler"
+            refl_sampler.image = used_images.get(props.env_sampler.typename)
+            refl_sampler.parent = reflection_texture_frame
+            refl_sampler.location = Vector((400, 0))
+            connect(uv_coord.outputs[0], refl_sampler.inputs["Vector"])
+            
+            REFLECTION_COLOR = refl_sampler.outputs["Color"]
+            REFLECTION_ALPHA = refl_sampler.outputs["Alpha"]
+            
+            WORKING_COLUMN += 700
+        elif props.envs_sampler.active:
+            reflection_texture_frame.label = "Spheremap"
         
-        # TODO: if reflection_map_sphere...
-        reflection_texture_frame.label = "Spheremap"
-        # else...
-        reflection_texture_frame.label = "Cubemap"
+            refl_vector = reflection_vector.outputs["Vector"]
+            offset_vector = add_vectors   (nodes, connect, refl_vector,   [0., 0., 1.], "Offset Reflection Vector",   (0, -200), reflection_texture_frame)
+            length        = length_vector (nodes, connect, offset_vector,               "Offset Vector Length",     (200, -200), reflection_texture_frame)
+            divisor       = divide_scalars(nodes, connect,           0.5,       length, "Divisor",                  (400, -200), reflection_texture_frame)
+            scaled_refl   = scale_vector  (nodes, connect, refl_vector,        divisor, "Scaled Reflection",        (600,    0), reflection_texture_frame)
+            uv_coord      = add_vectors   (nodes, connect, scaled_refl, [0.5, 0.5, 0.], "UV Coords",                (800,    0), reflection_texture_frame)
         
-        u_coordinate = nodes.new('ShaderNodeVectorMath')
-        u_coordinate.operation = "DOT_PRODUCT"
-        u_coordinate.name  = "U Coordinate"
-        u_coordinate.label = "U Coordinate"
-        u_coordinate.parent = reflection_texture_frame
-        u_coordinate.location = Vector((0, 0))
-        connect(reflection_vector.outputs["Vector"], u_coordinate.inputs[0])
-        u_coordinate.inputs[1].default_value[0] = -1.
-        u_coordinate.inputs[1].default_value[1] =  1.
-        u_coordinate.inputs[1].default_value[2] =  0.
-        
-        v_coordinate = nodes.new('ShaderNodeVectorMath')
-        v_coordinate.operation = "DOT_PRODUCT"
-        v_coordinate.name  = "V Coordinate"
-        v_coordinate.label = "V Coordinate"
-        v_coordinate.parent = reflection_texture_frame
-        v_coordinate.location = Vector((0, -300))
-        connect(reflection_vector.outputs["Vector"], v_coordinate.inputs[0])
-        v_coordinate.inputs[1].default_value[0] =  0.
-        v_coordinate.inputs[1].default_value[1] =  1.
-        v_coordinate.inputs[1].default_value[2] = -1.
-        
-        uv_coord = nodes.new('ShaderNodeCombineXYZ')
-        uv_coord.name  = "UV Coords"
-        uv_coord.label = "UV Coords"
-        uv_coord.parent = reflection_texture_frame
-        uv_coord.location = Vector((200, 0))
-        connect(u_coordinate.outputs[1], uv_coord.inputs[0])
-        connect(v_coordinate.outputs[1], uv_coord.inputs[1])
-        
-        refl_sampler = nodes.new('ShaderNodeTexImage')
-        refl_sampler.name  = "EnvSampler"
-        refl_sampler.label = "EnvSampler"
-        refl_sampler.image = used_images.get(props.env_sampler.typename)
-        refl_sampler.parent = reflection_texture_frame
-        refl_sampler.location = Vector((400, 0))
-        connect(uv_coord.outputs[0], refl_sampler.inputs["Vector"])
-        
-        REFLECTION_COLOR = refl_sampler.outputs["Color"]
-        REFLECTION_ALPHA = refl_sampler.outputs["Alpha"]
-        
-        WORKING_COLUMN += 700
+            refl_sampler = nodes.new('ShaderNodeTexImage')
+            refl_sampler.name  = "EnvsSampler"
+            refl_sampler.label = "EnvsSampler"
+            refl_sampler.image = used_images.get(props.envs_sampler.typename)
+            refl_sampler.parent = reflection_texture_frame
+            refl_sampler.location = Vector((1000, 0))
+            connect(uv_coord, refl_sampler.inputs["Vector"])
+            
+            REFLECTION_COLOR = refl_sampler.outputs["Color"]
+            REFLECTION_ALPHA = refl_sampler.outputs["Alpha"]
+            
+            WORKING_COLUMN += 1300
+        else:
+            REFLECTION_COLOR = [0., 0., 0.]
+            REFLECTION_ALPHA = 1.
         
         #######################
         # REFLECTION STRENGTH #
         #######################
         # Reflection Strength
-        reflection_strength = nodes.new('ShaderNodeAttribute')
-        reflection_strength.attribute_type = "OBJECT"
-        reflection_strength.attribute_name = "active_material.DSCS_MaterialProperties.reflection_strength"
-        reflection_strength.name  = "ReflectionStrength"
-        reflection_strength.label = "ReflectionStrength"
-        reflection_strength.parent = reflections_frame
-        reflection_strength.location = Vector((0, -600))
-        
-        REFLECTION_STRENGTH = reflection_strength.outputs["Fac"]
+        REFLECTION_STRENGTH = MaterialFloatAttribute(nodes, "reflection_strength", "ReflectionStrength", (0, -600), reflections_frame)
         REFLECTION_COLUMN = 200
         # Fresnel
         if (props.use_fresnel_min or props.use_fresnel_exp):
@@ -2069,13 +1459,7 @@ def build_reflections(props, nodes, connect, used_images, shvar, column_pos):
             connect(incident_angle.outputs[1], abs_incident_angle.inputs[0])
             
             # Fresnel Exp
-            fresnel_exp = nodes.new('ShaderNodeAttribute')
-            fresnel_exp.attribute_type = "OBJECT"
-            fresnel_exp.attribute_name = "active_material.DSCS_MaterialProperties.fresnel_exp"
-            fresnel_exp.name  = "FresnelExp"
-            fresnel_exp.label = "FresnelExp"
-            fresnel_exp.parent = fresnel_frame
-            fresnel_exp.location = Vector((0, -400))
+            FRESNEL_EXP = MaterialFloatAttribute(nodes, "fresnel_exp", "FresnelExp", (0, -400), fresnel_frame)
             
             # Inverted Exponent
             inv_fresnel_exp = nodes.new('ShaderNodeMath')
@@ -2085,7 +1469,7 @@ def build_reflections(props, nodes, connect, used_images, shvar, column_pos):
             inv_fresnel_exp.parent = fresnel_frame
             inv_fresnel_exp.location = Vector((200, -400))
             inv_fresnel_exp.inputs[0].default_value = 1.
-            connect(fresnel_exp.outputs["Fac"], inv_fresnel_exp.inputs[1])
+            connect(FRESNEL_EXP, inv_fresnel_exp.inputs[1])
 
             # Interpolation Value
             interpolation_value = nodes.new("ShaderNodeMath")
@@ -2098,13 +1482,7 @@ def build_reflections(props, nodes, connect, used_images, shvar, column_pos):
             connect(inv_fresnel_exp.outputs[0], interpolation_value.inputs[1])
             
             # Fresnel Min
-            fresnel_min = nodes.new('ShaderNodeAttribute')
-            fresnel_min.attribute_type = "OBJECT"
-            fresnel_min.attribute_name = "active_material.DSCS_MaterialProperties.fresnel_min"
-            fresnel_min.name  = "FresnelMin"
-            fresnel_min.label = "FresnelMin"
-            fresnel_min.parent = fresnel_frame
-            fresnel_min.location = Vector((0, -600))
+            FRESNEL_MIN = MaterialFloatAttribute(nodes, "fresnel_min", "FresnelMin", (0, -600), fresnel_frame)
             
             # Minimum Reflection value
             min_reflection_strength = nodes.new('ShaderNodeMath')
@@ -2113,8 +1491,8 @@ def build_reflections(props, nodes, connect, used_images, shvar, column_pos):
             min_reflection_strength.label = "Minimum Reflection Strength"
             min_reflection_strength.parent = fresnel_frame
             min_reflection_strength.location = Vector((200, -600))
-            connect(REFLECTION_STRENGTH,        min_reflection_strength.inputs[0])
-            connect(fresnel_min.outputs["Fac"], min_reflection_strength.inputs[1])
+            connect(REFLECTION_STRENGTH, min_reflection_strength.inputs[0])
+            connect(FRESNEL_MIN,         min_reflection_strength.inputs[1])
             
             # Fresnel Effect Reflection Strength
             fresnel_effect = nodes.new('ShaderNodeMix')
@@ -2134,31 +1512,37 @@ def build_reflections(props, nodes, connect, used_images, shvar, column_pos):
             
             REFLECTION_COLUMN += 1000
         
-        # Reflection RGBA    
+        # Reflection RGBA
         offset = max(WORKING_COLUMN, WORKING_COLUMN)
-        reflection_color = nodes.new("ShaderNodeVectorMath")
-        reflection_color.operation = "SCALE"
-        reflection_color.name  = "Reflection Color"
-        reflection_color.label = "Reflection Color"
-        reflection_color.parent = reflections_frame
-        reflection_color.location = Vector((offset, 0))
-        connect(REFLECTION_COLOR,    reflection_color.inputs[0])
-        connect(REFLECTION_STRENGTH, reflection_color.inputs[3])
-        
-        reflection_alpha = nodes.new('ShaderNodeMath')
-        reflection_alpha.operation = "MULTIPLY"
-        reflection_alpha.name  = "Reflection Alpha"
-        reflection_alpha.label = "Reflection Alpha"
-        reflection_alpha.parent = reflections_frame
-        reflection_alpha.location = Vector((offset, -200))
-        connect(REFLECTION_ALPHA,    reflection_alpha.inputs[0])
-        connect(REFLECTION_STRENGTH, reflection_alpha.inputs[1])
+        shvar.REFLECTION_COLOR = scale_vector    (nodes, connect, REFLECTION_COLOR, REFLECTION_STRENGTH, "Reflection Color", (offset,    0), reflections_frame)
+        shvar.REFLECTION_ALPHA = multiply_scalars(nodes, connect, REFLECTION_ALPHA, REFLECTION_STRENGTH, "Reflection Alpha", (offset, -200), reflections_frame)
 
-        shvar.REFLECTION_COLOR = reflection_color.outputs[0]
-        shvar.REFLECTION_ALPHA = reflection_alpha.outputs[0]
-        
         shvar.TREE_WIDTH = max(shvar.TREE_WIDTH, column_pos + offset)
 
+
+def build_ambient_light(props, nodes, connect, shvar, column_pos):
+    if props.use_ambient_light:
+        ambient_frame = NodeFrame(nodes, "Ambient Lighting", (column_pos, shvar.TREE_HEIGHT), None)
+        
+        WORKING_COLUMN = 0
+        AMBIENT_COLOR = SceneColorAttribute(nodes, "ambient_color", "AmbientColor", (WORKING_COLUMN, 0), ambient_frame).RGB
+        
+        if props.use_hemisph_light:
+            ground_color = SceneColorAttribute(nodes,  "ground_color",  "GroundColor",  (WORKING_COLUMN, -200), ambient_frame).RGB
+            sky_dir      = SceneVectorAttribute(nodes, "sky_direction", "SkyDirection", (WORKING_COLUMN, -400), ambient_frame)
+            
+            WORKING_COLUMN += 200
+            sky_proj = dot_vector(nodes, connect, shvar.NORMAL, sky_dir, ("Sky Projection"), (WORKING_COLUMN, -250), ambient_frame)
+            WORKING_COLUMN += 200
+            interp_val = multiply_add_scalars(nodes, connect, sky_proj, 0.5, 0.5, "Interpolation Value", (WORKING_COLUMN, -250), ambient_frame)
+
+            AMBIENT_COLOR = lerp_color(nodes, connect, interp_val, ground_color, AMBIENT_COLOR, "Interpolated Ambient Color", (WORKING_COLUMN, -250), ambient_frame)
+        
+        WORKING_COLUMN += 200
+        if props.use_dir_light:
+            shvar.DIFFUSE_LIGHTING_COLOR = multiply_colors(nodes, connect, shvar.DIFFUSE_LIGHTING_COLOR, AMBIENT_COLOR, "+ Ambient", (WORKING_COLUMN, 0), ambient_frame)    
+            WORKING_COLUMN += 200
+        
 
 def build_specular(props, nodes, connect, shvar):
     # TODO: Implement 'obscure' in here too
@@ -2250,14 +1634,7 @@ def build_GL_ALPHA(props, nodes, connect, shvar):
             node.inputs[1].default_value = 0.
             shvar.TREE_WIDTH += 200
         else:
-            threshold = nodes.new('ShaderNodeAttribute')
-            threshold.attribute_type = "OBJECT"
-            threshold.attribute_name = "active_material.DSCS_MaterialProperties.gl_alpha_threshold"
-            threshold.name  = "Thresold"
-            threshold.label = "Threshold"
-            threshold.parent = gl_alpha_frame
-            threshold.location = Vector((0, -200))
-            THRESHOLD = threshold.outputs["Fac"]
+            THRESHOLD = MaterialFloatAttribute(nodes, "gl_alpha_threshold", "Threshold", (0, -200), gl_alpha_frame)
             
             offset = 200
             if props.gl_alpha_func == "GL_LESS":
