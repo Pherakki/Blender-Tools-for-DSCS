@@ -1,5 +1,6 @@
 import bpy
 from mathutils import Matrix
+import struct
 
 from ...Core.FileFormats.Skel.SkelInterface import SkelInterface
 from ...Utilities.Hash import dscs_hash_string
@@ -31,6 +32,7 @@ def extract_skel(armature_obj, base_anim, errorlog, bpy_to_dscs_bone_map):
                     [*scale, 1.])
     
     for fc in props.float_channels:
-        si.add_float_channel(fc.name_hash, fc.flags, (fc.channel << 8) | fc.array_idx)
+        hsh = struct.unpack('I', struct.pack('i', fc.name_hash))[0]
+        si.add_float_channel(hsh, fc.flags, (fc.channel << 8) | fc.array_idx)
 
     return si
