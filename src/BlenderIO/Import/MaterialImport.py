@@ -8,7 +8,14 @@ def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
     import_images(gi, texture_bank, path)
     
     materials = []
-    for material_name, material in zip(ni.material_names, gi.materials):
+    name_lookup = {}
+    mat_names = iter(ni.material_names)
+    for material in gi.materials:
+        hsh = material.name_hash
+        if hsh not in name_lookup:
+            name_lookup[hsh] = next(mat_names)
+        material_name = name_lookup[hsh]
+        
         bpy_material = bpy.data.materials.new(name=material_name)
         materials.append(bpy_material)
         props = bpy_material.DSCS_MaterialProperties
@@ -49,8 +56,8 @@ def import_materials(ni, gi, path, rename_imgs, use_custom_nodes):
         import_opengl_settings(material, props, bpy_material)
         
         # Set up nodes
-        create_shader_nodes(path, bpy_material, material, gi, texture_bank, used_images)
         props.bpy_dtype = "ADVANCED"
+        bpy_material.use_nodes = True
         props.build_bpy_material()
         
         bpy_material.update_tag()
@@ -108,7 +115,8 @@ def import_shader_uniforms(material, props, texture_bank, used_images):
         elif is_float(uniform, 0x39):    props.set_spec_pow(uniform)
         
         # Reflection
-        elif is_tex  (uniform, 0x3A):    mk_tex(props.env_sampler, uniform)
+        elif is_tex  (uniform, 0x3A):    mk_tex(props.env_sampler,  uniform)
+        elif is_tex  (uniform, 0x8E):    mk_tex(props.envs_sampler, uniform)
         elif is_float(uniform, 0x3B):    props.set_refl_str(uniform)
         elif is_float(uniform, 0x3C):    props.set_fres_min(uniform)
         elif is_float(uniform, 0x3D):    props.set_fres_exp(uniform)
@@ -134,8 +142,12 @@ def import_shader_uniforms(material, props, texture_bank, used_images):
         elif is_vec  (uniform, 0x84, 2): props.uv_2.set_scale(uniform)
         elif is_vec  (uniform, 0x87, 2): props.uv_3.set_scale(uniform)
         
-        # Scene Properties
+        # Generated Properties
         elif is_float(uniform, 0x54):    props.set_time(uniform)
+        
+        # Vertex shader stuff
+        elif is_float(uniform, 0x77):    props.set_fat(uniform)
+        elif is_float(uniform, 0x8D):    props.set_zbias(uniform)
         
         # Anything not explicitly handled
         else:
@@ -164,126 +176,18 @@ def import_shader_uniforms(material, props, texture_bank, used_images):
 
 def import_opengl_settings(material, props, bpy_material):
     for setting in material.opengl_settings:
-        if    setting.index == 0xA0: props.set_gl_alpha_func(setting)
-        elif  setting.index == 0xA1: props.use_gl_alpha = bool(setting.data[0])
-        #elif setting.index == 0xA2: pass # glBlendFunc
-        #elif setting.index == 0xA3: pass # glBlendEquationSeparate
+        if   setting.index == 0xA0: props.set_gl_alpha_func(setting)
+        elif setting.index == 0xA1: props.use_gl_alpha = bool(setting.data[0])
+        elif setting.index == 0xA2: props.set_gl_blend_func(setting)
+        elif setting.index == 0xA3: props.set_gl_blend_equation_separate(setting)
         elif setting.index == 0xA4: props.use_gl_blend = bool(setting.data[0])
-        #elif setting.index == 0xA5: pass # glCullFace
+        elif setting.index == 0xA5: props.set_gl_cull_face(setting)
         elif setting.index == 0xA6: bpy_material.use_backface_culling = bool(setting.data[0])
-        #elif setting.index == 0xA7: pass # glDepthFunc
-        #elif setting.index == 0xA8: pass # glDepthMask
-        #elif setting.index == 0xA9: pass # GL_DEPTH_TEST
-        #elif setting.index == 0xAA: pass # glPolygonOffset
-        #elif setting.index == 0xAB: pass # GL_POLYGON_OFFSET_FILL
-        #elif setting.index == 0xAC: pass # glColorMask
+        elif setting.index == 0xA7: props.set_gl_depth_func(setting)
+        elif setting.index == 0xA8: props.use_gl_depth_mask = bool(setting.data[0])
+        elif setting.index == 0xA9: props.use_gl_depth_test = bool(setting.data[0])
+        elif setting.index == 0xAC: props.set_gl_color_mask(setting)
         else:
             bpy_setting = props.unhandled_settings.add()
             bpy_setting.index = setting.index
             bpy_setting.data  = setting.data
-        
-        
-def create_shader_nodes(path, bpy_material, material, gi, texture_bank, used_images):
-        bpy_material.use_nodes = True
-        nodes   = bpy_material.node_tree.nodes
-        connect = bpy_material.node_tree.links.new
-        props = bpy_material.DSCS_MaterialProperties
-
-        # ########################
-        # # DIFFUSE CONTRIBUTION #
-        # ########################
-        # main_group = nodes.new("ShaderNodeGroup")
-        # main_group.node_tree = bpy.data.node_groups['DSCS Shader']
-        
-        # color_sampler_uvs = nodes.new("ShaderNodeGroup")
-        # color_sampler_uvs.name  = "ColorSampler UVs"
-        # color_sampler_uvs.label = "ColorSampler UVs"
-        # #color_sampler_uvs.node_tree = bpy.data.node_groups["DSCS ColorSampler UV"]
-        
-        # color_sampler = nodes.new('ShaderNodeTexImage')
-        # color_sampler.name  = "ColorSampler"
-        # color_sampler.label = "ColorSampler"
-        # color_sampler.image = used_images.get(props.color_sampler.typename)
-        
-        # overlay_color_sampler_uvs = nodes.new("ShaderNodeGroup")
-        # overlay_color_sampler_uvs.name  = "OverlayColorSampler UVs"
-        # overlay_color_sampler_uvs.label = "OverlayColorSampler UVs"
-        # #overlay_color_sampler_uvs.node_tree = bpy.data.node_groups["DSCS OverlayColorSampler UV"]
-        
-        # overlay_color_sampler = nodes.new('ShaderNodeTexImage')
-        # overlay_color_sampler.name  = "OverlayColorSampler"
-        # overlay_color_sampler.label = "OverlayColorSampler"
-        # overlay_color_sampler.image = used_images.get(props.overlay_color_sampler.typename)
-        
-        # #connect(color_sampler_uvs.outputs["UV"], color_sampler.inputs["Vector"])
-        # connect(color_sampler.outputs["Color"], main_group.inputs["ColorSampler"])
-        # connect(color_sampler.outputs["Alpha"], main_group.inputs["ColorSamplerAlpha"])
-        # #connect(overlay_color_sampler_uvs.outputs["UV"], overlay_color_sampler.inputs["Vector"])
-        # connect(overlay_color_sampler.outputs["Color"], main_group.inputs["OverlayColorSampler"])
-        # connect(overlay_color_sampler.outputs["Alpha"], main_group.inputs["OverlayColorSamplerAlpha"])
-
-        # ########
-        # # CLUT #
-        # ########
-        # clut_uvs = nodes.new("ShaderNodeGroup")
-        # clut_uvs.node_tree = bpy.data.node_groups['DSCS CLUT UV']
-        
-        # clut_sampler = nodes.new('ShaderNodeTexImage')
-        # clut_sampler.name  = "CLUTSampler"
-        # clut_sampler.label = "CLUTSampler"
-        # clut_sampler.image = used_images.get(props.clut_sampler.typename)
-        # clut_sampler.extension = "EXTEND"
-        # if clut_sampler.image is not None:
-        #     clut_sampler.image.alpha_mode = "CHANNEL_PACKED"
-
-        # connect(clut_uvs.outputs["UV"], clut_sampler.inputs["Vector"])
-        # connect(clut_sampler.outputs["Color"],                main_group.inputs["CLUTSampler"])
-        # connect(clut_sampler.outputs["Alpha"],                main_group.inputs["CLUTSamplerAlpha"])
-        # connect(clut_uvs    .outputs["Lambert Term"],         main_group.inputs["Lambert Term"])
-        # connect(clut_uvs    .outputs["Reflection Intensity"], main_group.inputs["Reflection Intensity"])
-
-        
-        # ##############
-        # # REFLECTION #
-        # ##############
-        # refl_uvs = nodes.new("ShaderNodeGroup")
-        # refl_uvs.node_tree = bpy.data.node_groups['DSCS Reflection UV']
-        
-        # refl_sampler = nodes.new('ShaderNodeTexImage')
-        # refl_sampler.name  = "EnvSampler"
-        # refl_sampler.label = "EnvSampler"
-        # refl_sampler.image = used_images.get(props.env_sampler.typename)
-        
-        # connect(refl_uvs    .outputs["UV"],    refl_sampler.inputs["Vector"])
-        # connect(refl_sampler.outputs["Color"], main_group  .inputs["EnvSampler"])
-        # connect(refl_sampler.outputs["Alpha"], main_group  .inputs["EnvSamplerAlpha"])
-        
-        # ##########
-        # # OUTPUT #
-        # ##########
-        # bsdf_node = nodes.get('Principled BSDF')
-        # nodes.remove(bsdf_node)
-        
-        # mat_out = nodes.get('Material Output')
-        # connect(main_group.outputs["Shader"], mat_out.inputs["Surface"])
-
-        # main_group               .location = (-200, 300)
-        # #color_sampler_uvs        .location = (-700, 100)
-        # color_sampler            .location = (-500, 300)
-        # #overlay_color_sampler_uvs.location = (-700, -200)
-        # overlay_color_sampler    .location = (-500, 0)
-        # clut_sampler             .location = (-500, -300)
-        # clut_uvs                 .location = (-700, -300)
-        # refl_sampler             .location = (-500, -600)
-        # refl_uvs                 .location = (-700, -600)
-        
-
-# def load_shader_text(path, shader_name, suffix, shader_bank):
-#     shader_name = shader_name + suffix
-#     if shader_name not in shader_bank:
-#         shader_path = os.path.join(path, "shaders", shader_name)
-#         if os.path.isfile(shader_path):
-#             shader_bank.add(shader_name)
-#             with open(os.path.join(shader_path), 'r') as F:
-#                 text = bpy.data.texts.new(shader_name)
-#                 text.from_string(F.read())
