@@ -1,6 +1,7 @@
 import bpy
 import math
 from mathutils import Vector, Matrix
+import struct
 
 from ..IOHelpersLib.Bones import construct_bone, resize_bones
 from ..IOHelpersLib.Context import safe_active_object_switch
@@ -49,7 +50,7 @@ def import_skeleton(collection, armature_name, ni, si, gi, model_dims):
     # Now get the float channels in
     for fc in si.float_channels:
         bpy_fc = armature.DSCS_ModelProperties.float_channels.add()
-        bpy_fc.obj_hash  = fc.name_hash
+        bpy_fc.obj_hash  = struct.unpack('i', struct.pack('I', fc.name_hash))[0]
         bpy_fc.flags     = fc.flags
         bpy_fc.channel   = fc.array_index // 16
         bpy_fc.array_idx = fc.array_index % 16
