@@ -27,3 +27,7 @@ class MeshProperties(bpy.types.PropertyGroup):
     flag_7:    bpy.props.BoolProperty(name="Flag 7", default=False)
 
     flags:     bpy.props.IntProperty(name="Flags", get=flags_getter, options={'HIDDEN'})
+
+    def max_vertex_weights(self):
+        bpy_mesh = self.id_data
+        return max(len(v.groups) for v in bpy_mesh.vertices)
