@@ -109,9 +109,14 @@ def import_meshes(collection, model_name, ni, gi, armature, material_list, error
 
         # Assign vertex colours
         if mesh.vertices[0][AttributeTypes.COLOR] is not None:
-            colour_map = bpy_mesh.vertex_colors.new(name="Map", do_init=True)
-            for loop_idx, loop in enumerate(bpy_mesh.loops):
-                colour_map.data[loop_idx].color = loop_data[loop_idx].color
+            if hasattr(bpy_mesh, "color_attributes"):
+                colour_map = bpy_mesh.color_attributes.new(name="Map", domain="CORNER", type="FLOAT_COLOR")
+                for loop_idx, loop in enumerate(bpy_mesh.loops):
+                    colour_map.data[loop_idx].color = loop_data[loop_idx].color
+            else:    
+                colour_map = bpy_mesh.vertex_colors.new(name="Map", do_init=True)
+                for loop_idx, loop in enumerate(bpy_mesh.loops):
+                    colour_map.data[loop_idx].color = int(loop_data[loop_idx].color*255)
 
         # Rig the vertices
         vertex_groups = make_vertex_groups(new_verts)
@@ -210,6 +215,8 @@ def set_material_vertex_attributes(meshes_using_material, errorlog):
             props.requires_uv3s = True
         else:
             props.requires_uv3s = False
+            
+        props.build_bpy_material()
 
 
 def make_vertex_groups(blender_vert_infos):
