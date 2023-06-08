@@ -77,6 +77,15 @@ def find_bpy_objects(obj_list, parent_obj, predicates):
 def convert_to_mathutils_quats(anim):
     return {k: {k2: Quaternion([r[3], r[0], r[1], r[2]])  for k2, r in rdata.items()} for k, rdata in anim.rotations.items()}
 
+# DISGUSTING
+# SET UP A PROPER LIST OF OBJECTS FOR SHADER UNIFORMS, YOU FILTHY ANIMAL
+HANDLED_UNIFORMS = [0x33, 0x36, 0x38, 0x39, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+                    0x40, 0x41, 0x42, 0x46, 0x47, 0x4F,
+                    0x50, 0x55, 0x58, 0x5B, 0x5E,
+                    0x61, 0x64, 
+                    0x71, 0x72, 0x74, 0x77, 0x78, 0x7B, 0x7E, 
+                    0x81, 0x84, 0x87, 0x8D]
+
 def construct_nla_action(track_name, action_name, armature, method, positions, rotations, scales, float_channels, bone_names, playback_rate, blend_type):
     action = bpy.data.actions.new(action_name)
 
@@ -95,12 +104,12 @@ def construct_nla_action(track_name, action_name, armature, method, positions, r
     nla_strip.blend_type = blend_type
     armature.animation_data.action = None
 
+    ##################
+    # FLOAT CHANNELS #
+    ##################
     props = action.DSCS_AnimationProperties
     skel_float_channels = armature.data.DSCS_ModelProperties.float_channels
     material_hashes = {struct.unpack('i', struct.pack('I', dscs_hash_string(mesh.active_material.name)))[0]: mesh.active_material for mesh in [obj for obj in armature.children if obj.type == "MESH"] if mesh.active_material is not None}
-    
-    # action = bpy.data.actions.new(f"{action_name}_{bpy_material.name}")
-    # NEED TO COLLECT ALL FCURVES BY MATERIAL, CAM, LIGHT...
     
     material_fcurves = {}
     camera_fcurves = {}
@@ -108,8 +117,6 @@ def construct_nla_action(track_name, action_name, armature, method, positions, r
     unhandled_fcurves = {}
     
     for fc_idx, fc in float_channels.items():
-        print(">>", track_name, fc_idx, len(skel_float_channels))
-        print("//", list(material_hashes.keys()))
         # Locate the float channel data
         if fc_idx < len(skel_float_channels):
             skel_fc = skel_float_channels[fc_idx]
@@ -117,8 +124,7 @@ def construct_nla_action(track_name, action_name, armature, method, positions, r
             array_idx = skel_fc.array_idx
             
             # Figure out if it's a material, camera, or light...
-            if skel_fc.obj_hash in material_hashes:
-                print(">> IS MATERIAL")
+            if (skel_fc.obj_hash in material_hashes) and (idx in HANDLED_UNIFORMS):
                 bpy_material = material_hashes[skel_fc.obj_hash]
                 mname = bpy_material.name
                 if mname not in material_fcurves: material_fcurves[mname] = {}
@@ -130,7 +136,6 @@ def construct_nla_action(track_name, action_name, armature, method, positions, r
             # elif skel_fc.obj_hash in light_hashes:
             #     fc_type = "LIGHT"
             else:
-                print(">> WHO KNOWS WAHOOO", skel_fc.obj_hash)
                 unhandled_fcurves[fc_idx] = fc
         else:
             unhandled_fcurves[fc_idx] = fc
@@ -145,90 +150,59 @@ def construct_nla_action(track_name, action_name, armature, method, positions, r
             actiongroup = action.groups[name]
         return actiongroup
     
+    def mk_fcurves(group_name, rna_path, fcs):
+        actiongroup = mk_group(action, group_name)
+        for arr_idx, fc in fcs.items():
+            create_fcurve(action, actiongroup, f'DSCS_MaterialProperties.{rna_path}', "LINEAR", fps, fc.keys(), fc.values(), arr_idx)
+        
     fps = 1
     for mat_name, fcurves in material_fcurves.items():
-        print(">>", mat_name, fcurves)
+        # Skip if the fcurves are empty
+        if not any(len(fc) for _, fcs in fcurves.items() for _, fc in fcs.items()):
+            continue
+        
         bpy_material = bpy.data.materials[mat_name]
         bpy_material.animation_data_create()
-        bpy_material.node_tree.animation_data_create()
-        animation_data = bpy_material.node_tree.animation_data
         action = bpy.data.actions.new(f"{action_name}_{bpy_material.name}")
         
-        for idx, fcs in fcurves.items():
-            
+        
+        for idx, fcs in fcurves.items():     
             # Assign the animation
-            if idx == 0x33:
-                actiongroup = mk_group(action, "DiffuseColor")
-                for arr_idx, fc in fcs.items():
-                    create_fcurve(action, actiongroup, 'DSCS_MaterialProperties.diffuse_color', "LINEAR", fps, fc.keys(), fc.values(), arr_idx)
-                
-            # elif idx == 0x36:
-            #     pass # bumpiness
-            # elif idx == 0x38:
-            #     pass # spec strength
-            # elif idx == 0x39:
-            #     pass # spec power
-            # elif idx == 0x3B:
-            #     pass # refl strength
-            # elif idx == 0x3C:
-            #     pass # fres min
-            # elif idx == 0x3D:
-            #     pass # fres exp
-            # elif idx == 0x3E:
-            #     pass # surface color (3)
-            # elif idx == 0x3F:
-            #     pass #subsurface color (3)
-            # elif idx == 0x40:
-            #     pass # fuzzy spec color (3)
-            # elif idx == 0x41:
-            #     pass #rolloff
-            # elif idx == 0x42:
-            #     pass # velvet strength
-            # elif idx == 0x46:
-            #     pass # overlay bumpiness
-            # elif idx == 0x47:
-            #     pass # overlay strength
-            # elif idx == 0x4F:
-            #     pass # parallax x
-            # elif idx == 0x50:
-            #     pass #parallax y
-            # elif idx == 0x55:
-            #     pass #uv1 scroll
-            # elif idx == 0x58:
-            #     pass #uv2 scroll
-            # elif idx == 0x5B:
-            #     pass #uv3 scroll
-            elif idx == 0x5E:
-                actiongroup = mk_group(action, "UV1 - Offset")
-                for arr_idx, fc in fcs.items():
-                    create_fcurve(action, actiongroup, 'DSCS_MaterialProperties.uv_1.offset', "LINEAR", fps, fc.keys(), fc.values(), arr_idx)
-            
-            # elif idx == 0x61:
-            #     pass #uv 2 offset
-            # elif idx == 0x64:
-            #     pass # distortion
-            # elif idx == 0x71:
-            #     pass # lightmap power
-            # elif idx == 0x72:
-            #     pass # lightmap strength
-            # elif idx == 0x74:
-            #     pass # uv 3 offset
-            # elif idx == 0x77:
-            #     pass #fat
-            # elif idx == 0x78:
-            #     pass # uv1 rotation
-            # elif idx == 0x7B:
-            #     pass #uv2 rotation
-            # elif idx == 0x7E:
-            #     pass # uv3 rotation
-            # elif idx == 0x81:
-            #     pass # uv1 scale
-            # elif idx == 0x84:
-            #     pass #uv 2 scale
-            # elif idx == 0x87:
-            #     pass # uv 3scale
-            # elif idx == 0x8D:
-            #     pass # zbias
+            if   idx == 0x33: mk_fcurves("DiffuseColor",       "diffuse_color",       fcs)
+            elif idx == 0x36: mk_fcurves("Bumpiness",          "bumpiness",           fcs)
+            elif idx == 0x38: mk_fcurves("SpecularStrength",   "specular_strength",   fcs)
+            elif idx == 0x39: mk_fcurves("SpecularPower",      "specular_power",      fcs)
+            elif idx == 0x3B: mk_fcurves("ReflectionStrength", "reflection_strength", fcs)
+            elif idx == 0x3C: mk_fcurves("FresnelMin",         "fresnel_min",         fcs)
+            elif idx == 0x3D: mk_fcurves("FresnelExp",         "fresnel_exp",         fcs)
+            elif idx == 0x3E: mk_fcurves("SurfaceColor",       "surface_color",       fcs)
+            elif idx == 0x3F: mk_fcurves("SubSurfaceColor",    "subsurface_color",    fcs)
+            elif idx == 0x40: mk_fcurves("FuzzySpecColor",     "fuzzy_spec_color",    fcs)
+            elif idx == 0x41: mk_fcurves("Rolloff",            "rolloff",             fcs)
+            elif idx == 0x42: mk_fcurves("VelvetStrength",     "velvet_strength",     fcs)
+            elif idx == 0x46: mk_fcurves("OverlayBumpiness",   "overlay_bumpiness",   fcs)
+            elif idx == 0x47: mk_fcurves("OverlayStrength",    "overlay_strength",    fcs)
+            elif idx == 0x4F: mk_fcurves("Parallax Bias X",    "parallax_bias_x",     fcs)
+            elif idx == 0x50: mk_fcurves("Parallax Bias Y",    "parallax_bias_y",     fcs)
+            elif idx == 0x55: mk_fcurves("UV1 - Scroll",       "uv_1.scroll",         fcs)
+            elif idx == 0x58: mk_fcurves("UV2 - Scroll",       "uv_2.scroll",         fcs)
+            elif idx == 0x5B: mk_fcurves("UV3 - Scroll",       "uv_3.scroll",         fcs)
+            elif idx == 0x5E: mk_fcurves("UV1 - Offset",       "uv_1.offset",         fcs)
+            elif idx == 0x61: mk_fcurves("UV2 - Offset",       "uv_2.offset",         fcs)
+            elif idx == 0x64: mk_fcurves("Distortion",         "distortion",          fcs)
+            elif idx == 0x71: mk_fcurves("LightmapPower",      "lightmap_power",      fcs)
+            elif idx == 0x72: mk_fcurves("Lightmap trength",   "lightmap_strength",   fcs)
+            elif idx == 0x74: mk_fcurves("UV3 - Offset",       "uv_3.offset",         fcs)
+            elif idx == 0x77: mk_fcurves("Fat",                "fat",                 fcs)
+            elif idx == 0x78: mk_fcurves("UV1 - Rotation",     "uv_1.rotation",       fcs)
+            elif idx == 0x7B: mk_fcurves("UV2 - Rotation",     "uv_2.rotation",       fcs)
+            elif idx == 0x7E: mk_fcurves("UV3 - Rotation",     "uv_3.rotation",       fcs)
+            elif idx == 0x81: mk_fcurves("UV1 - Scale",        "uv_1.scale",          fcs)
+            elif idx == 0x84: mk_fcurves("UV2 - Scale",        "uv_2.scale",          fcs)
+            elif idx == 0x87: mk_fcurves("UV3 - Scale",        "uv_3.scale",          fcs)
+            elif idx == 0x8D: mk_fcurves("ZBias",              "zbias",               fcs)
+            else:
+                raise NotImplementedError(f"CRITICAL INTERNAL ERROR: UNHANDLED MATERIAL UNIFORM INDEX '{idx}'")
             bpy.context.scene.frame_set(0)
         
         track = bpy_material.animation_data.nla_tracks.new()
@@ -240,14 +214,14 @@ def construct_nla_action(track_name, action_name, armature, method, positions, r
         bpy_material.animation_data.action = None
     
     
-    # # If there was an error somewhere that prevented the channel being loaded...
-    # if idx is None:
-    #     bpy_fc = props.float_channels.add()
-    #     bpy_fc.channel_idx = fc_idx
-    #     for f, v in fc.items():
-    #         bpy_kf = bpy_fc.keyframes.add()
-    #         bpy_kf.frame = f
-    #         bpy_kf.value = v
+    # If there was an error somewhere that prevented the channel being loaded...
+    for fc_idx, fc in unhandled_fcurves.items():
+        bpy_fc = props.float_channels.add()
+        bpy_fc.channel_idx = fc_idx
+        for f, v in fc.items():
+            bpy_kf = bpy_fc.keyframes.add()
+            bpy_kf.frame = f
+            bpy_kf.value = v
     
 
 def build_base_fcurves(action, armature, bone_name, fps, positions, rotations, scales):
