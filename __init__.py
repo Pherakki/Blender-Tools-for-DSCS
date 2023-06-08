@@ -8,7 +8,7 @@ bl_info = {
         "name": "Media.Vision Import/Export (.name)",
         "description": "Imports model and animation files from Media.Vision titles.",
         "author": "Pherakki",
-        "version": (0, 2),
+        "version": (0, 2, "dev"),
         "blender": (2, 80, 0),
         "location": "File > Import, File > Export",
         "warning": "",
