@@ -6,7 +6,7 @@ from ..IOHelpersLib.Animations import create_fcurves, create_fcurve
 from ..IOHelpersLib.Animations import parent_relative_to_bind_relative
 from ..IOHelpersLib.Animations import parent_relative_to_bind_relative_preblend
 from ..IOHelpersLib.Context    import safe_active_object_switch, set_active_obj
-from ..Utils.BoneUtils import boneY_to_boneX_matrix, upY_to_upZ_matrix
+from ..Utils.BoneUtils import MODEL_TRANSFORMS
 
 from mathutils import Matrix, Quaternion
 
@@ -235,8 +235,7 @@ def build_base_fcurves(action, armature, bone_name, fps, positions, rotations, s
                                                 positions.values(), 
                                                 rotations.values(), 
                                                 scales.values(),
-                                                upY_to_upZ_matrix.inverted(),
-                                                Matrix.Identity(4))
+                                                MODEL_TRANSFORMS)
 
     # Create animations
     create_fcurves(action, actiongroup, f'pose.bones["{bone_name}"].rotation_quaternion', "BEZIER", fps, rotations.keys(), b_rotations, [0, 1, 2, 3])
@@ -256,8 +255,7 @@ def build_blend_fcurves(action, armature, bone_name, fps, positions, rotations, 
                                                           positions.values(), 
                                                           rotations.values(), 
                                                           scales.values(),
-                                                          upY_to_upZ_matrix.inverted(),
-                                                          Matrix.Identity(4))
+                                                          MODEL_TRANSFORMS)
 
     # Create animations
     create_fcurves(action, actiongroup, f'pose.bones["{bone_name}"].rotation_quaternion', "BEZIER", fps, rotations.keys(), b_rotations, [0, 1, 2, 3])

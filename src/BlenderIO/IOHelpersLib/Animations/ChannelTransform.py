@@ -1,25 +1,31 @@
 import math
-from mathutils import Matrix, Quaternion, Vector
+from mathutils import Matrix, Quaternion
 
 
 #############
 # INTERFACE #
 #############
-def parent_relative_to_bind_relative(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation=None, bone_axis_permutation=None):
-    return _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, True)
 def transform_bone_matrix(matrix, model_transforms): 
     world_axis_rotation   = model_transforms.world_axis_rotation
     bone_axis_permutation = model_transforms.bone_axis_permutation
 
-def bind_relative_to_parent_relative(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation=None, bone_axis_permutation=None):
-    return _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, False)
     return world_axis_rotation @ matrix @ bone_axis_permutation
 
-def parent_relative_to_bind_relative_preblend(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation=None, bone_axis_permutation=None):
-    return _parent_relative_bind_relative_preblend_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, True)
+def parent_relative_to_bind_relative(bpy_bone, positions, rotations, scales, model_transforms=None):
+    return _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, model_transforms, True)
 
-def bind_relative_to_parent_relative_preblend(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation=None, bone_axis_permutation=None):
-    return _parent_relative_bind_relative_preblend_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, False)
+
+def bind_relative_to_parent_relative(bpy_bone, positions, rotations, scales, model_transforms=None):
+
+    return _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, model_transforms, False)
+
+def parent_relative_to_bind_relative_preblend(bpy_bone, positions, rotations, scales, model_transforms=None):
+    return _parent_relative_bind_relative_preblend_swap(bpy_bone, positions, rotations, scales, model_transforms, True)
+
+
+def bind_relative_to_parent_relative_preblend(bpy_bone, positions, rotations, scales, model_transforms=None):
+    return _parent_relative_bind_relative_preblend_swap(bpy_bone, positions, rotations, scales, model_transforms, False)
+
 
 def align_quaternion_signs(rotations, reference_rotations):
     """
@@ -41,25 +47,32 @@ def align_quaternion_signs(rotations, reference_rotations):
     if len(t_rotations) <= 1:
         return t_rotations
     
-    # Fix signs
+    # Find if any rotations cross into the other relative quaternion sphere 
+    # for both rotation sets (i.e., rotations larger than 180 degrees)
     r_distances = [((q1.inverted() @ q2).angle < math.pi) for q1, q2 in zip(r_rotations, r_rotations[1:])]
     t_distances = [((q1.inverted() @ q2).angle < math.pi) for q1, q2 in zip(t_rotations, t_rotations[1:])]
+    # 1 if both crossed/did not cross, -1 otherwise
     differences = [-2*(b1 ^ b2) + 1 for b1, b2 in zip(r_distances, t_distances)]
+    # Now convert the "boundary crossings" above into sign flips
     flip_signs = [1]
     for i in range(len(differences)):
         flip_signs.append(differences[i]*flip_signs[i])
     
     return [sgn*v for v, sgn in zip(t_rotations, flip_signs)]
 
+
 ##################
 # IMPLEMENTATION #
 ##################
-def _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, parent_to_bind):
+def _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, model_transforms, parent_to_bind):
     # Generate fallback matrices and local bind
-    if inverse_world_axis_rotation is None:
+    if model_transforms is None:
         inverse_world_axis_rotation = Matrix.Identity(4)
-    if bone_axis_permutation is None:
-        bone_axis_permutation = Matrix.Identity(4)
+        bone_axis_permutation       = Matrix.Identity(4)
+    else:    
+        inverse_world_axis_rotation = model_transforms.world_axis_rotation_inverse
+        bone_axis_permutation       = model_transforms.bone_axis_permutation
+        
     if bpy_bone.parent is not None:
         local_bind_matrix = bone_axis_permutation @ bpy_bone.parent.matrix_local.inverted() @ bpy_bone.matrix_local
     else:
@@ -97,12 +110,16 @@ def _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, 
     
     return b_positions, b_rotations, b_scales
 
-def _parent_relative_bind_relative_preblend_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, parent_to_bind):
+
+def _parent_relative_bind_relative_preblend_swap(bpy_bone, positions, rotations, scales, model_transforms, parent_to_bind):
     # Generate fallback matrices and local bind
-    if inverse_world_axis_rotation is None:
+    if model_transforms is None:
         inverse_world_axis_rotation = Matrix.Identity(4)
-    if bone_axis_permutation is None:
-        bone_axis_permutation = Matrix.Identity(4)
+        bone_axis_permutation       = Matrix.Identity(4)
+    else:    
+        inverse_world_axis_rotation = model_transforms.world_axis_rotation_inverse
+        bone_axis_permutation       = model_transforms.bone_axis_permutation
+        
     if bpy_bone.parent is not None:
         local_bind_matrix = bone_axis_permutation @ bpy_bone.parent.matrix_local.inverted() @ bpy_bone.matrix_local
     else:
