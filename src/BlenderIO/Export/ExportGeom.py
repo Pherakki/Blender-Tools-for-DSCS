@@ -12,6 +12,7 @@ from ..IOHelpersLib.Meshes.VertexSplitting import get_tangents
 from ..IOHelpersLib.Meshes.VertexSplitting import get_binormals
 from ..IOHelpersLib.Meshes.VertexSplitting import get_uvs
 from ..IOHelpersLib.Meshes.VertexSplitting import get_colors
+from ..IOHelpersLib.Objects import find_bpy_objects
 from ..IOHelpersLib.ErrorLog import DisplayableVerticesError
 from ..IOHelpersLib.ErrorLog import DisplayableMeshesError
 
@@ -50,32 +51,6 @@ class TooManyVertexGroupsError(DisplayableMeshesError):
         msg = f"Mesh '{bpy_mesh_obj.name}' has {group_count} vertex groups with at least one vertex. A maximum of 54 vertex groups can be used per mesh. You should split this mesh such that each piece of the mesh contains less than 54 non-empty vertex groups."
         super().__init__(msg, [bpy_mesh_obj])
         
-
-def is_constraint_child_of(obj, parent_obj):
-    if len(obj.constraints):
-        for constr in obj.constraints:
-            if constr.type == "CHILD_OF":
-                if constr.target == parent_obj:
-                    return True
-    return False
-
-def is_copy_transforms_of(obj, parent_obj):
-    if len(obj.constraints):
-        for constr in obj.constraints:
-            if constr.type == "COPY_TRANSFORMS":
-                if constr.target == parent_obj:
-                    return True
-    return False
-
-def find_bpy_objects(obj_list, parent_obj, predicates):
-    out = []
-    for obj in obj_list:
-        if any((obj.parent == parent_obj,
-               is_constraint_child_of(obj, parent_obj),
-               is_copy_transforms_of(obj, parent_obj))) \
-        and all([p(obj) for p in predicates]):
-            out.append(obj)
-    return out
 
 
 def get_parent_info(obj):
