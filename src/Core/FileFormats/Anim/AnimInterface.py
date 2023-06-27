@@ -545,7 +545,7 @@ def strip_and_validate(keyframes, chunksizes, method):
         # Every chunk must have data in its first frame, so check if what we have does...
         if bitvector[0] == 0:
             if chunk_idx == 0:
-                assert 0, "Invalid input data to animation: first frame has no data."
+                raise ValueError("Invalid input data to animation: first frame has no data.")
             # If it doesn't, we'll need to interpolate it using the closest data in the past (from the previous chunk)
             # and the closest data in the future (an arbitrary number of chunks away)
             # Get the previous chunk so we can use that as the first point to interpolate from
