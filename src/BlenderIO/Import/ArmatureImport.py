@@ -3,9 +3,10 @@ import math
 from mathutils import Vector, Matrix
 import struct
 
-from ..IOHelpersLib.Bones import construct_bone, resize_bones
-from ..IOHelpersLib.Context import safe_active_object_switch
-from ..Utils.BoneUtils import MayaBoneToBlenderBone
+from ..IOHelpersLib.Animations import transform_bone_matrix
+from ..IOHelpersLib.Bones      import construct_bone, resize_bones
+from ..IOHelpersLib.Context    import safe_active_object_switch
+from ..Utils.BoneUtils         import MODEL_TRANSFORMS
 
 
 @safe_active_object_switch
@@ -29,7 +30,7 @@ def import_skeleton(collection, armature_name, ni, si, gi, model_dims):
         dscs_to_bpy_bone_map[bone.name_hash] = len(list_of_bones)
         
         bone_name = ni.bone_names[bone_idx]
-        bpy_bone = construct_bone(bone_name, armature_obj, MayaBoneToBlenderBone(bpms[bone_idx]), 1)
+        bpy_bone = construct_bone(bone_name, armature_obj, transform_bone_matrix(bpms[bone_idx], MODEL_TRANSFORMS), 1)
         list_of_bones[bone_idx] = bpy_bone
         
         if bone.parent != -1:

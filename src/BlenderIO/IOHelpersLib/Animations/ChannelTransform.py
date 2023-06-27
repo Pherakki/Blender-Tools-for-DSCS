@@ -7,9 +7,13 @@ from mathutils import Matrix, Quaternion, Vector
 #############
 def parent_relative_to_bind_relative(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation=None, bone_axis_permutation=None):
     return _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, True)
+def transform_bone_matrix(matrix, model_transforms): 
+    world_axis_rotation   = model_transforms.world_axis_rotation
+    bone_axis_permutation = model_transforms.bone_axis_permutation
 
 def bind_relative_to_parent_relative(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation=None, bone_axis_permutation=None):
     return _parent_relative_bind_relative_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, False)
+    return world_axis_rotation @ matrix @ bone_axis_permutation
 
 def parent_relative_to_bind_relative_preblend(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation=None, bone_axis_permutation=None):
     return _parent_relative_bind_relative_preblend_swap(bpy_bone, positions, rotations, scales, inverse_world_axis_rotation, bone_axis_permutation, True)
