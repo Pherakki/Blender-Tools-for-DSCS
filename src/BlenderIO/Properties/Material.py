@@ -79,7 +79,7 @@ def make_mapped_texture_sampler(sampler_name, uv2_bits, uv3_bits, split_alpha_bi
         uv_3_used: bpy.props.BoolProperty(name="", get=lambda self: self.uv_map=="UV3")
         
         def extract_data(self, texture_map):
-            return [texture_map[self.image], *self.data]
+            return [texture_map[self.image.name], *self.data]
         
     return TextureSampler
 
@@ -96,7 +96,7 @@ def make_texture_sampler(sampler_name):
         uv_map: bpy.props.EnumProperty(name="UV Map", items=[("AUTO", "AUTO", "")])
         
         def extract_data(self, texture_map):
-            return [texture_map[self.image], *self.data]
+            return [texture_map[self.image.name], *self.data]
         
     return TextureSampler
 

@@ -259,8 +259,9 @@ def extract_materials(gi, material_names):
     if len(bpy_mats):
         texture_names = []
         for bpy_mat in bpy_mats:
-            tex_names = bpy_mat.DSCS_MaterialProperties.get_textures()
-            for tex_name in tex_names:
+            textures = bpy_mat.DSCS_MaterialProperties.get_textures()
+            for texture in textures:
+                tex_name = texture.name
                 if tex_name not in texture_names:
                     texture_names.append(tex_name)
     else:
