@@ -1,6 +1,14 @@
 from .FCurves import create_fcurve, create_fcurves
-from .ExtractFCurves import group_fcurves_by_bone_and_type
-from .ExtractFCurves import extract_clean_animation_data
+from .ExtractFCurves import extract_fcurves
+from .ExtractFCurves import bone_fcurves_from_fcurves
+from .ExtractFCurves import object_transforms_from_fcurves
+from .ExtractFCurves import synchronize_keyframes
+from .ExtractFCurves import synchronised_transforms_from_fcurves
+from .ExtractFCurves import synchronised_bone_data_from_fcurves
+from .ExtractFCurves import synchronised_object_transforms_from_fcurves
+from .ExtractFCurves import synchronised_quat_bone_data_from_fcurves
+from .ExtractFCurves import synchronised_quat_object_transforms_from_fcurves
+from .ChannelTransform import transform_bone_matrix
 from .ChannelTransform import parent_relative_to_bind_relative
 from .ChannelTransform import parent_relative_to_bind_relative_preblend
 from .ChannelTransform import bind_relative_to_parent_relative

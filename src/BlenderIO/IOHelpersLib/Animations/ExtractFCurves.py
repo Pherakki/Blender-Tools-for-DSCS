@@ -1,183 +1,147 @@
+import re
+
 import numpy as np
-from ..Maths import lerp, convert_rotation_to_quaternion
-from .ChannelTransform import bind_relative_to_parent_relative
+from ..Maths import lerp, quat_to_euler, euler_to_quat
+
+BONE_PATTERN = re.compile("pose\.bones\[\"(.*)\"\].(.*)")
 
 #############
 # INTERFACE #
 #############
-
-def group_fcurves_by_bone_and_type(action):
+def extract_fcurves(action):
+    """
+    Returns a dictionary of all fcurves from an action, grouped by datapath.
+    """
     res = {}
-    possible_transforms = set(create_anim_init_data().keys())
-    obj_transforms = None
-    
     for fcurve in action.fcurves:
-        # Bone transform
-        if fcurve.data_path[:10] == 'pose.bones':
-            bone_name = get_bone_name_from_fcurve(fcurve)
-            if bone_name not in res: res[bone_name] = create_anim_init_data()
-            curve_type = get_fcurve_type(fcurve)
-            edit_transforms = res[bone_name]
-        # Object transforms
-        elif fcurve.data_path in possible_transforms:
-            if obj_transforms is None: obj_transforms = create_anim_init_data()
-            curve_type = fcurve.data_path
-            edit_transforms = obj_transforms
-        else:
-            continue
+        data_path = fcurve.data_path
+        if data_path not in res:
+            res[data_path] = {}
         
+        fcurve_data = res[data_path]
         array_index = fcurve.array_index
-        edit_transforms[curve_type][array_index] = fcurve
+        fcurve_data[array_index] = fcurve
             
-    return res, obj_transforms
+    return res
 
 
-def extract_clean_animation_data(group, curve_defaults, out_buffer, pose_object):
-    # Get whether any of the locations, rotations, and scales are animated; plus the f-curves for those
-    # that are
-    elements_used, bone_data = get_used_animation_elements_in_group(group)
-    # For each set that is animated, interpolate missing keyframes for each component of the relevant vector
-    # on each keyframe where at least one element is used
-    for curve_type, isUsed in elements_used.items():
-        if isUsed:
-            curve_data = interpolate_missing_frame_elements(bone_data[curve_type], curve_defaults[curve_type], lerp)
-            zipped_data = zip_vector_elements(curve_data)
-            out_buffer[curve_type] = zipped_data
-       
-    rotation_mode = pose_object.rotation_mode
-    if rotation_mode != "QUATERNION":
-        out_buffer["rotation_quaternion"] = {
-            k: convert_rotation_to_quaternion(None, v, rotation_mode) 
-            for k, v in out_buffer["rotation_euler"].items()
-        }
+def bone_fcurves_from_fcurves(fcurves_dict):
+    """
+    Transfers all bone animation fcurves to a new dict.
+    """
+    res = {}
+    for fc_dp, fcurve in list(fcurves_dict.items()):
+        if fc_dp[:10] == "pose.bones":
+            if fc_dp[11] == "[":
+                bone_name, attribute_rna_path = get_bone_name_from_datapath(fc_dp)
+                if bone_name not in res:
+                    res[bone_name] = {}
+                res[bone_name][attribute_rna_path] = fcurve
+                del fcurves_dict[fc_dp]
+    return res
+
+
+def object_transforms_from_fcurves(fcurves_dict):
+    """
+    Transfers Object Transform fcurves to a new dict.
+    """
+    res = {}
+    for fc_dp, fcurve in list(fcurves_dict.items()):
+        if fc_dp in ["rotation_quaternion", "rotation_euler", "location", "scale"]:
+            res[fc_dp] = fcurve
+            del fcurves_dict[fc_dp]
+    return res
+
+
+def synchronize_keyframes(fcurves, fcurve_defaults, interpolation_function):
+    """
+    Returns a list of keyframe: list pairs. The keyframes are taken from all
+    unique keyframes amongst the input keyframes. The lists are the same size
+    as the fcurve_defaults, and contain the animation values at the appropriate
+    keyframe if these values exist. If they do not exist, the value is
+    interpolated at that keyframe from the interpolation_method. for any
+    missing fcurves, the fcurve_default is used on all keyframes.
     
-    # elif "rotation_quaternion" in out_buffer:
-    #     out_buffer["rotation_quaternion"] = {
-    #         k: [v[1], v[2], v[3], v[0]] 
-    #         for k, v in out_buffer["rotation_quaternion"].items()
-    #     }
-
-#############
-# UTILITIES #
-#############
-
-def create_anim_init_data():
-    return {'rotation_quaternion': [None, None, None, None],
-            'location':            [None, None, None],
-            'scale':               [None, None, None],
-            'rotation_euler':      [None, None, None]}
-
-
-def get_bone_name_from_fcurve(fcurve):
-    return fcurve.data_path.split('[')[1].split(']')[0][1:-1]
-
-
-def get_fcurve_type(fcurve):
-    return fcurve.data_path.split('.')[-1]
-
-
-def get_used_animation_elements_in_group(group):
+    Any animation channels with array indices that overflow fcurve_defaults
+    are removed.
     """
-    Summary
-    -------
-    Takes a list of f-curves and assigns the keyframe point co-ordinates in each f-curve to the appropriate transform
-    and array index of a returned dictionary.
+    # First get every keyframe and set up return value
+    all_frame_idxs = sorted(set().union(*[fc.keys() for fc in fcurves.values()]))
+    res = {idx: [c for c in fcurve_defaults] for idx in all_frame_idxs}
+    
+    for (component_idx, framedata), default_value in zip(fcurves.items(), fcurve_defaults):
+        if component_idx >= len(fcurve_defaults): 
+            continue
 
-    The animation export module should probably be refactored so that the groups that get passed into this function
-    are either locations, rotations, or scales, so that all three are not handled simultaneously, but rather by three
-    separate function calls.
-
-    Parameters
-    ----------
-    :parameters:
-    group -- A list of Blender f-curve objects.
-
-    Returns
-    -------
-    :returns:
-    A two-element tuple:
-    - The first element is a dictionary in the shape {'location': bool, 'rotation_quaternion': bool, 'scale': bool} that
-      states whether any of the input f-curves are of any of those types
-    - The second element is a dictionary in the shape
-                {'location': {0: {}, 1: {}, 2: {}},
-                 'rotation_quaternion': {0: {}, 1: {}, 2: {}, 3: {}},
-                 'scale': {0: {}, 1: {}, 2: {}}},
-      where the integers are the array indices of the appropriate f-curves. Each array index is also given a dictionary
-      as above, which contains the frame index and the f-curve value as key-value pairs.
-    """
-    elements_used = {'location': False,
-                     'rotation_quaternion': False,
-                     'scale': False,
-                     'rotation_euler': False}
-
-    bone_data = {'rotation_quaternion': [{}, {}, {}, {}],
-                 'location':            [{}, {}, {}],
-                 'scale':               [{}, {}, {}],
-                 'rotation_euler':      [{}, {}, {}]}
-    for curve_type in group:
-        for curve_idx, f_curve in enumerate(group[curve_type]):
-            if f_curve is None:
-                continue
-            elements_used[curve_type] = True
-            bone_data[curve_type][curve_idx] = {k: v for k, v in [kfp.co for kfp in f_curve.keyframe_points]}
-
-    return elements_used, bone_data
-
-
-def get_all_required_frames(curve_data):
-    """
-    Returns all keys in a list of dictionaries as a sorted list of rounded integers plus the rounded-up final key,
-    assuming all keys are floating-point values.
-    """
-    res = set()
-    for dct in curve_data:
-        iter_keys = tuple(dct.keys())
-        for key in iter_keys:
-            res.add(key)
-    return sorted(list(res))
-
-
-def interpolate_missing_frame_elements(curve_data, default_values, interpolation_function):
-    """
-    GFS requires animations to be stored as whole quaternions, locations, and scales.
-    This function ensures that every passed f-curve has a value at every frame referenced by all f-curves - e.g. if
-    a location has values at frame 30 on its X f-curve but not on its Y and Z f-curves, the Y and Z values at frame 30
-    will be interpolated from the nearest frames on the Y and Z f-curves respectively and stored in the result.
-    """
-    # First get every frame required by the vector and which will be passed on to GFS
-    all_frame_idxs = get_all_required_frames(curve_data)
-    for (component_idx, framedata), default_value in zip(enumerate(curve_data), default_values):
         # Get all the frames at which the curve has data
         component_frame_idxs = list(framedata.keys())
         # Produce a function that will return the value for the frame, based on how many frames are available
         interp_method = produce_interpolation_method(component_frame_idxs, framedata, default_value, interpolation_function)
-        new_framedata = {}
-        # Generate the GFS-compatible data
+        component_frame_idxs = set(component_frame_idxs)
+        
         for frame_idx in all_frame_idxs:
             if frame_idx not in component_frame_idxs:
-                new_framedata[frame_idx] = interp_method(frame_idx)
+                res[frame_idx][component_idx] = interp_method(frame_idx)
             else:
-                new_framedata[frame_idx] = framedata[frame_idx]
+                res[frame_idx][component_idx] = framedata[frame_idx]
 
-        curve_data[component_idx] = new_framedata
-
-    return curve_data
+    return res
 
 
-def zip_vector_elements(curve_data):
-    """
-    Takes n dictionaries in a list, with each dictionary containing the frame indices (as keys) and values (as values)
-    of a single component of a vector. All dictionaries must have exactly the same keys (frame indices).
-    Returns a single dictionary with the frame indices as keys, and the vector components for that frame stored in a
-    list as the value for that key.
-    """
-    new_curve_data = {}
-    for frame_idxs in zip(*[list(e.keys()) for e in curve_data]):
-        for frame_idx in frame_idxs:
-            assert frame_idx == frame_idxs[0]
-        frame_idx = frame_idxs[0]
-        new_curve_data[frame_idx] = [e[frame_idx] for e in curve_data]
-    return new_curve_data
+def synchronised_transforms_from_fcurves(fcurves):
+    for fcurve_data in fcurves:
+        if 'rotation_quaternion' in fcurve_data: fcurve_data['rotation_quaternion'] = synchronize_keyframes(fcurve_data['rotation_quaternion'], [1, 0, 0, 0], lerp)
+        if 'rotation_euler'      in fcurve_data: fcurve_data['rotation_euler']      = synchronize_keyframes(fcurve_data['rotation_euler'],      [0, 0, 0],    lerp)
+        if 'location'            in fcurve_data: fcurve_data['location']            = synchronize_keyframes(fcurve_data['location'],            [0, 0, 0],    lerp)
+        if 'scale'               in fcurve_data: fcurve_data['scale']               = synchronize_keyframes(fcurve_data['scale'],               [1, 1, 1],    lerp)
+    return fcurves
+
+
+def synchronised_bone_data_from_fcurves(fcurves_dict):
+    bone_fcurves = bone_fcurves_from_fcurves(fcurves_dict)
+    synchronised_transforms_from_fcurves(bone_fcurves.values())
+    return bone_fcurves
+
+
+def synchronised_object_transforms_from_fcurves(fcurves_dict):
+    obj_fcurves = object_transforms_from_fcurves(fcurves_dict)
+    synchronised_transforms_from_fcurves(obj_fcurves.values())
+    return obj_fcurves
+
+
+def synchronised_quat_bone_data_from_fcurves(fcurves_dict, bones):
+    bone_fcurves = synchronised_bone_data_from_fcurves(fcurves_dict)
+    for bn, data in bone_fcurves.items():
+        if bn in bones:
+            bone = bones[bn]
+            rotation_mode = bone.rotation_mode
+            if rotation_mode != "QUATERNION" and 'rotation_euler' in data:
+                data["rotation_quaternion"] = {k: euler_to_quat(e, rotation_mode) for k, e in data["rotation_euler"].items()}
+        if 'rotation_euler' in data:
+            del data['rotation_euler']
+        if 'rotation_quaternion' not in data:
+            data['rotation_quaternion'] = {}
+    return bone_fcurves
+
+
+def synchronised_quat_object_transforms_from_fcurves(fcurves_dict, obj):
+    obj_fcurves = synchronised_object_transforms_from_fcurves(fcurves_dict)
+    rotation_mode = obj.rotation_mode
+    if rotation_mode != "QUATERNION" and 'rotation_euler' in obj_fcurves:
+        obj_fcurves["rotation_quaternion"] = {k: euler_to_quat(e, rotation_mode) for k, e in obj_fcurves["rotation_euler"].items()}
+    if 'rotation_euler' in obj_fcurves:
+        del obj_fcurves['rotation_euler']
+    if 'rotation_quaternion' not in obj_fcurves:
+        obj_fcurves['rotation_quaternion'] = {}
+    return obj_fcurves
+
+
+#############
+# UTILITIES #
+#############
+def get_bone_name_from_datapath(fcurve):
+    bone_data = re.match(BONE_PATTERN, fcurve)
+    return bone_data.group(1), bone_data.group(2)
 
 
 def interpolate_keyframe(frame_idxs, frame_values, idx, interpolation_function):
@@ -215,4 +179,3 @@ def produce_interpolation_method(frame_idxs, frame_values, default_value, interp
             return interpolate_keyframe(frame_idxs, frame_values, input_frame_idx, interpolation_function)
 
     return interp_method
-
