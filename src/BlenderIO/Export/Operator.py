@@ -3,10 +3,11 @@ import os
 import bpy
 from bpy_extras.io_utils import ExportHelper
 from ..Utils.ErrorLog import ExportErrorLog
-from .ExportSkel import extract_skel, create_bpy_to_dscs_bone_map
+from .ExportSkel import extract_skel, create_bpy_to_dscs_bone_map, create_missing_float_channels
 from .ExportGeom import extract_geom
 from .ExportName import extract_name
-from .ExportAnim import extract_base_anim, extract_anims, optimise_base_anim
+from .ExportAnim import extract_base_anim, extract_all_anim_channels, optimise_base_anim, transform_to_animation
+
 
 class ExportMediaVision(bpy.types.Operator):
     multiple_material_policy: bpy.props.EnumProperty(
@@ -54,9 +55,16 @@ class ExportMediaVision(bpy.types.Operator):
         
         # Extract armature data and animations
         base_anim = extract_base_anim(armature_obj, errorlog, bpy_to_dscs_bone_map)
+        anim_data = extract_all_anim_channels(armature_obj, errorlog, bpy_to_dscs_bone_map)
         si        = extract_skel(armature_obj, base_anim, errorlog, bpy_to_dscs_bone_map)
+        
+        anims = {}
+        for track_name, (na, hfa, ufa) in anim_data.items():
+            fa = create_missing_float_channels(si, hfa, ufa, errorlog)
+            ai = transform_to_animation(armature_obj, track_name, bpy_to_dscs_bone_map, errorlog, na, fa)
+            anims[track_name] = ai
         optimise_base_anim(base_anim)
-        anims     = extract_anims(armature_obj, errorlog, bpy_to_dscs_bone_map)
+        
         
         # Extract geometry and names
         gi, image_extractors = extract_geom(armature_obj, errorlog, bpy_to_dscs_bone_map, material_names)
