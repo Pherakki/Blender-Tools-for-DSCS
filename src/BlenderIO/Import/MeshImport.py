@@ -7,8 +7,9 @@ from mathutils import Vector, Quaternion
 
 from ...Core.FileFormats.Geom.GeomBinary.MeshBinary.Base import PrimitiveTypes
 from ...Core.FileFormats.Geom.Constants import AttributeTypes
-from ..IOHelpersLib.Meshes import merge_vertices, import_loop_normals, create_uv_map
+from ..IOHelpersLib.Meshes import create_merged_mesh, import_loop_normals, create_uv_map
 from ..IOHelpersLib.Context import safe_active_object_switch, set_active_obj, set_mode
+
 
 class VertexAttributeTracker:
     __slots__ = ("bpy_mesh_objs", "normals", "tangents", "binormals", "colors", "uv1s", "uv2s", "uv3s")
@@ -45,7 +46,7 @@ class VertexAttributeTracker:
 
 
 @safe_active_object_switch
-def import_meshes(collection, model_name, ni, gi, armature, material_list, errorlog, try_merge_vertices):
+def import_meshes(collection, model_name, ni, gi, armature, material_list, errorlog, attempt_merge):
     meshes = []
     meshes_using_material = {}
     for i, mesh in enumerate(gi.meshes):
@@ -60,19 +61,22 @@ def import_meshes(collection, model_name, ni, gi, armature, material_list, error
         else:
             raise Exception(f"Primitive Type '{mesh.indices.primitive_type}' not supported")
 
-        # Now merge OpenGL vertices into Blender vertices
-        new_verts, new_tris, new_facevert_to_old_facevert_map = merge_vertices(mesh.vertices, faces, try_merge_vertices, errorlog)
-        vert_positions = [Vector(v.position[:3]) for v in new_verts]
+        # Now merge model vertices into Blender vertices
+        vp = [v.position[:3] for v in mesh.vertices]
+        vi = [v.indices      for v in mesh.vertices]
+        vw = [v.weights      for v in mesh.vertices]
 
         ###############
         # CREATE MESH #
         ###############
         # Init mesh
         meshobj_name = f"{model_name}_{i}"
-        bpy_mesh = bpy.data.meshes.new(name=meshobj_name)
+        mesh_info = create_merged_mesh(meshobj_name, vp, vi, vw, faces, 
+                                       sanitize_vertices = True, 
+                                       attempt_merge     = attempt_merge, 
+                                       errorlog          = errorlog)
+        bpy_mesh = mesh_info.bpy_mesh
         bpy_mesh_object = bpy.data.objects.new(meshobj_name, bpy_mesh)
-
-        bpy_mesh_object.data.from_pydata(vert_positions, [], new_tris)
         collection.objects.link(bpy_mesh_object)
 
         # Assign materials
@@ -89,17 +93,8 @@ def import_meshes(collection, model_name, ni, gi, armature, material_list, error
         #################
         # ADD LOOP DATA #
         #################
-        # Get the loop data
         n_loops = len(bpy_mesh.loops)
-        map_of_loops_to_model_verts = {}
-        for new_poly_idx, poly in enumerate(bpy_mesh.polygons):
-            for loop_idx in poly.loop_indices:
-                assert loop_idx not in map_of_loops_to_model_verts, "Loop already exists!"
-                new_vert_idx = bpy_mesh.loops[loop_idx].vertex_index
-                # Take only the vert id from the old (face_id, vert_id) pair
-                old_vert_idx = new_facevert_to_old_facevert_map[(new_poly_idx, new_vert_idx)][1]
-                map_of_loops_to_model_verts[loop_idx] = old_vert_idx
-
+        map_of_loops_to_model_verts = mesh_info.map_of_loops_to_model_verts
         loop_data = [mesh.vertices[map_of_loops_to_model_verts[loop_idx]] for loop_idx in range(n_loops)]
 
         # Assign UVs
@@ -118,8 +113,10 @@ def import_meshes(collection, model_name, ni, gi, armature, material_list, error
                 for loop_idx, loop in enumerate(bpy_mesh.loops):
                     colour_map.data[loop_idx].color = int(loop_data[loop_idx].color*255)
 
-        # Rig the vertices
-        vertex_groups = make_vertex_groups(new_verts)
+        ###########
+        # RIGGING #
+        ###########
+        vertex_groups = make_vertex_groups(mesh_info.vertices)
         for bone_idx, vg in vertex_groups.items():
             vertex_group = bpy_mesh_object.vertex_groups.new(name=ni.bone_names[bone_idx])
             for vert_idx, vert_weight in vg:
