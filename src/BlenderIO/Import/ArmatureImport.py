@@ -48,12 +48,20 @@ def import_skeleton(collection, armature_name, ni, si, gi, model_dims):
     for bone_idx, bone in zip(list_of_bones.keys(), armature.bones):
         bone.DSCS_BoneProperties.flag = si.bones[bone_idx].flag
     
+    hashes = {}
+    for i, m in enumerate(gi.materials):
+        hashes[m.name_hash] = ni.material_names[i]
+    for i, b in enumerate(si.bones):
+        hashes[b.name_hash] = ni.bone_names[i]
+    
     # Now get the float channels in
     for fc in si.float_channels:
         bpy_fc = armature.DSCS_ModelProperties.float_channels.add()
         bpy_fc.obj_hash  = struct.unpack('i', struct.pack('I', fc.name_hash))[0]
+        bpy_fc.obj_name  = hashes.get(fc.name_hash, "???")
+        
         bpy_fc.flags     = fc.flags
-        bpy_fc.channel   = fc.array_index // 16
-        bpy_fc.array_idx = fc.array_index % 16
+        bpy_fc.channel   = fc.array_index >> 4
+        bpy_fc.array_idx = fc.array_index & 0x0000000F
     
     return armature_obj, dscs_to_bpy_bone_map
