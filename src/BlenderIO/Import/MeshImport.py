@@ -59,7 +59,7 @@ def import_meshes(collection, model_name, ni, gi, armature, material_list, error
         elif mesh.indices.primitive_type == PrimitiveTypes.TRIANGLE_STRIP:
             faces = mesh.indices.to_triangles().unpack()
         else:
-            raise Exception(f"Primitive Type '{mesh.indices.primitive_type}' not supported")
+            errorlog.log_error_message(f"Primitive Type '{mesh.indices.primitive_type}', found on mesh {i}, is not supported")
 
         # Now merge model vertices into Blender vertices
         vp = [v.position[:3] for v in mesh.vertices]
