@@ -19,7 +19,7 @@ boneY_to_boneX_matrix = Matrix.Identity(4)
 #upY_to_upZ_matrix = Matrix.Identity(4)
 
 MODEL_TRANSFORMS = ModelTransforms()
-MODEL_TRANSFORMS.world_rotation = upY_to_upZ_matrix
+MODEL_TRANSFORMS.world_axis_rotation = upY_to_upZ_matrix
 MODEL_TRANSFORMS.bone_axis_permutation = Matrix.Identity(4)
 
 def convert_XDirBone_to_YDirBone(matrix):
