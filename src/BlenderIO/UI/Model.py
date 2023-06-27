@@ -9,9 +9,8 @@ from ..IOHelpersLib.UI import UIListBase
 
 class OBJECT_UL_DSCSFloatChannelUIList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        split = layout.split(factor=0.2)
-        split.prop(item, "obj_name", emboss=False)
-        # obj hash?
+        split = layout.row()
+        split.prop(item, "obj_name", text="", emboss=False)
         split.prop(item, "flags")
         split.prop(item, "channel")
         split.prop(item, "array_idx")
