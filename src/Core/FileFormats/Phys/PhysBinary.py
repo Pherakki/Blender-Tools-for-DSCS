@@ -7,6 +7,7 @@ class PhysBinary(Serializable):
 
     def __init__(self):
         super().__init__()
+        self.context.endianness = '<'
 
         # Variables that appear in the file header
         self.filetype = b'PHYS'[::-1]
@@ -26,10 +27,10 @@ class PhysBinary(Serializable):
         self.collider_ptrs  = []
         self.colliders      = []
         self.materials      = None
-        self.bone_s         = None
+        self.bones          = None
     
     def read_write(self, rw):
-        rw.assert_file_pointer_now_at(0)
+        rw.assert_file_pointer_now_at("File start", 0)
 
         self.filetype = rw.rw_bytestring(self.filetype, 4)
         self.version  = rw.rw_uint32(self.version)
@@ -49,6 +50,7 @@ class PhysBinary(Serializable):
         # Ragdolls
         rw.assert_file_pointer_now_at("Ragdolls", self.ragdolls_offset)
         self.ragdolls = rw.rw_obj_array(self.ragdolls, Ragdoll, self.ragdoll_count)
+        rw.align(rw.tell(), 0x08)
         
         # Colliders
         rw.assert_file_pointer_now_at("Colliders", self.colliders_offset)
@@ -58,19 +60,20 @@ class PhysBinary(Serializable):
         if rw.mode() == "read":
             self.colliders = [Collider() for _ in range(self.collider_count)]
         for ptr, col in zip(self.collider_ptrs, self.colliders):
-            rw.assert_file_pointer_now_at(ptr)
+            rw.assert_file_pointer_now_at("Collider", ptr)
             rw.rw_obj(col)
 
         # Materials
-        rw.assert_file_pointer_now_at(self.material_offset)
-        self.materials = rw.rw_bytestrings(self.materials, (self.material_count, 0x40))
-        rw.assert_file_pointer_now_at(self.bones_offset)
-        self.bones = rw.rw_bytestrings(self.bones, (self.bone_count, 0x40))
+        rw.assert_file_pointer_now_at("Materials", self.materials_offset)
+        self.materials = rw.rw_bytestrings(self.materials, 0x40, self.material_count)
+        rw.assert_file_pointer_now_at("Bones", self.bones_offset)
+        self.bones = rw.rw_bytestrings(self.bones, 0x40, self.bone_count)
         
 
 class Ragdoll(Serializable):
     def __init__(self):
         super().__init__()
+        self.context.endianness = '<'
 
         # Variables that appear in the file header
         # Get the scaled quaternion by doing:
@@ -98,6 +101,7 @@ class Ragdoll(Serializable):
 class Collider(Serializable):
     def __init__(self):
         super().__init__()
+        self.context.endianness = '<'
 
         # Variables that appear in the file header
         self.filetype = None
@@ -108,11 +112,11 @@ class Collider(Serializable):
         self.filetype = rw.rw_uint64(self.filetype)
         
         if rw.mode() == "read":
-            if   self.filetype == 0: self.data = SimpleCollider()
+            if   self.filetype == 0: self.data = BoxCollider()
             elif self.filetype == 2: self.data = ComplexCollider()
             else:                    raise NotImplementedError(f"Unknown collider type '{self.filetype}'")
         
-        if   self.filetype == 0:          assert type(self.data) == SimpleCollider
+        if   self.filetype == 0:          assert type(self.data) == BoxCollider
         # Type 1 appears similar to type 0 in struct size...
         elif self.filetype == 2:          assert type(self.data) == ComplexCollider
         elif self.filetype not in [0, 2]: raise NotImplementedError(f"Unknown collider type '{self.filetype}'")
@@ -121,24 +125,27 @@ class Collider(Serializable):
         rw.rw_obj(self.data)
 
 
-class SimpleCollider(Serializable):
+class BoxCollider(Serializable):
     """
     A simple cuboid collider, defined only by its half-lengths.
     Sits at the position dictated by the Ragdoll entry it is attached to.
     """
     def __init__(self):
-        super().__init__
-        self.bounding_box_corner = [0., 0., 0.]
+        super().__init__()
+        self.context.endianness = '<'
+        
+        self.half_lengths = [0., 0., 0.]
         self.flag = 0
 
     def read_write(self, rw):
-        self.half_lengths = rw.rw_float32s(self.half_lengths)
+        self.half_lengths = rw.rw_float32s(self.half_lengths, 3)
         self.flag         = rw.rw_uint32(self.flag)
 
 
 class ComplexCollider(Serializable):
     def __init__(self):
         super().__init__()
+        self.context.endianness = '<'
         
         # Header
         self.vertex_count   = 0
@@ -170,16 +177,16 @@ class ComplexCollider(Serializable):
         self.submesh_bone_indices_offset     = rw.rw_uint64(self.submesh_bone_indices_offset)
 
         # Data
-        rw.assert_file_pointer_now_at(self.triangles_offset)
+        rw.assert_file_pointer_now_at("Triangles", self.triangles_offset)
         self.triangle_indices = rw.rw_uint32s(self.triangle_indices, (self.triangle_count, 3))
         
-        rw.assert_file_pointer_now_at(self.vertex_positions_offset)
+        rw.assert_file_pointer_now_at("Vertices", self.vertex_positions_offset)
         self.vertex_positions = rw.rw_float32s(self.vertex_positions, (self.vertex_count, 3))
         
-        rw.assert_file_pointer_now_at(self.submesh_material_indices_offset)   
+        rw.assert_file_pointer_now_at("Material Indices", self.submesh_material_indices_offset)   
         self.submesh_material_indices = rw.rw_int16s(self.submesh_material_indices, self.triangle_count)
         rw.align(rw.tell(), 0x04)
         
-        rw.assert_file_pointer_now_at(self.submesh_bone_indices_offset)   
+        rw.assert_file_pointer_now_at("Bone Indices", self.submesh_bone_indices_offset)   
         self.submesh_bone_indices = rw.rw_int16s(self.submesh_bone_indices, self.triangle_count)
         rw.align(rw.tell(), 0x04)
