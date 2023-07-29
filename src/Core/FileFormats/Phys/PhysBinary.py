@@ -26,8 +26,8 @@ class PhysBinary(Serializable):
         self.ragdolls       = []
         self.collider_ptrs  = []
         self.colliders      = []
-        self.materials      = None
-        self.bones          = None
+        self.materials      = []
+        self.bones          = []
     
     def read_write(self, rw):
         rw.assert_file_pointer_now_at("File start", 0)
@@ -104,23 +104,23 @@ class Collider(Serializable):
         self.context.endianness = '<'
 
         # Variables that appear in the file header
-        self.filetype = None
+        self.type = None
         self.data = None
 
 
     def read_write(self, rw):
-        self.filetype = rw.rw_uint64(self.filetype)
+        self.type = rw.rw_uint64(self.type)
         
         if rw.mode() == "read":
-            if   self.filetype == 0: self.data = BoxCollider()
-            elif self.filetype == 2: self.data = ComplexCollider()
-            else:                    raise NotImplementedError(f"Unknown collider type '{self.filetype}'")
+            if   self.type == 0: self.data = BoxCollider()
+            elif self.type == 2: self.data = ComplexCollider()
+            else:                raise NotImplementedError(f"Unknown collider type '{self.type}'")
         
-        if   self.filetype == 0:          assert type(self.data) == BoxCollider
+        if   self.type == 0:          assert type(self.data) == BoxCollider
         # Type 1 appears similar to type 0 in struct size...
-        elif self.filetype == 2:          assert type(self.data) == ComplexCollider
-        elif self.filetype not in [0, 2]: raise NotImplementedError(f"Unknown collider type '{self.filetype}'")
-        else:                             raise NotImplementedError(f"Invalid collider object type '{type(self.data)}'")
+        elif self.type == 2:          assert type(self.data) == ComplexCollider
+        elif self.type not in [0, 2]: raise NotImplementedError(f"Unknown collider type '{self.type}'")
+        else:                         raise NotImplementedError(f"Invalid collider object type '{type(self.data)}'")
 
         rw.rw_obj(self.data)
 
@@ -134,13 +134,19 @@ class BoxCollider(Serializable):
         super().__init__()
         self.context.endianness = '<'
         
-        self.half_lengths = [0., 0., 0.]
+        self.half_width  = 0.
+        self.half_height = 0.
+        self.half_depth  = 0.
         self.flag = 0
 
     def read_write(self, rw):
-        self.half_lengths = rw.rw_float32s(self.half_lengths, 3)
-        self.flag         = rw.rw_uint32(self.flag)
+        self.half_width  = rw.rw_float32(self.half_width)
+        self.half_height = rw.rw_float32(self.half_height)
+        self.half_depth  = rw.rw_float32(self.half_depth)
+        self.flag        = rw.rw_uint32(self.flag)
 
+    def calc_offsets(self, start_offset):
+        return start_offset + 0x10 + 0x08
 
 class ComplexCollider(Serializable):
     def __init__(self):
@@ -190,3 +196,22 @@ class ComplexCollider(Serializable):
         rw.assert_file_pointer_now_at("Bone Indices", self.submesh_bone_indices_offset)   
         self.submesh_bone_indices = rw.rw_int16s(self.submesh_bone_indices, self.triangle_count)
         rw.align(rw.tell(), 0x04)
+
+    def calc_offsets(self, start_offset):
+        offset = start_offset + 0x40 + 0x08
+        
+        self.triangles_offset = offset
+        offset += self.triangle_count*3*4
+        
+        self.vertex_positions_offset = offset
+        offset += self.vertex_count*3*4
+        
+        self.submesh_material_indices_offset = offset
+        offset += self.triangle_count*2
+        offset += (0x04 - (offset % 0x04)) % 0x04
+        
+        self.submesh_bone_indices_offset = offset
+        offset += self.triangle_count*2
+        offset += (0x04 - (offset % 0x04)) % 0x04
+        
+        return offset
