@@ -705,7 +705,7 @@ class MaterialProperties(bpy.types.PropertyGroup):
     
     def set_gl_blend_equation_separate(self, setting):
         self.use_gl_blend_eq = True
-        gl_enum = int(setting[0])
+        gl_enum = int(setting.data[0])
         
         if   gl_enum == 0x8006: self.gl_blend_eq = "GL_FUNC_ADD"
         elif gl_enum == 0x800A: self.gl_blend_eq = "GL_FUNC_SUBTRACT"
@@ -718,7 +718,7 @@ class MaterialProperties(bpy.types.PropertyGroup):
     
     def set_gl_cull_face(self, setting):
         self.use_gl_cull_face = True
-        gl_enum = int(setting[0])
+        gl_enum = int(setting.data[0])
         
         if   gl_enum == 0x0405: self.gl_cull_face = "GL_BACK"
         elif gl_enum == 0x0404: self.gl_cull_face = "GL_FRONT"
