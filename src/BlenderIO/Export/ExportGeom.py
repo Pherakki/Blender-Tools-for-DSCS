@@ -63,7 +63,8 @@ def get_parent_info(obj):
 
 
 def extract_meshes(gi, armature_obj, errorlog,  bone_names, material_names):
-    bpy_meshes = natural_sort([obj for obj in armature_obj.children if obj.type == "MESH"], lambda x: x.name)
+    all_meshes = [obj for obj in armature_obj.children if obj.type == "MESH"]
+    bpy_meshes = natural_sort([obj for obj in all_meshes if obj.data.DSCS_MeshProperties.mesh_type == "MESH"], lambda x: x.name)
     
     # Get material names
     for bpy_mesh_obj in bpy_meshes:

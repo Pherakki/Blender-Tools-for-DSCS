@@ -51,3 +51,6 @@ def import_colliders(collection, model_name, ni, pi, errorlog):
             bpy_mesh_object.rotation_euler = quat.to_euler('XYZ')
             bpy_mesh_object.scale = [instance.scale, instance.scale, instance.scale]
 
+        # Set custom props
+        bpy_mesh.DSCS_MeshProperties.mesh_type == "COLLIDER"
+

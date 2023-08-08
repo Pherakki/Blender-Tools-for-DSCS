@@ -18,12 +18,14 @@ class OBJECT_PT_DSCSMeshPanel(bpy.types.Panel):
         layout = self.layout
         props = mat.DSCS_MeshProperties
         
-        layout.prop(props, "name_hash")
-        
-        layout.prop(props, "is_rendered")
-        layout.prop(props, "is_wireframe")
-        layout.prop(props, "flag_3")
-        layout.prop(props, "flag_4")
-        layout.prop(props, "flag_5")
-        layout.prop(props, "flag_6")
-        layout.prop(props, "flag_7")
+        layout.prop(props, "mesh_type")
+        if props.mesh_type == "MESH":
+            layout.prop(props, "name_hash")
+            
+            layout.prop(props, "is_rendered")
+            layout.prop(props, "is_wireframe")
+            layout.prop(props, "flag_3")
+            layout.prop(props, "flag_4")
+            layout.prop(props, "flag_5")
+            layout.prop(props, "flag_6")
+            layout.prop(props, "flag_7")

@@ -15,6 +15,11 @@ def flags_getter(self):
 
 
 class MeshProperties(bpy.types.PropertyGroup):
+    mesh_type: bpy.props.EnumProperty(items=[
+        ("MESH", "Mesh", "Mesh"),
+        ("COLLIDER", "Collider", "Collider")
+    ], name="Type")
+    
     name_hash: bpy.props.IntProperty(name="Name Hash", default=0)
 
     is_rendered:    bpy.props.BoolProperty(name="Rendered",  default=True)
