@@ -9,8 +9,10 @@ from. ..Core.FileFormats.Name.NameInterface import NameInterface
 from ...Core.FileFormats.Skel.SkelInterface import SkelInterface
 from ...Core.FileFormats.Geom.GeomInterface import GeomInterface
 from ...Core.FileFormats.Anim.AnimInterface import AnimInterface
+from ...Core.FileFormats.Phys.PhysInterface import PhysInterface
 from .ArmatureImport import import_skeleton
 from .CameraImport   import import_cameras
+from .ColliderImport import import_colliders
 from .LightImport    import import_lights
 from .MaterialImport import import_materials
 from .MeshImport import import_meshes
@@ -74,6 +76,12 @@ class ImportMediaVision(bpy.types.Operator):
 
         # Finalise
         bpy.ops.object.mode_set(mode="OBJECT")
+        
+        # Import physics
+        physics_path = os.path.join(directory, model_name + ".phys")
+        if os.path.exists(physics_path):
+            pi = PhysInterface.from_file(physics_path)
+            import_colliders(collection, model_name, ni, pi, errorlog)
 
 
     def execute(self, context):
