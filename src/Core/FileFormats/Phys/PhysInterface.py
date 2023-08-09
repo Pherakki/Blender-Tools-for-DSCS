@@ -111,7 +111,7 @@ class ColliderInterface:
     def __init__(self):
         self.instances = []
         
-    def add_instance(self, name, position, rotation, scale, unknown_vec3=None, unknown_float=None, unknown_flag=None):
+    def add_instance(self, name, position, rotation, scale, unknown_vec3=None, unknown_float=None, is_solid=None):
         instance = RagdollInterface()
         instance.name = name
         instance.position = position
@@ -121,8 +121,8 @@ class ColliderInterface:
             instance.unknown_vec3 = unknown_vec3
         if unknown_float is not None:
             instance.unknown_float = unknown_float
-        if unknown_flag is not None:
-            instance.unknown_flag = unknown_flag
+        if is_solid is not None:
+            instance.is_solid = is_solid
         self.instances.append(instance)
 
 
@@ -146,16 +146,16 @@ class BoxColliderInterface(ColliderInterface):
         self.half_width  = 0.
         self.half_height = 0.
         self.half_depth  = 0.
-        self.flag = 0
+        self.material_idx = 0
         
     @classmethod
     def from_binary(cls, binary):
         instance = cls()
         
-        instance.half_width  = binary.half_width
-        instance.half_height = binary.half_height
-        instance.half_depth  = binary.half_depth
-        instance.flag        = binary.flag
+        instance.half_width   = binary.half_width
+        instance.half_height  = binary.half_height
+        instance.half_depth   = binary.half_depth
+        instance.material_idx = binary.material_idx
         
         return instance
     
@@ -222,7 +222,7 @@ class RagdollInterface:
         self.scale      = None
         self.unknown_vec3 = (0.20000000298023224, 0.20000000298023224, 0.6000000238418579)
         self.unknown_float = 0
-        self.unknown_flag = 0
+        self.is_solid   = True
         
     @property
     def name(self):
@@ -242,7 +242,7 @@ class RagdollInterface:
         instance.scale         = quat_magnitude
         instance.unknown_vec3  = binary.unknown_vec3
         instance.unknown_float = binary.unknown_float
-        instance.unknown_flag  = binary.unknown_flag
+        instance.is_solid      = binary.is_solid
         
         return instance
     
@@ -253,7 +253,7 @@ class RagdollInterface:
         binary.scaled_quaternion = [e*self.scale for e in self.rotation]
         binary.unknown_vec3      = self.unknown_vec3
         binary.unknown_float     = self.unknown_float
-        binary.unknown_flag      = self.unknown_flag
+        binary.is_solid          = self.is_solid
         binary.collider_id       = collider_id
         
         return binary

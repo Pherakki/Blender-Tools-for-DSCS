@@ -14,9 +14,9 @@ class OBJECT_PT_DSCSMeshPanel(bpy.types.Panel):
         return context.mesh is not None
 
     def draw(self, context):
-        mat = context.mesh
+        mesh = context.mesh
         layout = self.layout
-        props = mat.DSCS_MeshProperties
+        props = mesh.DSCS_MeshProperties
         
         layout.prop(props, "mesh_type")
         if props.mesh_type == "MESH":
@@ -29,3 +29,5 @@ class OBJECT_PT_DSCSMeshPanel(bpy.types.Panel):
             layout.prop(props, "flag_5")
             layout.prop(props, "flag_6")
             layout.prop(props, "flag_7")
+        elif props.mesh_type == "COLLIDER":
+            mesh.DSCS_ColliderProperties.display(mesh.DSCS_ColliderProperties, layout)

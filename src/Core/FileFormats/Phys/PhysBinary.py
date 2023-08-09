@@ -82,11 +82,11 @@ class Ragdoll(Serializable):
         #  3) Covert back to quaternion without normalising
         self.position = None
         self.scaled_quaternion = None
-        self.unknown_vec3 = (0.20000000298023224, 0.20000000298023224, 0.6000000238418579)
+        self.unknown_vec3  = (0.20000000298023224, 0.20000000298023224, 0.6000000238418579)
         self.unknown_float = 0
-        self.collider_id = 0
-        self.unknown_flag = 0
-        self.ragdoll_name = None
+        self.collider_id   = 0
+        self.is_solid      = True
+        self.ragdoll_name  = None
 
     def read_write(self, rw):
         self.position          = rw.rw_float32s(self.position, 3)
@@ -94,8 +94,9 @@ class Ragdoll(Serializable):
         self.unknown_vec3      = rw.rw_float32s(self.unknown_vec3, 3)
         self.unknown_float     = rw.rw_float32(self.unknown_float)
         self.collider_id       = rw.rw_uint32(self.collider_id)
-        self.unknown_flag      = rw.rw_uint32(self.unknown_flag)
+        self.is_solid          = rw.rw_uint32(self.is_solid)
         self.ragdoll_name      = rw.rw_bytestring(self.ragdoll_name, 0x18)
+        
 
 
 class Collider(Serializable):
@@ -137,13 +138,13 @@ class BoxCollider(Serializable):
         self.half_width  = 0.
         self.half_height = 0.
         self.half_depth  = 0.
-        self.flag = 0
+        self.material_idx = 0
 
     def read_write(self, rw):
-        self.half_width  = rw.rw_float32(self.half_width)
-        self.half_height = rw.rw_float32(self.half_height)
-        self.half_depth  = rw.rw_float32(self.half_depth)
-        self.flag        = rw.rw_uint32(self.flag)
+        self.half_width   = rw.rw_float32(self.half_width)
+        self.half_height  = rw.rw_float32(self.half_height)
+        self.half_depth   = rw.rw_float32(self.half_depth)
+        self.material_idx = rw.rw_uint32(self.material_idx)
 
     def calc_offsets(self, start_offset):
         return start_offset + 0x10 + 0x08
