@@ -3,7 +3,7 @@ import bpy
 
 class OBJECT_PT_DSCSCameraPanel(bpy.types.Panel):
     bl_label       = "DSCS Camera"
-    bl_idname      = "OBJECT_PT_DSCSBonePanel"
+    bl_idname      = "OBJECT_PT_DSCSCameraPanel"
     bl_space_type  = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context     = "data"
