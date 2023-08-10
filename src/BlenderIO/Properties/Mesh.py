@@ -32,6 +32,9 @@ class MeshProperties(bpy.types.PropertyGroup):
     flag_7:    bpy.props.BoolProperty(name="Flag 7", default=False)
 
     flags:     bpy.props.IntProperty(name="Flags", get=flags_getter, options={'HIDDEN'})
+    
+    is_mesh:     bpy.props.BoolProperty(name="Is Mesh",     get=lambda self: self.mesh_type=="MESH")
+    is_collider: bpy.props.BoolProperty(name="Is Collider", get=lambda self: self.mesh_type=="COLLIDER")
 
     def max_vertex_weights(self):
         bpy_mesh = self.id_data

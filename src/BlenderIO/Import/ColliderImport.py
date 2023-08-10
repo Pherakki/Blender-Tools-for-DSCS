@@ -12,9 +12,11 @@ from ..IOHelpersLib.Meshes.Generation import make_cuboid
 
 
 @safe_active_object_switch
-def import_colliders(collection, model_name, ni, pi, errorlog):
+def import_colliders(collection, model_name, ni, pi, material_list, errorlog):
     p = Quaternion([1/(2**.5), 1/(2**.5), 0, 0]).to_matrix().to_4x4()
     pinv = p.inverted()
+    
+    material_lookup = {nm.encode('utf8'): mat for nm, mat in zip(ni.material_names, material_list)}
     
     for i, collider in enumerate(pi.colliders):
 
@@ -23,6 +25,10 @@ def import_colliders(collection, model_name, ni, pi, errorlog):
         bpy_mesh = bpy.data.meshes.new(name=collider_name)
         props    = bpy_mesh.DSCS_ColliderProperties
         bpy_mesh.DSCS_MeshProperties.mesh_type = "COLLIDER"
+        
+        props.complex_props.cached_verts   = []
+        props.complex_props.cached_indices = []
+        
         
         # Get geometry
         if collider.TYPE == 0:
@@ -45,9 +51,22 @@ def import_colliders(collection, model_name, ni, pi, errorlog):
         
         # Construct
         bpy_mesh.from_pydata(vertices, [], faces)
-        bpy_mesh.use_auto_smooth = True
-        for poly in bpy_mesh.polygons:
-            poly.use_smooth = True
+        # bpy_mesh.use_auto_smooth = True
+        # for poly in bpy_mesh.polygons:
+        #     poly.use_smooth = True
+            
+        # Materials
+        if collider.TYPE == 0:
+            material_name = pi.materials[collider.material_idx]
+            active_material = material_lookup[material_name]
+            bpy_mesh.materials.append(active_material)
+        elif collider.TYPE == 2:
+            for midx, material_name in enumerate(collider.materials):
+                active_material = material_lookup[material_name]
+                bpy_mesh.materials.append(active_material)
+            
+            for tridx, tri in enumerate(collider.triangles):
+                bpy_mesh.polygons[tridx].material_index  = tri.material
         
         
         # Create objects
@@ -70,7 +89,7 @@ def import_colliders(collection, model_name, ni, pi, errorlog):
             rprops.unknown_vector = instance.unknown_vec3
             rprops.unknown_float  = instance.unknown_float
             rprops.is_solid       = instance.is_solid
-            
+    
 
     #     # Assign materials
     #     active_material = material_list[mesh.material_id]
@@ -132,10 +151,10 @@ def import_colliders(collection, model_name, ni, pi, errorlog):
     #     if mesh.vertices[0][AttributeTypes.NORMAL] is not None:
     #         import_loop_normals(bpy_mesh, (l.normal for l in loop_data))
 
-    #     # Tell Blender what we've done
-    #     bpy_mesh.validate(verbose=True, clean_customdata=False)
-    #     bpy_mesh.update()
-    #     bpy_mesh.update()
+        # Tell Blender what we've done
+        bpy_mesh.validate(verbose=True, clean_customdata=False)
+        bpy_mesh.update()
+        bpy_mesh.update()
 
     #     # Convert meshes Y up -> Z up
     #     bpy_mesh.transform(Quaternion([1/(2**.5), 1/(2**.5), 0, 0]).to_matrix().to_4x4())

@@ -4,7 +4,7 @@ import bpy
 
 class RagdollProperties(bpy.types.PropertyGroup):
     unknown_vector: bpy.props.FloatVectorProperty(name="Unknown Vector", size=3, default=[0.20000000298023224, 0.20000000298023224, 0.6000000238418579])
-    unknown_float: bpy.props.FloatProperty("Unknown Float", default=0.)
+    unknown_float: bpy.props.FloatProperty("Unknown Float", name="Unknown Float", default=0.)
     is_solid: bpy.props.BoolProperty(name="Is Solid", description="True if the collider prevents other colliders moving through it. Disable this for colliders that are used to trigger events", default=True)
 
     @staticmethod
@@ -31,10 +31,19 @@ class BoxColliderProperties(bpy.types.PropertyGroup):
     
 
 class ComplexColliderProperties(bpy.types.PropertyGroup):
-    def __init__(self):
-        super().__init__()
+    @property
+    def cached_verts(self):
+        return self["cached_verts"]
+    @cached_verts.setter
+    def cached_verts(self, value):
+        self["cached_verts"] = value
         
-        self.cached_verts = [0, 1, 2, 3]
+    @property
+    def cached_indices(self):
+        return self["cached_indices"]
+    @cached_indices.setter
+    def cached_indices(self, value):
+        self["cached_indices"] = value
         
     @staticmethod
     def display(self, layout):

@@ -81,7 +81,7 @@ class ImportMediaVision(bpy.types.Operator):
         physics_path = os.path.join(directory, model_name + ".phys")
         if os.path.exists(physics_path):
             pi = PhysInterface.from_file(physics_path)
-            import_colliders(collection, model_name, ni, pi, errorlog)
+            import_colliders(collection, model_name, ni, pi, material_list, errorlog)
 
 
     def execute(self, context):
