@@ -124,6 +124,9 @@ def rebuild_advanced_tree(bpy_material, used_images):
     
     # Wipe tree
     nodes.clear()
+    # bpy_material.use_backface_culling = False
+    # bpy_material.blend_method = "OPAQUE"
+    bpy_material.show_transparent_back = True
     
     # Build contributions
     shvar = ShaderVariables()
