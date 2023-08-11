@@ -67,7 +67,9 @@ def import_colliders(collection, model_name, ni, pi, material_list, errorlog):
             
             for tridx, tri in enumerate(collider.triangles):
                 bpy_mesh.polygons[tridx].material_index  = tri.material
-        
+                
+            # Convert meshes Y up -> Z up
+            bpy_mesh.transform(Quaternion([1/(2**.5), 1/(2**.5), 0, 0]).to_matrix().to_4x4())
         
         # Create objects
         for instance in collider.instances:
