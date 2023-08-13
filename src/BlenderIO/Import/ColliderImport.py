@@ -36,9 +36,10 @@ def import_colliders(collection, bpy_armature, model_name, ni, pi, material_list
                                              2*collider.half_depth,
                                              [1, 1, 1])
             
-            props.width  = 2*collider.half_width
-            props.height = 2*collider.half_height
-            props.depth  = 2*collider.half_depth
+            # Rotate Y up -> Z up
+            props.box_props["height"]  = 2*collider.half_width
+            props.box_props["width"] = 2*collider.half_height
+            props.box_props["depth"]  = 2*collider.half_depth
             props.collider_type = "BOX"
         elif collider.TYPE == 2:
             vertices = collider.vertices

@@ -1,6 +1,6 @@
 import struct
 import bpy
-
+from ..IOHelpersLib.Meshes.Generation import make_cuboid
 
 class RagdollProperties(bpy.types.PropertyGroup):
     unknown_vector: bpy.props.FloatVectorProperty(name="Unknown Vector", size=3, default=[0.20000000298023224, 0.20000000298023224, 0.6000000238418579])
@@ -13,10 +13,37 @@ class RagdollProperties(bpy.types.PropertyGroup):
         layout.prop(self, "unknown_float")
         layout.prop(self, "is_solid")
 
+def height_getter(self):
+    if "height" not in self:
+        self["height"] = 1.
+    return self["height"]
+
+def height_setter(self, value):
+    self["height"] = value
+    self.rebuild_mesh()
+
+def width_getter(self):
+    if "width" not in self:
+        self["width"] = 1.
+    return self["width"]
+
+def width_setter(self, value):
+    self["width"] = value
+    self.rebuild_mesh()
+
+def depth_getter(self):
+    if "depth" not in self:
+        self["depth"] = 1.
+    return self["depth"]
+
+def depth_setter(self, value):
+    self["depth"] = value
+    self.rebuild_mesh()
+
 class BoxColliderProperties(bpy.types.PropertyGroup):
-    height: bpy.props.FloatProperty(name="Height", default=1.)
-    width:  bpy.props.FloatProperty(name="Width",  default=1.)
-    depth:  bpy.props.FloatProperty(name="Depth",  default=1.)
+    height: bpy.props.FloatProperty(name="Height", default=1., get=height_getter, set=height_setter)
+    width:  bpy.props.FloatProperty(name="Width",  default=1., get=width_getter,  set=width_setter)
+    depth:  bpy.props.FloatProperty(name="Depth",  default=1., get=depth_getter,  set=depth_setter)
     cached_material: bpy.props.PointerProperty(type=bpy.types.Material, name="Cached Material",
         description="HIDDEN PROPERTY. This is used to reconstruct the mesh when swapping collider types."\
             "DO NOT USE FOR EXPORT. This property will only be updated when swapping collider types, and"\
@@ -29,6 +56,23 @@ class BoxColliderProperties(bpy.types.PropertyGroup):
         layout.prop(self, "width")
         layout.prop(self, "depth")
     
+
+    
+    def rebuild_mesh(self):
+        bpy_mesh = self.id_data
+        
+        # base_scale = min(bpy_mesh.scale)
+        # self["height"] *= bpy_mesh.scale[0]/base_scale
+        # self["width"]  *= bpy_mesh.scale[1]/base_scale
+        # self["depth"]  *= bpy_mesh.scale[2]/base_scale
+        # bpy_mesh.scale = [base_scale, base_scale, base_scale]
+        
+        bpy_mesh.clear_geometry()
+        bpy_mesh.from_pydata(*make_cuboid(self["height"], self["width"], self["depth"], [1, 1, 1]))
+        bpy_mesh.use_auto_smooth = False
+        for poly in bpy_mesh.polygons:
+            poly.use_smooth = False
+
 
 class ComplexColliderProperties(bpy.types.PropertyGroup):
     @property
