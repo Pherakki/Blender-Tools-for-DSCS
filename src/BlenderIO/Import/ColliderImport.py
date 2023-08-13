@@ -12,7 +12,7 @@ from ..IOHelpersLib.Meshes.Generation import make_cuboid
 
 
 @safe_active_object_switch
-def import_colliders(collection, model_name, ni, pi, material_list, errorlog):
+def import_colliders(collection, bpy_armature, model_name, ni, pi, material_list, errorlog):
     p = Quaternion([1/(2**.5), 1/(2**.5), 0, 0]).to_matrix().to_4x4()
     pinv = p.inverted()
     
@@ -28,7 +28,6 @@ def import_colliders(collection, model_name, ni, pi, material_list, errorlog):
         
         props.complex_props.cached_verts   = []
         props.complex_props.cached_indices = []
-        
         
         # Get geometry
         if collider.TYPE == 0:
@@ -91,67 +90,22 @@ def import_colliders(collection, model_name, ni, pi, material_list, errorlog):
             rprops.unknown_vector = instance.unknown_vec3
             rprops.unknown_float  = instance.unknown_float
             rprops.is_solid       = instance.is_solid
-    
 
-    #     # Assign materials
-    #     active_material = material_list[mesh.material_id]
-    #     bpy.data.objects[meshobj_name].active_material = active_material
-        
-    #     matname = active_material.name
-    #     if matname not in meshes_using_material:
-    #         meshes_using_material[matname] = VertexAttributeTracker()
-    #     meshes_using_material[matname].log_mesh(bpy_mesh_object, mesh)
-        
-    #     set_active_obj(bpy_mesh_object)
-        
-    #     #################
-    #     # ADD LOOP DATA #
-    #     #################
-    #     n_loops = len(bpy_mesh.loops)
-    #     map_of_loops_to_model_verts = mesh_info.map_of_loops_to_model_verts
-    #     loop_data = [mesh.vertices[map_of_loops_to_model_verts[loop_idx]] for loop_idx in range(n_loops)]
 
-    #     # Assign UVs
-    #     for uv_idx, uv_type in enumerate([AttributeTypes.UV1, AttributeTypes.UV2, AttributeTypes.UV3]):
-    #         if mesh.vertices[0][uv_type] is not None:
-    #             create_uv_map(bpy_mesh, f"UV{uv_idx + 1}", ((l[uv_type][0], (l[uv_type][1]*-1) + 1) for l in loop_data))
+            if collider.TYPE == 2:    
+                # Rigging
+                vertex_groups = make_collider_vertex_groups(collider.triangles)
+                for bone_idx, vg in vertex_groups.items():
+                    vertex_group = bpy_mesh_object.vertex_groups.new(name=collider.bones[bone_idx].decode('utf8'))
+                    for vert_idx, vert_weight in vg:
+                        vertex_group.add([vert_idx], vert_weight, 'REPLACE')
+                        
+                # Set armature constraint
+                modifier = bpy_mesh_object.modifiers.new(name="Armature", type="ARMATURE")
+                modifier.object = bpy_armature
+                        
+            instance.parent = bpy_armature
 
-    #     # Assign vertex colours
-    #     if mesh.vertices[0][AttributeTypes.COLOR] is not None:
-    #         if hasattr(bpy_mesh, "color_attributes"):
-    #             colour_map = bpy_mesh.color_attributes.new(name="Map", domain="CORNER", type="FLOAT_COLOR")
-    #             for loop_idx, loop in enumerate(bpy_mesh.loops):
-    #                 colour_map.data[loop_idx].color = loop_data[loop_idx].color
-    #         else:    
-    #             colour_map = bpy_mesh.vertex_colors.new(name="Map", do_init=True)
-    #             for loop_idx, loop in enumerate(bpy_mesh.loops):
-    #                 colour_map.data[loop_idx].color = int(loop_data[loop_idx].color*255)
-
-    #     ###########
-    #     # RIGGING #
-    #     ###########
-    #     vertex_groups = make_vertex_groups(mesh_info.vertices)
-    #     for bone_idx, vg in vertex_groups.items():
-    #         vertex_group = bpy_mesh_object.vertex_groups.new(name=ni.bone_names[bone_idx])
-    #         for vert_idx, vert_weight in vg:
-    #             vertex_group.add([vert_idx], vert_weight, 'REPLACE')
-
-    #     #################
-    #     # ADD MISC DATA #
-    #     #################
-    #     # Load the hashed mesh name
-    #     signed_hash = struct.unpack('i', struct.pack('I', mesh.name_hash))[0]
-    #     bpy_mesh_object.data.DSCS_MeshProperties.name_hash = signed_hash
-
-    #     # Set armature constraint
-    #     bpy_mesh_object.parent = armature
-    #     modifier = bpy_mesh_object.modifiers.new(name="Armature", type="ARMATURE")
-    #     modifier.object = armature
-
-    #     # Assign normals
-    #     # Do this LAST because it can remove some loops
-    #     if mesh.vertices[0][AttributeTypes.NORMAL] is not None:
-    #         import_loop_normals(bpy_mesh, (l.normal for l in loop_data))
 
         # Tell Blender what we've done
         bpy_mesh.validate(verbose=True, clean_customdata=False)
@@ -166,13 +120,13 @@ def import_colliders(collection, model_name, ni, pi, material_list, errorlog):
     # set_material_vertex_attributes(meshes_using_material, errorlog)
 
 
-def make_vertex_groups(blender_vert_infos):
+def make_collider_vertex_groups(triangles):
     groups = {}
-    for vert_idx, vert in enumerate(blender_vert_infos):
-        for bone_idx, weight in zip(vert.indices, vert.weights):
-            if weight == 0.:
-                continue
-            elif bone_idx not in groups:
-                groups[bone_idx] = []
-            groups[bone_idx].append((vert_idx, weight))
+    for tri in triangles:
+        bone_idx = tri.bone
+        if bone_idx not in groups:
+            groups[bone_idx] = []
+        groups[bone_idx].append((tri.v1, 1))
+        groups[bone_idx].append((tri.v2, 1))
+        groups[bone_idx].append((tri.v3, 1))
     return groups
