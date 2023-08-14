@@ -1,5 +1,6 @@
 import bpy
 
+from ..IOHelpersLib.Objects import find_bpy_objects
 from ..IOHelpersLib.UI import UIListBase
 
 
