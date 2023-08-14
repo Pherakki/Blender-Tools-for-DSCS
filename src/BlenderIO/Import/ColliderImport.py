@@ -105,7 +105,7 @@ def import_colliders(collection, bpy_armature, model_name, ni, pi, material_list
                 modifier = bpy_mesh_object.modifiers.new(name="Armature", type="ARMATURE")
                 modifier.object = bpy_armature
                         
-            instance.parent = bpy_armature
+            bpy_mesh_object.parent = bpy_armature
 
 
         # Tell Blender what we've done
