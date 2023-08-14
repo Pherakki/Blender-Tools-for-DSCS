@@ -22,6 +22,16 @@ class ModelProperties(bpy.types.PropertyGroup):
     def get_meshes(self):
         return [obj for obj in self.id_data.children if obj.type == "MESH"]
 
+    def get_colliders(self):
+        bpy_meshes = [obj for obj in self.id_data.children if obj.type == "MESH"]
+        return [obj for obj in bpy_meshes if obj.data.DSCS_MeshProperties.mesh_type == "COLLIDER"]
+    
+    def get_solid_colliders(self):
+        return [obj for obj in self.get_colliders() if obj.data.DSCS_ColliderProperties.is_solid == True]
+    
+    def get_nonsolid_colliders(self):
+        return [obj for obj in self.get_colliders() if obj.data.DSCS_ColliderProperties.is_solid == False]
+    
     def get_cameras(self):
         return find_bpy_objects(bpy.data.objects, self.id_data, [lambda x: x.type == "CAMERA"])
     
