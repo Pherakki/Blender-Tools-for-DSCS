@@ -4,7 +4,6 @@ from ..IOHelpersLib.Objects import find_bpy_objects
 from ..IOHelpersLib.UI import UIListBase
 
 
-
 class DSCSSkelFloatChannel(bpy.types.PropertyGroup):
     obj_name: bpy.props.StringProperty(name="Name")
     obj_hash: bpy.props.IntProperty(name="Hash", subtype="UNSIGNED")
@@ -20,18 +19,27 @@ class ModelProperties(bpy.types.PropertyGroup):
     new_cam_parent_bone: bpy.props.StringProperty(name="Assign to")
     new_lgt_parent_bone: bpy.props.StringProperty(name="Assign to")
     
-    def get_meshes(self):
-        return [obj for obj in self.id_data.children if obj.type == "MESH"]
+    nonrendered_mesh_toggle_is_show: bpy.props.BoolProperty(default=True)
+    solidcollider_toggle_is_show:    bpy.props.BoolProperty(default=False)
+    nonsolidcollider_toggle_is_show: bpy.props.BoolProperty(default=False)
+    
+    def get_meshes(self, bpy_object):
+        return [obj for obj in bpy_object.children if obj.type == "MESH"]
 
-    def get_colliders(self):
-        bpy_meshes = [obj for obj in self.id_data.children if obj.type == "MESH"]
+    def get_nonrendered_meshes(self, bpy_object):
+        bpy_meshes = self.get_meshes(bpy_object)
+        bpy_meshes = [obj for obj in bpy_meshes if obj.data.DSCS_MeshProperties.mesh_type == "MESH" and obj.active_material is not None]
+        return [obj for obj in bpy_meshes if obj.active_material.DSCS_MaterialProperties.shader_name == "00000000_00000000_00000000_00000000"]
+    
+    def get_colliders(self, bpy_object):
+        bpy_meshes = [obj for obj in bpy_object.children if obj.type == "MESH"]
         return [obj for obj in bpy_meshes if obj.data.DSCS_MeshProperties.mesh_type == "COLLIDER"]
     
-    def get_solid_colliders(self):
-        return [obj for obj in self.get_colliders() if obj.data.DSCS_ColliderProperties.is_solid == True]
+    def get_solid_colliders(self, bpy_object):
+        return [obj for obj in self.get_colliders(bpy_object) if obj.data.DSCS_ColliderProperties.ragdoll_props.is_solid == True]
     
-    def get_nonsolid_colliders(self):
-        return [obj for obj in self.get_colliders() if obj.data.DSCS_ColliderProperties.is_solid == False]
+    def get_nonsolid_colliders(self, bpy_object):
+        return [obj for obj in self.get_colliders(bpy_object) if obj.data.DSCS_ColliderProperties.ragdoll_props.is_solid == False]
     
     def get_cameras(self):
         return find_bpy_objects(bpy.data.objects, self.id_data, [lambda x: x.type == "CAMERA"])

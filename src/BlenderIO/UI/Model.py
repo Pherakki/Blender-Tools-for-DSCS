@@ -93,6 +93,65 @@ class OBJECT_OT_AddLight(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OBJECT_OT_ToggleNonRenderedMeshes(bpy.types.Operator):
+    bl_label = "Toggle Non-Rendered Colliders"
+    bl_idname = "import_dscs.OBJECT_OT_ToggleNonRenderedMeshes".lower()
+    
+    def execute(self, context):
+        bpy_armature = context.armature
+        props = bpy_armature.DSCS_ModelProperties
+        
+        nonrendered_meshes = props.get_nonrendered_meshes(context.object)
+        if props.nonrendered_mesh_toggle_is_show:
+            for m in nonrendered_meshes:
+                m.hide_set(False)
+        else:
+            for m in nonrendered_meshes:
+                m.hide_set(True)
+        props.nonrendered_mesh_toggle_is_show = not props.nonrendered_mesh_toggle_is_show
+        
+        return {'FINISHED'}
+
+
+class OBJECT_OT_ToggleSolidColliders(bpy.types.Operator):
+    bl_label = "Toggle Solid Colliders"
+    bl_idname = "import_dscs.OBJECT_OT_ToggleSolidColliders".lower()
+    
+    def execute(self, context):
+        bpy_armature = context.armature
+        props = bpy_armature.DSCS_ModelProperties
+        
+        colliders = props.get_solid_colliders(context.object)
+        if props.solidcollider_toggle_is_show:
+            for m in colliders:
+                m.hide_set(False)
+        else:
+            for m in colliders:
+                m.hide_set(True)
+        props.solidcollider_toggle_is_show = not props.solidcollider_toggle_is_show
+        
+        return {'FINISHED'}
+
+class OBJECT_OT_ToggleNonSolidColliders(bpy.types.Operator):
+    bl_label = "Toggle Non-Solid Colliders"
+    bl_idname = "import_dscs.OBJECT_OT_ToggleNonSolidColliders".lower()
+    
+    def execute(self, context):
+        bpy_armature = context.armature
+        props = bpy_armature.DSCS_ModelProperties
+        
+        colliders = props.get_nonsolid_colliders(context.object)
+        if props.nonsolidcollider_toggle_is_show:
+            for m in colliders:
+                m.hide_set(False)
+        else:
+            for m in colliders:
+                m.hide_set(True)
+        props.nonsolidcollider_toggle_is_show = not props.nonsolidcollider_toggle_is_show
+        
+        return {'FINISHED'}
+
+
 class OBJECT_PT_DSCSModelPanel(_base_class):
     bl_label       = "DSCS Model"
     bl_idname      = "OBJECT_PT_DSCSModelPanel"
@@ -121,6 +180,18 @@ class OBJECT_PT_DSCSModelPanel(_base_class):
         row.operator(OBJECT_OT_AddLight.bl_idname)
         row.prop_search(props, "new_lgt_parent_bone", bpy_armature, "bones")
         
+        row = layout.row()
+        op_verb = "Show" if props.nonrendered_mesh_toggle_is_show else "Hide"
+        row.operator(OBJECT_OT_ToggleNonRenderedMeshes.bl_idname, text=f"{op_verb} Non-Rendered Meshes")
+        
+        row = layout.row()
+        op_verb = "Show" if props.solidcollider_toggle_is_show else "Hide"
+        row.operator(OBJECT_OT_ToggleSolidColliders.bl_idname, text=f"{op_verb} Solid Colliders")
+        
+        row = layout.row()
+        op_verb = "Show" if props.nonsolidcollider_toggle_is_show else "Hide"
+        row.operator(OBJECT_OT_ToggleNonSolidColliders.bl_idname, text=f"{op_verb} Non-Solid Colliders")
+        
         _base_class.draw_collection(self, context)
 
     @classmethod
@@ -128,6 +199,9 @@ class OBJECT_PT_DSCSModelPanel(_base_class):
         bpy.utils.register_class(OBJECT_UL_DSCSFloatChannelUIList)
         bpy.utils.register_class(OBJECT_OT_AddCamera)
         bpy.utils.register_class(OBJECT_OT_AddLight)
+        bpy.utils.register_class(OBJECT_OT_ToggleNonRenderedMeshes)
+        bpy.utils.register_class(OBJECT_OT_ToggleSolidColliders)
+        bpy.utils.register_class(OBJECT_OT_ToggleNonSolidColliders)
         _base_class.register()
         
     @classmethod
@@ -135,4 +209,7 @@ class OBJECT_PT_DSCSModelPanel(_base_class):
         bpy.utils.unregister_class(OBJECT_UL_DSCSFloatChannelUIList)
         bpy.utils.unregister_class(OBJECT_OT_AddCamera)
         bpy.utils.unregister_class(OBJECT_OT_AddLight)
+        bpy.utils.unregister_class(OBJECT_OT_ToggleNonRenderedMeshes)
+        bpy.utils.unregister_class(OBJECT_OT_ToggleSolidColliders)
+        bpy.utils.unregister_class(OBJECT_OT_ToggleNonSolidColliders)
         _base_class.unregister()
