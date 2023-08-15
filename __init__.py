@@ -46,7 +46,6 @@ def init_bpy():
     from .src.BlenderIO.Properties.Mesh     import MeshProperties
     from .src.BlenderIO.Properties.Model    import ModelProperties, DSCSSkelFloatChannel
     from .src.BlenderIO.Properties.Scene    import SceneProperties
-    from .src.BlenderIO.Properties.Util     import UtilProperties
     from .src.BlenderIO.UI.Bone  import OBJECT_PT_DSCSBonePanel
     from .src.BlenderIO.UI.Camera import OBJECT_PT_DSCSCameraPanel
     from .src.BlenderIO.UI.Light import OBJECT_PT_DSCSLightPanel
@@ -105,7 +104,6 @@ def init_bpy():
         (bpy.types.Material, "DSCS_MaterialProperties",  MaterialProperties ),
         (bpy.types.Mesh,     "DSCS_MeshProperties",      MeshProperties     ),
         (bpy.types.Scene,    "DSCS_SceneProperties",     SceneProperties    ),
-        (bpy.types.Object,   "DSCS_UtilProperties",      UtilProperties     ),
     )
     
     LIST_ITEMS = (
