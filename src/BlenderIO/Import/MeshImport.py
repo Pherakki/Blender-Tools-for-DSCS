@@ -82,7 +82,8 @@ def import_meshes(collection, model_name, ni, gi, armature, material_list, error
         # Assign materials
         active_material = material_list[mesh.material_id]
         bpy.data.objects[meshobj_name].active_material = active_material
-        
+        if active_material.DSCS_MaterialProperties.shader_name == "00000000_00000000_00000000_00000000":
+            bpy_mesh_object.hide_set(True)
         matname = active_material.name
         if matname not in meshes_using_material:
             meshes_using_material[matname] = VertexAttributeTracker()
