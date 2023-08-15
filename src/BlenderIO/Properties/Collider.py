@@ -59,7 +59,7 @@ class BoxColliderProperties(bpy.types.PropertyGroup):
 
     
     def rebuild_mesh(self):
-        bpy_mesh = self.id_data
+        bpy_mesh = self.id_data.data
         
         # base_scale = min(bpy_mesh.scale)
         # self["height"] *= bpy_mesh.scale[0]/base_scale

@@ -15,6 +15,7 @@ class OBJECT_PT_DSCSMeshPanel(bpy.types.Panel):
 
     def draw(self, context):
         mesh = context.mesh
+        obj  = context.object
         layout = self.layout
         props = mesh.DSCS_MeshProperties
         
@@ -30,4 +31,4 @@ class OBJECT_PT_DSCSMeshPanel(bpy.types.Panel):
             layout.prop(props, "flag_6")
             layout.prop(props, "flag_7")
         elif props.mesh_type == "COLLIDER":
-            mesh.DSCS_ColliderProperties.display(mesh.DSCS_ColliderProperties, layout)
+            obj.DSCS_ColliderProperties.display(obj.DSCS_ColliderProperties, layout)

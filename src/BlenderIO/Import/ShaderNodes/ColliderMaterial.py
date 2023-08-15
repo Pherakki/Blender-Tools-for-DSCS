@@ -9,12 +9,12 @@ def mk_util_attribute_node(nodes, attr_name, name, location, parent):
 def mk_mesh_attribute_node(nodes, attr_name, name, location, parent):
     if len(attr_name) > 23:
          raise ValueError(f"Attribute name too long: {attr_name}")
-    return mk_attribute_node(nodes, "OBJECT", f"DSCS_MeshProperties.{attr_name}", name, location, parent)
+    return mk_attribute_node(nodes, "OBJECT", f"data.DSCS_MeshProperties.{attr_name}", name, location, parent)
 
 def mk_collider_attribute_node(nodes, attr_name, name, location, parent):
     # if len(attr_name) > 18:
     #      raise ValueError(f"Attribute name too long: {attr_name}")
-    return mk_attribute_node(nodes, "OBJECT", f"data.DSCS_ColliderProperties.{attr_name}", name, location, parent)
+    return mk_attribute_node(nodes, "OBJECT", f"DSCS_ColliderProperties.{attr_name}", name, location, parent)
 
 def UtilFloatAttribute(nodes, attr_name, name, location, parent):
     return mk_util_attribute_node(nodes, attr_name, name, location, parent).outputs["Fac"]
@@ -53,9 +53,7 @@ def rebuild_collider_tree(bpy_material):
     outlined_color = lerp_color(nodes, connect, wireframe.outputs[0], collider_color, [0, 0, 0, 1], "Outlined Color", (start_x + 900, -300), None)
     mesh_color     = lerp_color(nodes, connect, is_collider, [0.8, 0.8, 0.8, 1.0], outlined_color, "Mesh Color", (start_x + 1200, 0), None)
     
-    mesh_alpha     = lerp_scalar(nodes, connect, is_collider, 0.0, 0.8, "Mesh Alpha", (start_x + 600, -900), None)
-    is_editmode    = UtilFloatAttribute(nodes, "is_editmode", "Is Editmode?", (start_x + 600, -1200), None)
-    full_alpha     = lerp_scalar(nodes, connect, is_editmode, mesh_alpha, 1.0, "Full Alpha", (start_x + 900, -900), None)
+    mesh_alpha     = lerp_scalar(nodes, connect, is_collider, 1.0, 0.8, "Mesh Alpha", (start_x + 600, -900), None)
     
     
     bsdf = nodes.new('ShaderNodeBsdfDiffuse')
@@ -67,7 +65,7 @@ def rebuild_collider_tree(bpy_material):
     
     mix_shader = nodes.new("ShaderNodeMixShader")
     mix_shader.location = (300, 0)
-    connect(full_alpha, mix_shader.inputs["Fac"])
+    connect(mesh_alpha, mix_shader.inputs["Fac"])
     connect(trans.outputs[0], mix_shader.inputs[1])
     connect(bsdf.outputs[0], mix_shader.inputs[2])
     

@@ -100,7 +100,7 @@ def init_bpy():
         (bpy.types.Action,   "DSCS_AnimationProperties", AnimationProperties),
         (bpy.types.Bone,     "DSCS_BoneProperties",      BoneProperties     ),
         (bpy.types.Camera,   "DSCS_CameraProperties",    CameraProperties   ),
-        (bpy.types.Mesh,     "DSCS_ColliderProperties",  ColliderProperties ),
+        (bpy.types.Object,   "DSCS_ColliderProperties",  ColliderProperties ),
         (bpy.types.Light,    "DSCS_LightProperties",     LightProperties    ),
         (bpy.types.Material, "DSCS_MaterialProperties",  MaterialProperties ),
         (bpy.types.Mesh,     "DSCS_MeshProperties",      MeshProperties     ),
