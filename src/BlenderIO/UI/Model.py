@@ -102,6 +102,7 @@ class OBJECT_OT_ToggleNonRenderedMeshes(bpy.types.Operator):
         props = bpy_armature.DSCS_ModelProperties
         
         nonrendered_meshes = props.get_nonrendered_meshes(context.object)
+        props.nonrendered_mesh_toggle_is_show = not props.are_all_visible(nonrendered_meshes)
         if props.nonrendered_mesh_toggle_is_show:
             for m in nonrendered_meshes:
                 m.hide_set(False)
@@ -122,6 +123,7 @@ class OBJECT_OT_ToggleSolidColliders(bpy.types.Operator):
         props = bpy_armature.DSCS_ModelProperties
         
         colliders = props.get_solid_colliders(context.object)
+        props.solidcollider_toggle_is_show = not props.are_all_visible(colliders)
         if props.solidcollider_toggle_is_show:
             for m in colliders:
                 m.hide_set(False)
@@ -140,7 +142,9 @@ class OBJECT_OT_ToggleNonSolidColliders(bpy.types.Operator):
         bpy_armature = context.armature
         props = bpy_armature.DSCS_ModelProperties
         
+        
         colliders = props.get_nonsolid_colliders(context.object)
+        props.nonsolidcollider_toggle_is_show = not props.are_all_visible(colliders)
         if props.nonsolidcollider_toggle_is_show:
             for m in colliders:
                 m.hide_set(False)
@@ -181,15 +185,18 @@ class OBJECT_PT_DSCSModelPanel(_base_class):
         row.prop_search(props, "new_lgt_parent_bone", bpy_armature, "bones")
         
         row = layout.row()
-        op_verb = "Show" if props.nonrendered_mesh_toggle_is_show else "Hide"
+        do_show = not props.all_nonrendered_meshes_visible(context.object)
+        op_verb = "Show" if do_show else "Hide"
         row.operator(OBJECT_OT_ToggleNonRenderedMeshes.bl_idname, text=f"{op_verb} Non-Rendered Meshes")
         
         row = layout.row()
-        op_verb = "Show" if props.solidcollider_toggle_is_show else "Hide"
+        do_show = not props.all_solid_colliders_visible(context.object)
+        op_verb = "Show" if do_show else "Hide"
         row.operator(OBJECT_OT_ToggleSolidColliders.bl_idname, text=f"{op_verb} Solid Colliders")
         
         row = layout.row()
-        op_verb = "Show" if props.nonsolidcollider_toggle_is_show else "Hide"
+        do_show = not props.all_nonsolid_colliders_visible(context.object)
+        op_verb = "Show" if do_show else "Hide"
         row.operator(OBJECT_OT_ToggleNonSolidColliders.bl_idname, text=f"{op_verb} Non-Solid Colliders")
         
         _base_class.draw_collection(self, context)
