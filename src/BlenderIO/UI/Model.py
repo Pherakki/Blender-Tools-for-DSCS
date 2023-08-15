@@ -168,6 +168,21 @@ class OBJECT_PT_DSCSModelPanel(_base_class):
     def poll(self, context):
         return context.armature is not None
 
+    def handle_visiblity_toggle(self, layout, context, props, getter, op, message):
+        row = layout.row()
+        objs = getter(context.object)
+        if len(objs):
+            do_show = not props.are_all_visible(objs)
+            op_verb = "Show" if do_show else "Hide"
+            text = f"{op_verb} {message}"
+            enabled = True
+        else:
+            text = f"Model has no {message}"
+            enabled = False
+        row.operator(op.bl_idname, text=text)
+        row.enabled = enabled
+
+
     def draw(self, context):
         layout = self.layout
         bpy_armature = context.armature
@@ -184,21 +199,10 @@ class OBJECT_PT_DSCSModelPanel(_base_class):
         row.operator(OBJECT_OT_AddLight.bl_idname)
         row.prop_search(props, "new_lgt_parent_bone", bpy_armature, "bones")
         
-        row = layout.row()
-        do_show = not props.all_nonrendered_meshes_visible(context.object)
-        op_verb = "Show" if do_show else "Hide"
-        row.operator(OBJECT_OT_ToggleNonRenderedMeshes.bl_idname, text=f"{op_verb} Non-Rendered Meshes")
-        
-        row = layout.row()
-        do_show = not props.all_solid_colliders_visible(context.object)
-        op_verb = "Show" if do_show else "Hide"
-        row.operator(OBJECT_OT_ToggleSolidColliders.bl_idname, text=f"{op_verb} Solid Colliders")
-        
-        row = layout.row()
-        do_show = not props.all_nonsolid_colliders_visible(context.object)
-        op_verb = "Show" if do_show else "Hide"
-        row.operator(OBJECT_OT_ToggleNonSolidColliders.bl_idname, text=f"{op_verb} Non-Solid Colliders")
-        
+        self.handle_visiblity_toggle(layout, context, props, props.get_nonrendered_meshes, OBJECT_OT_ToggleNonRenderedMeshes, "Non-Rendered Meshes")
+        self.handle_visiblity_toggle(layout, context, props, props.get_solid_colliders,    OBJECT_OT_ToggleSolidColliders,    "Solid Colliders")
+        self.handle_visiblity_toggle(layout, context, props, props.get_nonsolid_colliders, OBJECT_OT_ToggleNonSolidColliders, "Non-Solid Colliders")
+     
         _base_class.draw_collection(self, context)
 
     @classmethod
