@@ -13,12 +13,17 @@ def flags_getter(self):
     v |= self.flag_7       << 7
     return v
 
+def force_ui_redraw(self, context):
+    for region in context.area.regions:
+        if region.type == "UI":
+            region.tag_redraw()
+    return None
 
 class MeshProperties(bpy.types.PropertyGroup):
     mesh_type: bpy.props.EnumProperty(items=[
         ("MESH", "Mesh", "Mesh"),
         ("COLLIDER", "Collider", "Collider")
-    ], name="Type")
+    ], name="Type", update=force_ui_redraw)
     
     name_hash: bpy.props.IntProperty(name="Name Hash", default=0)
 

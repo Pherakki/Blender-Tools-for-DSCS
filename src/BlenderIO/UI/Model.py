@@ -27,6 +27,7 @@ _base_class = UIListBase(
 class OBJECT_OT_AddCamera(bpy.types.Operator):
     bl_label  = "Add Camera"
     bl_idname =  "import_dscs.OBJECT_OT_AddCamera".lower()
+    bl_options = {"UNDO"}
     
     def execute(self, context):
         bpy_armature_obj = context.active_object
@@ -61,6 +62,7 @@ class OBJECT_OT_AddCamera(bpy.types.Operator):
 class OBJECT_OT_AddLight(bpy.types.Operator):
     bl_label  = "Add Light"
     bl_idname = "import_dscs.OBJECT_OT_AddLight".lower()
+    bl_options = {"UNDO"}
     
     def execute(self, context):
         bpy_armature_obj = context.active_object
@@ -96,6 +98,7 @@ class OBJECT_OT_AddLight(bpy.types.Operator):
 class OBJECT_OT_ToggleNonRenderedMeshes(bpy.types.Operator):
     bl_label = "Toggle Non-Rendered Colliders"
     bl_idname = "import_dscs.OBJECT_OT_ToggleNonRenderedMeshes".lower()
+    bl_options = {"UNDO"}
     
     def execute(self, context):
         bpy_armature = context.armature
@@ -117,6 +120,7 @@ class OBJECT_OT_ToggleNonRenderedMeshes(bpy.types.Operator):
 class OBJECT_OT_ToggleSolidColliders(bpy.types.Operator):
     bl_label = "Toggle Solid Colliders"
     bl_idname = "import_dscs.OBJECT_OT_ToggleSolidColliders".lower()
+    bl_options = {"UNDO"}
     
     def execute(self, context):
         bpy_armature = context.armature
@@ -137,6 +141,7 @@ class OBJECT_OT_ToggleSolidColliders(bpy.types.Operator):
 class OBJECT_OT_ToggleNonSolidColliders(bpy.types.Operator):
     bl_label = "Toggle Non-Solid Colliders"
     bl_idname = "import_dscs.OBJECT_OT_ToggleNonSolidColliders".lower()
+    bl_options = {"UNDO"}
     
     def execute(self, context):
         bpy_armature = context.armature
