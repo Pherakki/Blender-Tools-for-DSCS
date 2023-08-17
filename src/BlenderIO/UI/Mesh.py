@@ -69,7 +69,6 @@ class OBJECT_PT_DSCSMeshPanel(bpy.types.Panel):
         layout = self.layout
         props = mesh.DSCS_MeshProperties
         
-        layout.prop(props, "mesh_type")
         if props.mesh_type == "MESH":
             layout.operator(OBJECT_OT_ConvertToBoxCollider.bl_idname)
             layout.operator(OBJECT_OT_ConvertToComplexCollider.bl_idname)
@@ -85,7 +84,12 @@ class OBJECT_PT_DSCSMeshPanel(bpy.types.Panel):
             layout.prop(props, "flag_7")
         elif props.mesh_type == "COLLIDER":
             layout.operator(OBJECT_OT_ConvertToMesh.bl_idname)
-            obj.DSCS_ColliderProperties.display(obj.DSCS_ColliderProperties, layout)
+            cprops = obj.DSCS_ColliderProperties
+            if cprops.collider_type == "BOX":
+                layout.operator(OBJECT_OT_ConvertToComplexCollider)
+            elif cprops.collider_type == "COMPLEX":
+                layout.operator(OBJECT_OT_ConvertToBoxCollider)
+            cprops.display(cprops, layout)
             
     @classmethod
     def register(self):
