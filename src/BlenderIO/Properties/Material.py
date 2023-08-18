@@ -239,6 +239,7 @@ def find_specular_map_channel(self):
     else:
         return 1
 
+
 class MaterialProperties(bpy.types.PropertyGroup):
     bpy_dtype: bpy.props.EnumProperty(items=[("BASIC",    "Basic",    "A basic, minimalist shader that does not try to guess settings from the shader name"),
                                              ("ADVANCED", "Advanced", "Guesses the shader tree that should be built based on the currently active properties. Automatically rebuilds the tree if settings and changed. Be mindful that switching material properties on and off may make the material inconsistent with the shader name, which will determine the in-engine shader properties"),
