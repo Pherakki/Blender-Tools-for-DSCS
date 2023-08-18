@@ -27,7 +27,6 @@ def init_bpy():
     from .src.BlenderIO.Properties.Camera   import CameraProperties
     from .src.BlenderIO.Properties.Collider import RagdollProperties,         \
                                                    BoxColliderProperties,     \
-                                                   ComplexColliderProperties, \
                                                    ColliderProperties
     from .src.BlenderIO.Properties.Light    import LightProperties
     from .src.BlenderIO.Properties.Material import MaterialProperties,       \
@@ -81,7 +80,6 @@ def init_bpy():
         DSCSSkelFloatChannel,
         RagdollProperties,
         BoxColliderProperties,
-        ComplexColliderProperties,
         OBJECT_PT_DSCSBonePanel,
         OBJECT_PT_DSCSCameraPanel,
         OBJECT_PT_DSCSLightPanel,
