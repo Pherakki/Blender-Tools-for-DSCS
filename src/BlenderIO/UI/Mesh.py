@@ -86,9 +86,9 @@ class OBJECT_PT_DSCSMeshPanel(bpy.types.Panel):
             layout.operator(OBJECT_OT_ConvertToMesh.bl_idname)
             cprops = obj.DSCS_ColliderProperties
             if cprops.collider_type == "BOX":
-                layout.operator(OBJECT_OT_ConvertToComplexCollider)
+                layout.operator(OBJECT_OT_ConvertToComplexCollider.bl_idname)
             elif cprops.collider_type == "COMPLEX":
-                layout.operator(OBJECT_OT_ConvertToBoxCollider)
+                layout.operator(OBJECT_OT_ConvertToBoxCollider.bl_idname)
             cprops.display(cprops, layout)
             
     @classmethod
