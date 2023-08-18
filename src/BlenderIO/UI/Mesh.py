@@ -3,6 +3,31 @@ import bpy
 from mathutils import Matrix
 
 
+def set_collider_material(obj):
+    change_material = False
+    if obj.active_material is None:
+        change_material = True
+    elif obj.active_material.DSCS_MaterialProperties.shader_name != "00000000_00000000_00000000_00000000":
+        change_material = True
+    
+    collider_material = "DSCS_ColliderMaterial"
+    if change_material:
+        create_material = True
+        if collider_material in bpy.data.materials:
+            mat = bpy.data.materials[collider_material]
+            if mat.DSCS_MaterialProperties.shader_name != "00000000_00000000_00000000_00000000":
+                create_material = False
+                
+        if create_material:
+            material = bpy.data.materials.new(collider_material) # Generate a new collider material
+            material.use_nodes = True
+            material.DSCS_MaterialProperties.shader_name = "00000000_00000000_00000000_00000000"
+            material.DSCS_MaterialProperties.bpy_dtype = "ADVANCED"
+            material.DSCS_MaterialProperties.build_bpy_material()
+            obj.active_material = material
+        else:
+            obj.active_material = bpy.data.materials[collider_material]
+
 
 class OBJECT_OT_ConvertToBoxCollider(bpy.types.Operator):
     bl_label = "Convert to Box Collider"
@@ -37,6 +62,9 @@ class OBJECT_OT_ConvertToBoxCollider(bpy.types.Operator):
         obj.rotation_euler = euler.to_matrix().to_euler(rmode)
         obj.rotation_quaternion = obj.rotation_euler.to_quaternion()
         obj.scale = [1., 1., 1.]
+
+        # Change material
+        set_collider_material(obj)
 
         return {'FINISHED'}
 
@@ -82,6 +110,8 @@ class OBJECT_OT_ConvertToComplexCollider(bpy.types.Operator):
         
         cprops.collider_type = "COMPLEX"
         props.mesh_type = "COLLIDER"
+        # Change material
+        set_collider_material(obj)
         
         return {'FINISHED'}
 
