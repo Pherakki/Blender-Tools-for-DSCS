@@ -13,8 +13,16 @@ class PhysInterface:
         c.half_height   = half_height
         c.half_depth    = half_depth
         c.material_name = material_name
-        self.colliders.append()
+        self.colliders.append(c)
     
+    def add_complex_collider(self, vertices, triangles, material_names, bone_names):
+        c = ComplexColliderInterface()
+        c.vertices  = vertices
+        c.triangles = [Triangle(*tri) for tri in triangles]
+        c.materials = material_names
+        c.bones     = bone_names
+        self.colliders.append(c)
+        
     @classmethod
     def from_file(cls, filepath):
         binary = PhysBinary()
@@ -218,6 +226,9 @@ class ComplexColliderInterface(ColliderInterface):
         binary.first_vertex_copy_2 = binary.vertex_positions[0]
         
         return binary
+    
+    def add_triangle(self, v1, v2, v3, mat_idx, bone_idx):
+        self.triangles.append(Triangle(v1, v2, v3, mat_idx, bone_idx))
     
 
 class RagdollInterface:
