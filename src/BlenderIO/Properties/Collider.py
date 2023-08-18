@@ -90,7 +90,6 @@ class ColliderProperties(bpy.types.PropertyGroup):
     
     @staticmethod
     def display(self, layout):
-        layout.prop(self, "collider_type")
         self.ragdoll_props.display(self.ragdoll_props, layout)
         if self.collider_type == "BOX":
             self.box_props.display(self.box_props, layout)
