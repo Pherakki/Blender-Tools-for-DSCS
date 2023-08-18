@@ -52,8 +52,8 @@ class BoxColliderProperties(bpy.types.PropertyGroup):
     
     @staticmethod
     def display(self, layout):
-        layout.prop(self, "height")
         layout.prop(self, "width")
+        layout.prop(self, "height")
         layout.prop(self, "depth")
     
 
