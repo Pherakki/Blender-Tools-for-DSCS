@@ -74,27 +74,6 @@ class BoxColliderProperties(bpy.types.PropertyGroup):
             poly.use_smooth = False
 
 
-class ComplexColliderProperties(bpy.types.PropertyGroup):
-    @property
-    def cached_verts(self):
-        return self["cached_verts"]
-    @cached_verts.setter
-    def cached_verts(self, value):
-        self["cached_verts"] = value
-        
-    @property
-    def cached_indices(self):
-        return self["cached_indices"]
-    @cached_indices.setter
-    def cached_indices(self, value):
-        self["cached_indices"] = value
-        
-    @staticmethod
-    def display(self, layout):
-        print(self.cached_verts)
-        
-
-
 class ColliderProperties(bpy.types.PropertyGroup):
     collider_type: bpy.props.EnumProperty(items=[
         ("BOX", "Box", "Box Collider"),
@@ -107,14 +86,12 @@ class ColliderProperties(bpy.types.PropertyGroup):
     # Each collider uses one of these sets of properties. In principle these can be shared
     # between multiple collider instances alongside the collider mesh itself.
     box_props:     bpy.props.PointerProperty(type=BoxColliderProperties, name="Box Properties")
-    complex_props: bpy.props.PointerProperty(type=ComplexColliderProperties, name="Complex Properties")
 
+    
     @staticmethod
     def display(self, layout):
         layout.prop(self, "collider_type")
         self.ragdoll_props.display(self.ragdoll_props, layout)
         if self.collider_type == "BOX":
             self.box_props.display(self.box_props, layout)
-        elif self.collider_type == "COMPLEX":
-            self.complex_props.display(self.complex_props, layout)
         

@@ -33,9 +33,6 @@ def import_colliders(collection, bpy_armature, model_name, ni, pi, material_list
             props    = bpy_mesh_object.DSCS_ColliderProperties
             bpy_mesh.DSCS_MeshProperties.mesh_type = "COLLIDER"
             
-            props.complex_props.cached_verts   = []
-            props.complex_props.cached_indices = []
-            
             # Get geometry
             if collider.TYPE == 0:
                 vertices, _, faces = make_cuboid(2*collider.half_width, 
