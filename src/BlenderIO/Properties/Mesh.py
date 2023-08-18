@@ -14,9 +14,10 @@ def flags_getter(self):
     return v
 
 def force_ui_redraw(self, context):
-    for region in context.area.regions:
-        if region.type == "UI":
-            region.tag_redraw()
+    if context.area is not None:
+        for region in context.area.regions:
+            if region.type == "UI":
+                region.tag_redraw()
     return None
 
 class MeshProperties(bpy.types.PropertyGroup):
