@@ -1,4 +1,6 @@
+import numpy as np
 import bpy
+from mathutils import Matrix
 
 
 
@@ -13,13 +15,59 @@ class OBJECT_OT_ConvertToBoxCollider(bpy.types.Operator):
         obj  = context.object
         cprops = obj.DSCS_ColliderProperties
         
-        cprops.box_props.height = obj.bound_box[4][0] - obj.bound_box[0][0]
-        cprops.box_props.depth  = obj.bound_box[2][1] - obj.bound_box[0][1]
-        cprops.box_props.width  = obj.bound_box[1][2] - obj.bound_box[0][2]
+        # Generate mesh
+        dims, centre, orientation = self.create_bounding_box(obj, [0, 1])
+        cprops.box_props["height"] = dims[0]
+        cprops.box_props["depth" ] = dims[1]
+        cprops.box_props["width" ] = dims[2]
         cprops.collider_type = "BOX"
         props.mesh_type = "COLLIDER"
+        cprops.box_props.rebuild_mesh()
         
+        # Shift object
+        rmode = obj.rotation_mode
+        if rmode not in ['XYZ', 'XZY', 'YXZ', 'YZX', 'ZXY', 'ZYX']:
+            rmode = "XYZ"
+
+        orientation = Matrix(orientation)
+        euler = Matrix(orientation).to_euler('XYZ')
+        euler[0] *= -1
+        for i in range(len(centre)):
+            obj.location[i] = centre[i]
+        obj.rotation_euler = euler.to_matrix().to_euler(rmode)
+        obj.rotation_quaternion = obj.rotation_euler.to_quaternion()
+        obj.scale = [1., 1., 1.]
+
         return {'FINISHED'}
+
+    def create_bounding_box(self, obj, plane):
+        # Get vertex cloud relative to object parent
+        mesh = obj.data
+        transform = np.array(obj.matrix_local)
+        vertices = transform @ np.array([(*v.co, 1) for v in mesh.vertices]).T
+        
+        # Find principal axes of the vertex cloud
+        cov = np.cov(vertices[plane])
+        eigval, eigvec = np.linalg.eig(cov)
+
+        # Generate full rotation matrix from planar principal axes
+        orientation = np.eye(3)
+        for e_idx, o_idx in enumerate(plane):
+            for e_idx2, o_idx2 in enumerate(plane):
+                orientation[o_idx, o_idx2] = eigvec[e_idx, e_idx2]
+        
+        # Align verts to our reference frame and measure width/height range
+        aligned_verts = orientation.T @ (vertices[:3])
+        southwest_corner = np.min(aligned_verts,axis=1)
+        northeast_corner = np.max(aligned_verts,axis=1)
+        
+        # Get box dims
+        dims   = (northeast_corner - southwest_corner)
+        centre = orientation @ ((northeast_corner + southwest_corner)/2)
+
+        
+        return dims, centre, orientation
+
 
 class OBJECT_OT_ConvertToComplexCollider(bpy.types.Operator):
     bl_label = "Convert to Complex Collider"
