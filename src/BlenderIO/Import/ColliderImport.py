@@ -58,8 +58,7 @@ def import_colliders(collection, bpy_armature, model_name, ni, pi, material_list
             
             # Materials
             if collider.TYPE == 0:
-                material_name = pi.materials[collider.material_idx]
-                active_material = material_lookup[material_name]
+                active_material = material_lookup[collider.material_name]
                 bpy_mesh.materials.append(active_material)
             elif collider.TYPE == 2:
                 for midx, material_name in enumerate(collider.materials):

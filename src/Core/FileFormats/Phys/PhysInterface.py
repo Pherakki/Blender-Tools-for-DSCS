@@ -7,6 +7,14 @@ class PhysInterface:
         self.materials = []
         self.bones = []
     
+    def add_box_collider(self, half_width, half_height, half_depth, material_name):
+        c = BoxColliderInterface()
+        c.half_width    = half_width
+        c.half_height   = half_height
+        c.half_depth    = half_depth
+        c.material_name = material_name
+        self.colliders.append()
+    
     @classmethod
     def from_file(cls, filepath):
         binary = PhysBinary()
@@ -23,7 +31,7 @@ class PhysInterface:
         
         for collider in binary.colliders:
             if collider.type == 0:
-                instance.colliders.append(BoxColliderInterface.from_binary(collider.data))
+                instance.colliders.append(BoxColliderInterface.from_binary(collider.data, binary.materials))
             elif collider.type == 2:
                 instance.colliders.append(ComplexColliderInterface.from_binary(collider.data, binary.materials, binary.bones))
             elif collider.type not in [0, 2]: 
@@ -45,8 +53,8 @@ class PhysInterface:
     def to_binary(self):
         binary = PhysBinary()
         
-        material_lookup = {m.ljust(0x40, b'\x00'): m_idx for m_idx, m in enumerate(self.materials)}
-        bone_lookup     = {b.ljust(0x40, b'\x00'): b_idx for b_idx, b in enumerate(self.bones)}
+        material_lookup = {m: m_idx for m_idx, m in enumerate(self.materials)}
+        bone_lookup     = {b: b_idx for b_idx, b in enumerate(self.bones)}
         binary.materials = [m.ljust(0x40, b'\x00') for m in self.materials]
         binary.bones     = [b.ljust(0x40, b'\x00') for b in self.bones]
         # Order probably doesn't matter and all colliders are 1:1 with ragdolls
@@ -61,13 +69,13 @@ class PhysInterface:
                 local_bones     = {}
                 
                 for m_idx, material in enumerate(collider.materials):
-                    material = material.ljust(0x40, b'\x00')
+                    material = material
                     if material not in material_lookup:
                         binary.materials.append(material)
                         material_lookup[material] = len(material_lookup)
                     local_materials[m_idx] = material_lookup[material]
                 for b_idx, bone in enumerate(collider.bones):
-                    bone = bone.ljust(0x40, b'\x00')
+                    bone = bone
                     if bone not in bone_lookup:
                         binary.bones.append(bone)
                         bone_lookup[bone] = len(bone_lookup)
@@ -75,7 +83,7 @@ class PhysInterface:
 
                 cd = (collider.to_binary(local_materials, local_bones))
             else:
-                cd = (collider.to_binary())
+                cd = (collider.to_binary(material_lookup))
                 
             col = Collider()
             col.type = collider.TYPE
@@ -146,26 +154,26 @@ class BoxColliderInterface(ColliderInterface):
         self.half_width  = 0.
         self.half_height = 0.
         self.half_depth  = 0.
-        self.material_idx = 0
+        self.material_name = ""
         
     @classmethod
-    def from_binary(cls, binary):
+    def from_binary(cls, binary, phys_material_names):
         instance = cls()
         
         instance.half_width   = binary.half_width
         instance.half_height  = binary.half_height
         instance.half_depth   = binary.half_depth
-        instance.material_idx = binary.material_idx
+        instance.material_name = phys_material_names[binary.material_idx].rstrip(b'\x00')
         
         return instance
     
-    def to_binary(self):
+    def to_binary(self, phys_material_names):
         binary = BoxCollider()
         
-        binary.half_width  = self.half_width
-        binary.half_height = self.half_height
-        binary.half_depth  = self.half_depth
-        binary.flag        = self.flag
+        binary.half_width   = self.half_width
+        binary.half_height  = self.half_height
+        binary.half_depth   = self.half_depth
+        binary.material_idx = phys_material_names[self.material_name]
         
         return binary
    
