@@ -65,13 +65,24 @@ def get_parent_info(obj):
 def extract_meshes(gi, armature_obj, errorlog,  bone_names, material_names):
     all_meshes = [obj for obj in armature_obj.children if obj.type == "MESH"]
     bpy_meshes = natural_sort([obj for obj in all_meshes if obj.data.DSCS_MeshProperties.mesh_type == "MESH"], lambda x: x.name)
+    collider_meshes = [obj for obj in all_meshes if obj.data.DSCS_MeshProperties.mesh_type == "COLLIDER"]
+    
+    def add_mat(mat):
+        mat_name = mat.name
+        if mat_name not in material_names:
+            material_names.append(mat_name)
     
     # Get material names
     for bpy_mesh_obj in bpy_meshes:
         if bpy_mesh_obj.active_material is not None:
-            mat_name = bpy_mesh_obj.active_material.name
-            if mat_name not in material_names:
-                material_names.append(mat_name)
+            add_mat(bpy_mesh_obj.active_material)
+    for bpy_mesh_obj in collider_meshes:
+        cprops = bpy_mesh_obj.DSCS_ColliderProperties
+        if bpy_mesh_obj.active_materials is not None:
+            add_mat(bpy_mesh_obj.active_material)
+        if cprops.collider_type == "COMPLEX":
+            for mat in bpy_mesh_obj.material_slots:
+                add_mat(mat)
     material_names_table = {nm: i for i, nm in enumerate(material_names)}
     
     #########################################
@@ -97,7 +108,7 @@ def extract_meshes(gi, armature_obj, errorlog,  bone_names, material_names):
         unsigned_hash = struct.unpack('I', struct.pack('i', props.name_hash))[0]
         m = gi.add_mesh(unsigned_hash, props.flags, material_idx, vertices, indices)
         m.vertex_attributes = None  # Setting to 'None' will cause the attributes to be auto-calculated
-        
+    
 
 def extract_vertices(bpy_mesh_obj, errorlog, bone_names):
     bpy_mesh = bpy_mesh_obj.data

@@ -7,7 +7,7 @@ from .ExportSkel import extract_skel, create_bpy_to_dscs_bone_map, create_missin
 from .ExportGeom import extract_geom
 from .ExportName import extract_name
 from .ExportAnim import extract_base_anim, extract_all_anim_channels, optimise_base_anim, transform_to_animation
-
+from .ExportPhys import extract_colliders
 
 class ExportMediaVision(bpy.types.Operator):
     multiple_material_policy: bpy.props.EnumProperty(
@@ -70,6 +70,9 @@ class ExportMediaVision(bpy.types.Operator):
         gi, image_extractors = extract_geom(armature_obj, errorlog, bpy_to_dscs_bone_map, material_names)
         ni        = extract_name(errorlog, bpy_to_dscs_bone_map, material_names)
         
+        # Extract colliders
+        pi = extract_colliders(ni, gi, armature_obj, errorlog)
+        
         # Check if there were any errors generated during export
         errorlog.validate_error_data()
         errorlog.digest_errors()
@@ -82,6 +85,8 @@ class ExportMediaVision(bpy.types.Operator):
         base_anim.to_file(os.path.splitext(self.filepath)[0] + ".anim", si, isBase=True)
         for track_name, ai in anims.items():
             ai.to_file(os.path.splitext(self.filepath)[0] + f"_{track_name}.anim", si, isBase=False)
+        if pi is not None:
+            pi.to_file(os.path.splitext(self.filepath)[0] + ".phys")
         
         # Export textures
         base_dir = os.path.dirname(self.filepath)
