@@ -68,7 +68,7 @@ def extract_colliders(ni, gi, armature_obj, errorlog):
             bpy_tris = collider.data.polygons
             
             # TODO: ROTATE VERTS
-            vertices = np.array([v.co for v in bpy_vs])
+            vertices = np.array([(v.co[0], v.co[2], v.co[1]) for v in bpy_vs])
             tris = []
             mat_names  = {}
             bone_names = {}
