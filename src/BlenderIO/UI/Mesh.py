@@ -42,9 +42,9 @@ class OBJECT_OT_ConvertToBoxCollider(bpy.types.Operator):
         
         # Generate mesh
         dims, centre, orientation = self.create_bounding_box(obj, [0, 1])
-        cprops.box_props["height"] = dims[0]
+        cprops.box_props["width" ] = dims[0]
+        cprops.box_props["height"] = dims[2]
         cprops.box_props["depth" ] = dims[1]
-        cprops.box_props["width" ] = dims[2]
         cprops.collider_type = "BOX"
         props.mesh_type = "COLLIDER"
         cprops.box_props.rebuild_mesh()

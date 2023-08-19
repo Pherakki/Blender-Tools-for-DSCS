@@ -36,13 +36,13 @@ def import_colliders(collection, bpy_armature, model_name, ni, pi, material_list
             # Get geometry
             if collider.TYPE == 0:
                 vertices, _, faces = make_cuboid(2*collider.half_width, 
-                                                 2*collider.half_height,
                                                  2*collider.half_depth,
+                                                 2*collider.half_height,
                                                  [1, 1, 1])
                 
                 # Rotate Y up -> Z up
-                props.box_props["height"]  = 2*collider.half_width
-                props.box_props["width"] = 2*collider.half_height
+                props.box_props["width"]  = 2*collider.half_width
+                props.box_props["height"] = 2*collider.half_height
                 props.box_props["depth"]  = 2*collider.half_depth
                 props.collider_type = "BOX"
             elif collider.TYPE == 2:

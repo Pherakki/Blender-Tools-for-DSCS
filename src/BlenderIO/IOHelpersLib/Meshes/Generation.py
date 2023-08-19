@@ -28,8 +28,8 @@ class CapsuleGenerator:
 
 def make_cuboid(width, height, depth, scale):
     x_span  = scale[0] * width  / 2
-    z_span  = scale[1] * height / 2
-    y_span  = scale[2] * depth  / 2
+    y_span  = scale[1] * height / 2
+    z_span  = scale[2] * depth  / 2
     
     vertices = [
         (-x_span, -y_span, -z_span),
