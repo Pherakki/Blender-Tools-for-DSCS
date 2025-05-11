@@ -1,16 +1,21 @@
 import bpy
 
-from ..IOHelpersLib.Objects import find_bpy_objects
-from ..IOHelpersLib.UI import UIListBase
-
+# from ..IOHelpersLib.Objects import find_bpy_objects
 
 
     
 class DSCSSkelFloatChannel(bpy.types.PropertyGroup):
-    obj_name: bpy.props.StringProperty(name="Name")
-    obj_hash: bpy.props.IntProperty(name="Hash", subtype="UNSIGNED")
-    flags:    bpy.props.IntProperty(name="Flags", min=0, max=255, subtype="UNSIGNED")
-    channel: bpy.props.IntProperty(name="Channel", subtype="UNSIGNED", min=0, max=16777215)
+    obj_name:  bpy.props.StringProperty(name="Name")
+    obj_hash:  bpy.props.IntProperty(name="Hash", subtype="UNSIGNED")
+    flag_0:    bpy.props.BoolProperty(name="Flag 0")
+    flag_1:    bpy.props.BoolProperty(name="Flag 1")
+    flag_2:    bpy.props.BoolProperty(name="Flag 2")
+    flag_3:    bpy.props.BoolProperty(name="Flag 3")
+    flag_4:    bpy.props.BoolProperty(name="Flag 4")
+    flag_5:    bpy.props.BoolProperty(name="Flag 5")
+    flag_6:    bpy.props.BoolProperty(name="Flag 6")
+    flag_7:    bpy.props.BoolProperty(name="Flag 7")
+    channel:   bpy.props.IntProperty(name="Channel", subtype="UNSIGNED", min=0, max=16777215)
     array_idx: bpy.props.IntProperty(name="Array Idx", subtype="UNSIGNED", min=0, max=15)
 
 
@@ -39,24 +44,24 @@ class ModelProperties(bpy.types.PropertyGroup):
     def all_nonrendered_meshes_visible(self, bpy_object):
         return self.are_all_visible(self.get_nonrendered_meshes(bpy_object))
     
-    def get_colliders(self, bpy_object):
-        bpy_meshes = [obj for obj in bpy_object.children if obj.type == "MESH"]
-        return [obj for obj in bpy_meshes if obj.data.DSCS_MeshProperties.mesh_type == "COLLIDER"]
+    # def get_colliders(self, bpy_object):
+    #     bpy_meshes = [obj for obj in bpy_object.children if obj.type == "MESH"]
+    #     return [obj for obj in bpy_meshes if obj.data.DSCS_MeshProperties.mesh_type == "COLLIDER"]
     
-    def get_solid_colliders(self, bpy_object):
-        return [obj for obj in self.get_colliders(bpy_object) if obj.DSCS_ColliderProperties.ragdoll_props.is_solid == True]
+    # def get_solid_colliders(self, bpy_object):
+    #     return [obj for obj in self.get_colliders(bpy_object) if obj.DSCS_ColliderProperties.ragdoll_props.is_solid == True]
     
-    def all_solid_colliders_visible(self, bpy_object):
-        return self.are_all_visible(self.get_solid_colliders(bpy_object))
+    # def all_solid_colliders_visible(self, bpy_object):
+    #     return self.are_all_visible(self.get_solid_colliders(bpy_object))
     
-    def get_nonsolid_colliders(self, bpy_object):
-        return [obj for obj in self.get_colliders(bpy_object) if obj.DSCS_ColliderProperties.ragdoll_props.is_solid == False]
+    # def get_nonsolid_colliders(self, bpy_object):
+    #     return [obj for obj in self.get_colliders(bpy_object) if obj.DSCS_ColliderProperties.ragdoll_props.is_solid == False]
     
-    def all_nonsolid_colliders_visible(self, bpy_object):
-        return self.are_all_visible(self.get_nonsolid_colliders(bpy_object))
+    # def all_nonsolid_colliders_visible(self, bpy_object):
+    #     return self.are_all_visible(self.get_nonsolid_colliders(bpy_object))
     
-    def get_cameras(self):
-        return find_bpy_objects(bpy.data.objects, self.id_data, [lambda x: x.type == "CAMERA"])
+    # def get_cameras(self):
+    #     return find_bpy_objects(bpy.data.objects, self.id_data, [lambda x: x.type == "CAMERA"])
     
-    def get_light(self):
-        return find_bpy_objects(bpy.data.objects, self.id_data, [lambda x: x.type == "LIGHT"])
+    # def get_light(self):
+    #     return find_bpy_objects(bpy.data.objects, self.id_data, [lambda x: x.type == "LIGHT"])

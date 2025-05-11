@@ -1,15 +1,17 @@
 import bpy
 
-from ...Core.FileFormats.Geom.GeomInterface import Material
-from ..Import.ShaderNodes.BuildTree import rebuild_tree
+# from ..Import.ShaderNodes.BuildTree import rebuild_tree
+from .Materials.BasicShader import rebuild_basic_tree
 
 from_shader_msg = "This is determined from the shader name."
 
 def build_bpy_material(self):
     bpy_mat = self.id_data
-    rebuild_tree(bpy_mat, self.get_texture_lookup())
+    rebuild_basic_tree(bpy_mat, self.get_texture_lookup())
+    # rebuild_tree(bpy_mat, self.get_texture_lookup())
 
 def setting_updated(self, context):
+    return
     # Going via id_data allows more than just the MaterialProperties to call
     # this method: we also need to call it on the TextureSamplers parented to
     # the MaterialProperties, for example.

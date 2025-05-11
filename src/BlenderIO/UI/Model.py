@@ -2,9 +2,9 @@ import math
 import bpy
 from mathutils import Matrix
 
-from ..IOHelpersLib.Collection import init_collection
-from ..IOHelpersLib.Objects import lock_obj_transforms
-from ..IOHelpersLib.UI import UIListBase
+from ....external.blunger.interface.collection import init_collection
+from ....external.blunger.interface.object import lock_obj_transforms
+from ....external.blunger.interface.UI import UIListBase
 
 
 class OBJECT_UL_DSCSFloatChannelUIList(bpy.types.UIList):
@@ -161,7 +161,7 @@ class OBJECT_OT_ToggleNonSolidColliders(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OBJECT_PT_DSCSModelPanel(_base_class):
+class OBJECT_PT_DSCSModelPanel(_base_class, bpy.types.Panel):
     bl_label       = "DSCS Model"
     bl_idname      = "OBJECT_PT_DSCSModelPanel"
     bl_space_type  = 'PROPERTIES'

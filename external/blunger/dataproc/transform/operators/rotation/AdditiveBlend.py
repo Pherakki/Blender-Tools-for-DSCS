@@ -1,0 +1,3 @@
+# Maybe the best way to implement the additive euler angles here...
+# is to permute the order of the matrix multiplies and change the animation
+# equation to that ordering.

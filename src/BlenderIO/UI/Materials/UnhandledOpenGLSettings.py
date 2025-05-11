@@ -1,6 +1,7 @@
 import bpy
 
-from ...IOHelpersLib.UI import UIListBase
+from .....external.blunger.interface.UI import UIListBase
+
 
 class OBJECT_UL_DSCSOpenGLUIList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -23,9 +24,9 @@ _base_class = UIListBase(
 )
 
 
-class OBJECT_PT_DSCSMaterialUnhandledSettingsPanel(_base_class):
+class OBJECT_UL_DSCSMaterialUnhandledSettingsPanel(_base_class, bpy.types.UIList):
     bl_label       = ""
-    bl_parent_id   = "OBJECT_PT_DSCSMaterialOpenGLPanel"
+    bl_parent_id   = "OBJECT_UL_DSCSMaterialOpenGLPanel"
     bl_space_type  = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context     = "material"

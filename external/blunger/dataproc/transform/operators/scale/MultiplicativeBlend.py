@@ -1,0 +1,6 @@
+from .Basic import parentspace_to_bindspace_scale
+from .Basic import bindspace_to_parentspace_scale
+
+# Transform rules are identical for multiplicative blending.
+parentspace_to_bindspace_scale_multblend = parentspace_to_bindspace_scale
+bindspace_to_parentspace_scale_multblend = bindspace_to_parentspace_scale

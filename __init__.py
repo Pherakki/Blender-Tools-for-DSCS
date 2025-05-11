@@ -1,9 +1,9 @@
 bl_info = {
-        "name": "Media.Vision Import/Export (.name)",
-        "description": "Imports model and animation files from Media.Vision titles.",
+        "name": "MVGL Import/Export (.name)",
+        "description": "Imports model and animation files for the MVGL Engine.",
         "author": "Pherakki",
-        "version": (0, 2, "dev"),
-        "blender": (2, 80, 0),
+        "version": (0, 3, 0),
+        "blender": (2, 81, 0),
         "location": "File > Import, File > Export",
         "warning": "",
         "wiki_url": "https://github.com/Pherakki/Blender-Tools-for-DSCS",
@@ -14,55 +14,65 @@ bl_info = {
 
 def init_bpy():
     import bpy
-    #from .BlenderIO.Import import ImportDSCS#, ImportMegido
-    from .src.BlenderIO.Import.Operator import ImportDSCS, ImportDSCS_PS#, ImportMegido
+    # from .src.BlenderIO.Preferences import AddonPreferences
+    from .src.BlenderIO.Import.Operator import ImportDSCSOpenGL, ImportDSCSPS, ImportDSCSAnim
+    from .src.BlenderIO.Import.Operator import ImportMegido72, ImportMegido72Anim
+    from .src.BlenderIO.Import.Operator import ImportHundredLine, ImportHundredLineAnim
+    from .src.BlenderIO.Import.Operator import ImportPoliciesGroup
     from .src.BlenderIO.Import.Menu     import MVImportSubmenu, menu_func_import
-    from .src.BlenderIO.Export.Operator import ExportDSCS#, ExportMegido
-    from .src.BlenderIO.Export.Menu     import MVExportSubmenu, menu_func_export
+    # from .src.BlenderIO.Export.Operator import ExportDSCS#, ExportMegido
+    # from .src.BlenderIO.Export.Menu     import MVExportSubmenu, menu_func_export
     
-    from .src.BlenderIO.Properties.Animation import DSCSKeyframe
-    from .src.BlenderIO.Properties.Animation import DSCSAnimFloatChannel
-    from .src.BlenderIO.Properties.Animation import AnimationProperties
-    from .src.BlenderIO.Properties.Bone     import BoneProperties
-    from .src.BlenderIO.Properties.Camera   import CameraProperties
-    from .src.BlenderIO.Properties.Collider import RagdollProperties,         \
-                                                   BoxColliderProperties,     \
-                                                   ColliderProperties
+    # from .src.BlenderIO.Properties.Animation import DSCSKeyframe
+    # from .src.BlenderIO.Properties.Animation import DSCSAnimFloatChannel
+    # from .src.BlenderIO.Properties.Animation import AnimationProperties
+    from .src.BlenderIO.Properties.Bone      import BoneProperties
+    from .src.BlenderIO.Properties.Camera    import CameraProperties
+    # # from .src.BlenderIO.Properties.Collider import RagdollProperties,         \
+    # #                                                BoxColliderProperties,     \
+    # #                                                ColliderProperties
     from .src.BlenderIO.Properties.Light    import LightProperties
     from .src.BlenderIO.Properties.Material import MaterialProperties,       \
-                                                   color_sampler_t,          \
-                                                   overlay_color_sampler_t,  \
-                                                   normal_sampler_t,         \
-                                                   overlay_normal_sampler_t, \
-                                                   lightmap_sampler_t,       \
-                                                   env_sampler_t,            \
-                                                   envs_sampler_t,           \
-                                                   clut_sampler_t,           \
-                                                   UnhandledOpenGLSetting,   \
-                                                   UnhandledMaterialUniform, \
-                                                   UnhandledTextureSampler,  \
-                                                   UVTransforms
+                                                    color_sampler_t,          \
+                                                    overlay_color_sampler_t,  \
+                                                    normal_sampler_t,         \
+                                                    overlay_normal_sampler_t, \
+                                                    lightmap_sampler_t,       \
+                                                    env_sampler_t,            \
+                                                    envs_sampler_t,           \
+                                                    clut_sampler_t,           \
+                                                    UnhandledOpenGLSetting,   \
+                                                    UnhandledMaterialUniform, \
+                                                    UnhandledTextureSampler,  \
+                                                    UVTransforms
     from .src.BlenderIO.Properties.Mesh     import MeshProperties
     from .src.BlenderIO.Properties.Model    import ModelProperties, DSCSSkelFloatChannel
-    from .src.BlenderIO.Properties.Scene    import SceneProperties
+    # from .src.BlenderIO.Properties.Scene    import SceneProperties
     from .src.BlenderIO.UI.Bone  import OBJECT_PT_DSCSBonePanel
     from .src.BlenderIO.UI.Camera import OBJECT_PT_DSCSCameraPanel
     from .src.BlenderIO.UI.Light import OBJECT_PT_DSCSLightPanel
     from .src.BlenderIO.UI.Mesh import OBJECT_PT_DSCSMeshPanel
     from .src.BlenderIO.UI.Materials.Material import OBJECT_PT_DSCSMaterialPanel
     from .src.BlenderIO.UI.Materials.UnhandledMaterialUniforms import OBJECT_UL_DSCSMaterialUniformUIList
-    from .src.BlenderIO.UI.Materials.UnhandledMaterialUniforms import OBJECT_PT_DSCSMaterialUnhandledUniformsPanel
+    from .src.BlenderIO.UI.Materials.UnhandledMaterialUniforms import OBJECT_UL_DSCSMaterialUnhandledUniformsPanel
     from .src.BlenderIO.UI.Materials.UnhandledOpenGLSettings   import OBJECT_UL_DSCSOpenGLUIList
-    from .src.BlenderIO.UI.Materials.UnhandledOpenGLSettings   import OBJECT_PT_DSCSMaterialUnhandledSettingsPanel
+    from .src.BlenderIO.UI.Materials.UnhandledOpenGLSettings   import OBJECT_UL_DSCSMaterialUnhandledSettingsPanel
     from .src.BlenderIO.UI.Model  import OBJECT_PT_DSCSModelPanel
-    from .src.BlenderIO.Utils.ErrorLog import ImportErrorLog
+    from .src.BlenderIO.Logging   import ImportErrorLog
     
     CLASSES = (
-        ImportDSCS,
-        ImportDSCS_PS,
-        ExportDSCS,
+        # AddonPreferences,
+        ImportPoliciesGroup,
+        ImportDSCSOpenGL,
+        ImportDSCSPS,
+        ImportDSCSAnim,
+        ImportMegido72,
+        ImportMegido72Anim,
+        ImportHundredLine,
+        ImportHundredLineAnim,
+        # ExportDSCS,
         MVImportSubmenu,
-        MVExportSubmenu,
+        # MVExportSubmenu,
         UnhandledOpenGLSetting,
         UnhandledTextureSampler,
         UnhandledMaterialUniform,
@@ -75,38 +85,38 @@ def init_bpy():
         env_sampler_t,
         envs_sampler_t,
         clut_sampler_t,
-        DSCSKeyframe,
-        DSCSAnimFloatChannel,
+        # DSCSKeyframe,
+        # DSCSAnimFloatChannel,
         DSCSSkelFloatChannel,
-        RagdollProperties,
-        BoxColliderProperties,
+        # RagdollProperties,
+        # BoxColliderProperties,
         OBJECT_PT_DSCSBonePanel,
         OBJECT_PT_DSCSCameraPanel,
         OBJECT_PT_DSCSLightPanel,
         OBJECT_PT_DSCSMeshPanel,
         OBJECT_PT_DSCSMaterialPanel,
         OBJECT_UL_DSCSMaterialUniformUIList,
-        OBJECT_PT_DSCSMaterialUnhandledUniformsPanel,
+        OBJECT_UL_DSCSMaterialUnhandledUniformsPanel,
         OBJECT_UL_DSCSOpenGLUIList,
-        OBJECT_PT_DSCSMaterialUnhandledSettingsPanel,
+        OBJECT_UL_DSCSMaterialUnhandledSettingsPanel,
         OBJECT_PT_DSCSModelPanel,
     )
     
     PROP_GROUPS = (
         (bpy.types.Armature, "DSCS_ModelProperties",     ModelProperties    ),
-        (bpy.types.Action,   "DSCS_AnimationProperties", AnimationProperties),
+        # (bpy.types.Action,   "DSCS_AnimationProperties", AnimationProperties),
         (bpy.types.Bone,     "DSCS_BoneProperties",      BoneProperties     ),
         (bpy.types.Camera,   "DSCS_CameraProperties",    CameraProperties   ),
-        (bpy.types.Object,   "DSCS_ColliderProperties",  ColliderProperties ),
+        # (bpy.types.Object,   "DSCS_ColliderProperties",  ColliderProperties ),
         (bpy.types.Light,    "DSCS_LightProperties",     LightProperties    ),
         (bpy.types.Material, "DSCS_MaterialProperties",  MaterialProperties ),
         (bpy.types.Mesh,     "DSCS_MeshProperties",      MeshProperties     ),
-        (bpy.types.Scene,    "DSCS_SceneProperties",     SceneProperties    ),
+        # (bpy.types.Scene,    "DSCS_SceneProperties",     SceneProperties    ),
     )
     
     LIST_ITEMS = (
         (bpy.types.TOPBAR_MT_file_import, menu_func_import),
-        (bpy.types.TOPBAR_MT_file_export, menu_func_export)
+        # (bpy.types.TOPBAR_MT_file_export, menu_func_export)
     )
     
     MODULES = (

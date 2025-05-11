@@ -1,6 +1,6 @@
 import bpy
 
-from ...IOHelpersLib.UI import UIListBase
+from .....external.blunger.interface.UI import UIListBase
 
 
 class OBJECT_UL_DSCSMaterialUniformUIList(bpy.types.UIList):
@@ -36,7 +36,7 @@ _base_class = UIListBase(
 )
 
 
-class OBJECT_PT_DSCSMaterialUnhandledUniformsPanel(_base_class):
+class OBJECT_UL_DSCSMaterialUnhandledUniformsPanel(_base_class, bpy.types.UIList):
     bl_label       = ""
     bl_parent_id   = "OBJECT_PT_DSCSShaderUniformsPanel"
     bl_space_type  = "PROPERTIES"

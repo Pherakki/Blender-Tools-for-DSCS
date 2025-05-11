@@ -1,0 +1,38 @@
+from .Base import MeshBinaryBase, PrimitiveTypes
+from .ShaderTransforms import PosPackedIndex, IndexDiv3
+
+
+class MeshBinaryDSCSPS(MeshBinaryBase):
+    __DATA_TYPES = {
+        0: 'B',
+        8: 'e',
+        9: 'f'
+    }
+
+    __PRIMITIVE_TYPES = {
+        0x0000: PrimitiveTypes.TRIANGLE_STRIP,
+        0x0004: PrimitiveTypes.TRIANGLES
+    }
+
+    @property
+    def _CLASSTAG(self):
+        return "DSCS PS MeshBinary"
+
+    @property
+    def DATA_TYPES(self):
+        return self.__DATA_TYPES
+
+    @property
+    def PRIMITIVE_TYPES(self):
+        return self.__PRIMITIVE_TYPES
+
+    def retrieve_index_rw_function(self, rw):
+        dtype = 'H'
+        rw.assert_equal(self.index_type, 0)
+        return rw.rw_uint16s
+
+    def get_default_shader_transforms(self):
+        if self.vertex_groups_per_vertex == 1:
+            return [PosPackedIndex(), IndexDiv3()] # Index Div 3
+        else:
+            return []
