@@ -16,7 +16,7 @@ from ....external.blunger.interface.object import set_mode, TempSwapActiveObject
 from ...filetypes.Geom.Binary.HundredLine import GeomFileBinaryHundredLine, AttributeTypes, PrimitiveTypes
 from ...filetypes.Anim.InterfaceHundredLine import AnimFileHundredLine
 from ...filetypes.Anim.BinaryHundredLine import AnimFileBinary as AnimFileBinaryHundredLine
-from ...filetypes.NameList.Interface import NameList
+from ...filetypes.NameList.Interface.HundredLine import NameList
 from ...filetypes.Skel.Interface import SkelFile
 from ...utilities.Hash import dscs_hash
 from ...filetypes.Texture.DDS import DDS, to_nonsrgb_dds
@@ -374,4 +374,4 @@ def import_hl_anim(bpy_armature_obj, filepath, errorlog):
     bone_names = [b.name for b in bpy_armature_obj.data.bones]
     anim_name = os.path.split(os.path.splitext(filepath)[0])[1]
     ais = {anim_name: load_hl_anim_file(filepath)}
-    import_animations(bpy_armature_obj.name, bpy_armature_obj, [b.encode('ascii') for b in bone_names], ais, errorlog)
+    import_animations(bpy_armature_obj.name, bpy_armature_obj, [b for b in bone_names], ais, errorlog)
